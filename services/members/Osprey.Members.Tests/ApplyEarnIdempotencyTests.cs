@@ -13,7 +13,7 @@ namespace Osprey.Members.Tests;
 /// </summary>
 public sealed class ApplyEarnIdempotencyTests : IAsyncLifetime
 {
-    private readonly MongoDbContainer mongo = new MongoDbBuilder().Build();
+    private readonly MongoDbContainer mongo = new MongoDbBuilder().WithImage("mongo:7").Build();
     private IMongoCollection<MemberDocument> members = null!;
     private IMongoCollection<PointsTransactionDocument> transactions = null!;
 

@@ -11,8 +11,8 @@ namespace Osprey.Members.Tests;
 
 public sealed class EarnEventsQueueTests : IAsyncLifetime
 {
-    private readonly MongoDbContainer mongo = new MongoDbBuilder().Build();
-    private readonly RabbitMqContainer rabbit = new RabbitMqBuilder().Build();
+    private readonly MongoDbContainer mongo = new MongoDbBuilder().WithImage("mongo:7").Build();
+    private readonly RabbitMqContainer rabbit = new RabbitMqBuilder().WithImage("rabbitmq:3-management").Build();
     private WebApplicationFactory<Program> factory = null!;
 
     public async Task InitializeAsync()

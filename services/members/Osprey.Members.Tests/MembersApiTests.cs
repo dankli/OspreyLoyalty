@@ -9,7 +9,7 @@ namespace Osprey.Members.Tests;
 
 public sealed class MembersApiTests : IAsyncLifetime
 {
-    private readonly MongoDbContainer mongo = new MongoDbBuilder().Build();
+    private readonly MongoDbContainer mongo = new MongoDbBuilder().WithImage("mongo:7").Build();
     private WebApplicationFactory<Program> factory = null!;
 
     public async Task InitializeAsync()
