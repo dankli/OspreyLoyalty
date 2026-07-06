@@ -11,6 +11,7 @@ public sealed class TiersCoreTests
     [InlineData(20_000, Tiers.Tier.Silver)]
     [InlineData(44_999, Tiers.Tier.Silver)]
     [InlineData(45_000, Tiers.Tier.Gold)]
+    [InlineData(89_999, Tiers.Tier.Gold)]
     [InlineData(90_000, Tiers.Tier.Diamond)]
     [InlineData(150_000, Tiers.Tier.Diamond)] // points alone never reach PANDION
     public void Qualifying_points_map_to_tier(int points, Tiers.Tier expected) =>

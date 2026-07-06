@@ -32,4 +32,12 @@ public sealed class EnrollMemberValidationTests
         Assert.Throws<ArgumentException>(() =>
             EnrollMember.Validation.Require(new EnrollMember.Request("Ada", "not-an-email")));
     }
+
+    [Fact]
+    public void Email_over_max_length_fails()
+    {
+        string tooLong = new string('a', 250) + "@example.com";
+        Assert.Throws<ArgumentException>(() =>
+            EnrollMember.Validation.Require(new EnrollMember.Request("Ada", tooLong)));
+    }
 }

@@ -11,6 +11,7 @@ public static partial class EnrollMember
     public static class Validation
     {
         private const int MaxNameLength = 200;
+        private const int MaxEmailLength = 254;
 
         public static void Require(Request request)
         {
@@ -20,6 +21,8 @@ public static partial class EnrollMember
                 throw new ArgumentException($"Name must be at most {MaxNameLength} characters.");
             if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
                 throw new ArgumentException("Email must be a valid address.");
+            if (request.Email.Length > MaxEmailLength)
+                throw new ArgumentException($"Email must be at most {MaxEmailLength} characters.");
         }
     }
 }
