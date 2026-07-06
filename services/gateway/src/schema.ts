@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { createSchema } from "graphql-yoga";
+import type { GraphQLSchemaWithContext, YogaInitialContext } from "graphql-yoga";
 import { env } from "./env.js";
 import type { Member } from "./features/member/membersClient.js";
 
@@ -7,7 +8,7 @@ export type Deps = { fetchMember: (baseUrl: string, id: string) => Promise<Membe
 
 const typeDefs = readFileSync(new URL("../schema.graphql", import.meta.url), "utf8");
 
-export function schema(deps: Deps) {
+export function schema(deps: Deps): GraphQLSchemaWithContext<YogaInitialContext> {
   return createSchema({
     typeDefs,
     resolvers: {

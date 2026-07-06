@@ -19,4 +19,4 @@ Listens on http://localhost:4000 (GraphQL at `/graphql`). Expects the members se
 npm test
 ```
 
-5 vitest tests covering the GraphQL member query and the members client (timeouts, 404 handling).
+5 vitest tests covering the GraphQL member query and the members client (response mapping, 404 handling, and 5xx error translation). The members client enforces a 2-second timeout at the call site.

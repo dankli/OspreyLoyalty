@@ -1,17 +1,15 @@
 {
   "name": "gateway",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "GraphQL BFF for Osprey Loyalty frontends",
+  "private": true,
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "type": "module",
   "dependencies": {
     "graphql": "^16.14.2",
