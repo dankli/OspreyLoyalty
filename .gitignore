@@ -1,0 +1,25 @@
+# AI tooling — no agent/assistant artifacts in the repo
+.codegraph/
+.claude/
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+.cursor/
+.cursorrules
+.aider*
+.mcp.json
+.testagent/
+docs/superpowers/
+
+# Build output
+bin/
+obj/
+node_modules/
+dist/
+
+# IDE / OS
+.vs/
+.idea/
+*.user
+.DS_Store
+Thumbs.db
