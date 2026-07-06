@@ -33,3 +33,30 @@ body {
 }
 .bar { margin-top: 0.75rem; height: 8px; border-radius: 4px; background: var(--navy-700); overflow: hidden; }
 .bar-fill { height: 100%; background: var(--gold-400); }
+
+/* ── navigation ── */
+.site-nav {
+  display: flex; gap: 1.5rem; padding: 0.75rem 1.5rem;
+  background: var(--navy-900); border-bottom: 1px solid var(--navy-700);
+}
+.site-nav a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+.site-nav a.active,
+.site-nav a:hover { color: var(--gold-400); }
+
+/* ── transactions table ── */
+.transactions { width: 100%; border-collapse: collapse; margin-top: 1.5rem; font-size: 0.9rem; }
+.transactions th { text-align: left; color: var(--muted); font-weight: 400; padding: 0.4rem 0.75rem; border-bottom: 1px solid var(--navy-700); }
+.transactions td { padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.type-badge { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; background: var(--navy-700); }
+.type-earn  { background: rgba(96,200,120,0.18); color: #60c878; }
+.type-burn  { background: rgba(240,120,80,0.18); color: #f07850; }
+.positive { color: #60c878; }
+.negative { color: #f07850; }
+
+/* ── pager ── */
+.pager { display: flex; align-items: center; gap: 1rem; margin-top: 1.25rem; }
+.pager button { background: var(--navy-700); color: var(--text); border: 1px solid rgba(216,178,92,0.25); border-radius: 6px; padding: 0.35rem 0.9rem; cursor: pointer; }
+.pager button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── type filter ── */
+label select { margin-left: 0.5rem; background: var(--navy-700); color: var(--text); border: 1px solid var(--navy-700); border-radius: 6px; padding: 0.3rem 0.6rem; }

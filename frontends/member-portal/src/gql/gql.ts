@@ -15,9 +15,11 @@ import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-
  */
 type Documents = {
     "\n  query MemberDashboard($id: ID!) {\n    member(id: $id) {\n      id\n      name\n      tier\n      qualifyingPoints\n      spendablePoints\n      pointsToNextTier\n      benefits\n    }\n  }\n": typeof types.MemberDashboardDocument,
+    "\n  query MemberTransactions($memberId: ID!, $page: Int!) {\n    transactions(memberId: $memberId, page: $page) {\n      items {\n        id\n        type\n        points\n        source\n        occurredAtUtc\n      }\n      page\n      hasMore\n    }\n  }\n": typeof types.MemberTransactionsDocument,
 };
 const documents: Documents = {
     "\n  query MemberDashboard($id: ID!) {\n    member(id: $id) {\n      id\n      name\n      tier\n      qualifyingPoints\n      spendablePoints\n      pointsToNextTier\n      benefits\n    }\n  }\n": types.MemberDashboardDocument,
+    "\n  query MemberTransactions($memberId: ID!, $page: Int!) {\n    transactions(memberId: $memberId, page: $page) {\n      items {\n        id\n        type\n        points\n        source\n        occurredAtUtc\n      }\n      page\n      hasMore\n    }\n  }\n": types.MemberTransactionsDocument,
 };
 
 /**
@@ -38,6 +40,10 @@ export function graphql(source: string): unknown;
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query MemberDashboard($id: ID!) {\n    member(id: $id) {\n      id\n      name\n      tier\n      qualifyingPoints\n      spendablePoints\n      pointsToNextTier\n      benefits\n    }\n  }\n"): (typeof documents)["\n  query MemberDashboard($id: ID!) {\n    member(id: $id) {\n      id\n      name\n      tier\n      qualifyingPoints\n      spendablePoints\n      pointsToNextTier\n      benefits\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query MemberTransactions($memberId: ID!, $page: Int!) {\n    transactions(memberId: $memberId, page: $page) {\n      items {\n        id\n        type\n        points\n        source\n        occurredAtUtc\n      }\n      page\n      hasMore\n    }\n  }\n"): (typeof documents)["\n  query MemberTransactions($memberId: ID!, $page: Int!) {\n    transactions(memberId: $memberId, page: $page) {\n      items {\n        id\n        type\n        points\n        source\n        occurredAtUtc\n      }\n      page\n      hasMore\n    }\n  }\n"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};
