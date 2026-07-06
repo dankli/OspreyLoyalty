@@ -6,7 +6,7 @@ namespace Osprey.Members.Features;
 
 public static partial class EnrollMember
 {
-    internal static Dto ToDto(MemberDocument document) => new(
+    internal static Response ToResponse(MemberDocument document) => new(
         document.Id,
         document.Name,
         document.Email,

@@ -11,7 +11,7 @@ public static partial class EnrollMember
     {
         private const int MongoTimeoutSeconds = 5;
 
-        public async Task<Dto> Handle(Request request, CancellationToken ct = default)
+        public async Task<Response> Handle(Request request, CancellationToken ct = default)
         {
             Validation.Require(request);
 
@@ -27,7 +27,7 @@ public static partial class EnrollMember
             cts.CancelAfter(TimeSpan.FromSeconds(MongoTimeoutSeconds)); // a hung Mongo must not hang the request
             await members.InsertOneAsync(document, options: null, cts.Token);
 
-            return ToDto(document);
+            return ToResponse(document);
         }
     }
 }

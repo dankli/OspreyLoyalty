@@ -4,7 +4,7 @@ namespace Osprey.Members.Features;
 
 public static partial class GetMemberProfile
 {
-    public sealed record Dto(
+    public sealed record Response(
         string Id,
         string Name,
         string Email,

@@ -7,7 +7,7 @@ public static partial class EnrollMember
     public static void MapEndpoints(IEndpointRouteBuilder app) =>
         app.MapPost("/api/members", async (Request request, Handler handler, CancellationToken ct) =>
         {
-            Dto dto = await handler.Handle(request, ct);
-            return Results.Created($"/api/members/{dto.Id}", dto);
+            Response response = await handler.Handle(request, ct);
+            return Results.Created($"/api/members/{response.Id}", response);
         });
 }

@@ -6,7 +6,7 @@ public static partial class EnrollMember
 {
     public sealed record Request(string Name, string Email);
 
-    public sealed record Dto(
+    public sealed record Response(
         string Id,
         string Name,
         string Email,

@@ -14,12 +14,12 @@ public sealed class GetMemberProfileCoreTests
             new DateTime(2024, 3, 12, 0, 0, 0, DateTimeKind.Utc),
             QualifyingPoints: 32_000, SpendablePoints: 14_500);
 
-        GetMemberProfile.Dto dto = GetMemberProfile.ToDto(document);
+        GetMemberProfile.Response response = GetMemberProfile.ToResponse(document);
 
-        Assert.Equal("SILVER", dto.Tier);
-        Assert.Equal(13_000, dto.PointsToNextTier);
-        Assert.Contains("Priority boarding", dto.Benefits);
-        Assert.Equal(14_500, dto.SpendablePoints);
+        Assert.Equal("SILVER", response.Tier);
+        Assert.Equal(13_000, response.PointsToNextTier);
+        Assert.Contains("Priority boarding", response.Benefits);
+        Assert.Equal(14_500, response.SpendablePoints);
     }
 
     [Fact]
@@ -29,9 +29,9 @@ public sealed class GetMemberProfileCoreTests
             "x", "Top Flyer", "top@example.com", DateTime.UtcNow,
             QualifyingPoints: 96_000, SpendablePoints: 0, IsPandionInvited: true);
 
-        GetMemberProfile.Dto dto = GetMemberProfile.ToDto(document);
-        Assert.Equal("PANDION", dto.Tier);
-        Assert.Null(dto.PointsToNextTier);
+        GetMemberProfile.Response response = GetMemberProfile.ToResponse(document);
+        Assert.Equal("PANDION", response.Tier);
+        Assert.Null(response.PointsToNextTier);
     }
 
     [Fact]
@@ -41,6 +41,6 @@ public sealed class GetMemberProfileCoreTests
             "x", "Frequent Flyer", "ff@example.com", DateTime.UtcNow,
             QualifyingPoints: 200_000, SpendablePoints: 0);
 
-        Assert.Equal("DIAMOND", GetMemberProfile.ToDto(document).Tier);
+        Assert.Equal("DIAMOND", GetMemberProfile.ToResponse(document).Tier);
     }
 }

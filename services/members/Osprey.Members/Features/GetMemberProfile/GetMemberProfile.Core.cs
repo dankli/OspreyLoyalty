@@ -6,10 +6,10 @@ namespace Osprey.Members.Features;
 
 public static partial class GetMemberProfile
 {
-    internal static Dto ToDto(MemberDocument document)
+    internal static Response ToResponse(MemberDocument document)
     {
         Tiers.Tier tier = Tiers.Effective(document.QualifyingPoints, document.IsPandionInvited);
-        return new Dto(
+        return new Response(
             document.Id,
             document.Name,
             document.Email,

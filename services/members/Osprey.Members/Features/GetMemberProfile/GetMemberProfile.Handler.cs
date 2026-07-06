@@ -11,7 +11,7 @@ public static partial class GetMemberProfile
     {
         private const int MongoTimeoutSeconds = 5;
 
-        public async Task<Dto?> Handle(string id, CancellationToken ct = default)
+        public async Task<Response?> Handle(string id, CancellationToken ct = default)
         {
             Validation.RequireId(id);
 
@@ -21,7 +21,7 @@ public static partial class GetMemberProfile
                 .Find(m => m.Id == id)
                 .FirstOrDefaultAsync(cts.Token);
 
-            return document is null ? null : ToDto(document);
+            return document is null ? null : ToResponse(document);
         }
     }
 }
