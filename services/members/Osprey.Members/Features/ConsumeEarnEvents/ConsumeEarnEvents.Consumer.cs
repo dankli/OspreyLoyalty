@@ -11,8 +11,10 @@ public static partial class ConsumeEarnEvents
     /// <summary>
     /// At-least-once consumer. Success or duplicate → ack. Malformed or invalid → nack without
     /// requeue (straight to the dead queue — retrying a poison message never helps). Transient
-    /// failure (Mongo down) → nack WITH requeue; the quorum delivery limit dead-letters it
-    /// after 5 attempts, so nothing loops forever.
+    /// failure (Mongo down or the handler's 5s timeout firing) → nack WITH requeue; the quorum
+    /// delivery limit dead-letters it after 5 attempts, so nothing loops forever. Only a
+    /// shutdown-triggered cancellation leaves the delivery unacked — the broker redelivers it
+    /// after the channel closes.
     /// </summary>
     public sealed class Consumer(IServiceProvider services, IConfiguration config, ILogger<Consumer> logger)
         : BackgroundService
@@ -43,7 +45,8 @@ public static partial class ConsumeEarnEvents
             }
             if (connection is null) return;
 
-            using IChannel channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
+            await using IConnection rabbit = connection;
+            await using IChannel channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
             await DeclareAsync(channel, stoppingToken);
             await channel.BasicQosAsync(0, prefetchCount: 8, global: false, stoppingToken); // bounded in-flight work
 
@@ -69,7 +72,11 @@ public static partial class ConsumeEarnEvents
                     logger.LogWarning(ex, "Poison earn event — dead-lettering.");
                     await channel.BasicNackAsync(delivery.DeliveryTag, multiple: false, requeue: false, stoppingToken);
                 }
-                catch (Exception ex) when (ex is not OperationCanceledException)
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    // Shutting down — leave the delivery unacked; the broker redelivers after the channel closes.
+                }
+                catch (Exception ex)
                 {
                     logger.LogError(ex, "Transient failure applying earn event — requeueing.");
                     await channel.BasicNackAsync(delivery.DeliveryTag, multiple: false, requeue: true, stoppingToken);

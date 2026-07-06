@@ -76,4 +76,30 @@ public sealed class EarnEventsQueueTests : IAsyncLifetime
         Assert.Equal("SILVER", profile.Tier);
         Assert.Equal(20_000, profile.QualifyingPoints); // ledger recompute replaces the seeded display value
     }
+
+    [Fact]
+    public async Task Malformed_event_lands_in_the_dead_queue_not_the_ledger()
+    {
+        var factoryR = new ConnectionFactory
+        {
+            HostName = rabbit.Hostname,
+            Port = rabbit.GetMappedPublicPort(5672),
+            UserName = "rabbitmq",
+            Password = "rabbitmq",
+        };
+        await using IConnection connection = await factoryR.CreateConnectionAsync();
+        await using IChannel channel = await connection.CreateChannelAsync();
+        await ConsumeEarnEvents.DeclareAsync(channel);
+
+        await channel.BasicPublishAsync("", ConsumeEarnEvents.Queue, "not json at all"u8.ToArray());
+
+        uint deadCount = 0;
+        for (int attempt = 0; attempt < 30; attempt++) // bounded poll
+        {
+            deadCount = await channel.MessageCountAsync(ConsumeEarnEvents.DeadQueue);
+            if (deadCount > 0) break;
+            await Task.Delay(500);
+        }
+        Assert.Equal(1u, deadCount);
+    }
 }
