@@ -1,32 +1,22 @@
-# React + TypeScript + Vite
+# member-portal
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The member-facing dashboard: spendable balance, current tier with progress toward the next one, and tier benefits, in a dark-blue airline-lounge look.
 
-Currently, two official plugins are available:
+**Stack choices:** React 19 on Vite for fast feedback; TanStack Query for server state (caching, loading and error states without hand-rolled effects); GraphQL codegen against the gateway's checked-in schema, so every query is typed end to end and a schema change breaks the build instead of the runtime.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Run
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Opens on http://localhost:5173. Expects the gateway on http://localhost:4000. `npm run codegen` regenerates `src/gql/` from `services/gateway/schema.graphql`.
+
+## Test
+
+```bash
+npm test
+```
+
+6 vitest tests: pure tier-progress math plus Testing Library component tests.
