@@ -31,6 +31,6 @@ The database enforces the invariant. No lock, no pre-check, no cache.
 
 ## Consequences
 
-- The ledger insert must happen **before** any projection updates (tier, balance). A crash between insert and projection leaves the projections stale; they are recomputed from the ledger on the next event, so the system heals without manual intervention.
+- The ledger insert must happen **before** any projection updates (tier, balance). The healing guarantee differs per projection: **qualifying points** are recomputed from the ledger on every earn, so a crash between insert and projection leaves them stale only until the next event — they self-heal. **Spendable points** are a one-time increment protected by the dedup: a crash between the ledger insert and the projection update loses that increment, because the duplicate-key path returns without re-applying it. This is accepted for the demo; the production answer is to recompute the spendable balance as a ledger sum too.
 - `idempotencyKey` on `PointsTransaction` is required and indexed; any earn path that does not supply one is a bug caught at the boundary.
-- The duplicate-delivery test (`ApplyEarn_with_duplicate_key_produces_single_transaction`) exercises this path directly and is treated as a first-class showcase in the test suite.
+- The duplicate-delivery test (`Same_earn_event_delivered_twice_produces_exactly_one_transaction`) exercises this path directly and is treated as a first-class showcase in the test suite.

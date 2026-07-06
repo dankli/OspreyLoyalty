@@ -38,15 +38,15 @@ curl -X POST http://localhost:8081/partners/cardco/purchases \
   -d '{"memberId":"demo-erik","amount":40000}'
 ```
 
-The event travels through RabbitMQ into the members ledger; his profile at http://localhost:5080/api/members/demo-erik flips to SILVER moments later. Then try the duplicate-delivery demo, which deliberately publishes the same event twice:
+The event travels through RabbitMQ into the members ledger; his profile at http://localhost:5080/api/members/demo-erik flips to SILVER moments later. Then try the duplicate-delivery demo on the same member, which deliberately publishes the same event twice:
 
 ```bash
 curl -X POST http://localhost:8081/partners/stayinn/purchases/duplicate-demo \
   -H "Content-Type: application/json" \
-  -d '{"memberId":"demo-ada","amount":1000}'
+  -d '{"memberId":"demo-erik","amount":1000}'
 ```
 
-Ada's transaction list still shows exactly one stayinn earn: the ledger's unique idempotency key absorbs the duplicate, which is the whole point ([docs/decisions/0002](docs/decisions/0002-idempotency-unique-ledger-key.md)).
+Erik's transaction list still shows exactly one stayinn earn: the ledger's unique idempotency key absorbs the duplicate, which is the whole point ([docs/decisions/0002](docs/decisions/0002-idempotency-unique-ledger-key.md)).
 
 ## What's inside
 
@@ -64,7 +64,7 @@ More services arrive in later phases (a Rust points engine). Each one has to jus
 These are principles I claim on my CV. Here they are as code you can click:
 
 - **Vertical Slice Architecture.** One folder per feature, everything the feature needs in one place: [`Features/EnrollMember`](services/members/Osprey.Members/Features/EnrollMember) holds contracts, validation, handler and endpoint. The domain core ([`Tiers.Core.cs`](services/members/Osprey.Members/Features/Tiers/Tiers.Core.cs)) is pure and I/O-free, which makes it trivially testable.
-- **TDD, visibly.** The commit history shows tests driving the implementation. 65 tests across four languages so far (members 41, gateway 8, portal 11, partners 5), including integration tests against a real Mongo and RabbitMQ via Testcontainers.
+- **TDD, visibly.** The commit history shows tests driving the implementation. 66 tests across four languages so far (members 42, gateway 8, portal 11, partners 5), including integration tests against a real Mongo and RabbitMQ via Testcontainers.
 - **Exceptions on the edges.** Validation throws with a human message; one middleware in [`Program.cs`](services/members/Osprey.Members/Program.cs) turns expected failures into clean 400s. The happy path reads top to bottom, with no Result types threaded through every method.
 - **Bounded everything.** The Mongo lookup carries a 5-second cap ([`GetMemberProfile.Handler.cs`](services/members/Osprey.Members/Features/GetMemberProfile/GetMemberProfile.Handler.cs)); the gateway calls members with a 2-second timeout ([`membersClient.ts`](services/gateway/src/features/member/membersClient.ts)). Small habit, cheap insurance.
 - **Standards over invention.** GraphQL Yoga, zod, TanStack Query, GraphQL codegen, Testcontainers, minimal APIs. Boring, current, well-documented choices; the creativity budget goes to the domain.

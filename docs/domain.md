@@ -23,10 +23,10 @@ The membership level assigned to a member. Five levels exist:
 Tier is recomputed on every earn event. A member drops a tier when the rolling window rolls off enough qualifying points. PANDION is granted by an admin or support flow via an `IsPandionInvited` flag; the criteria are secret and the points engine never computes it. An invited PANDION member is unaffected by window roll-off.
 
 **PointsTransaction**
-An immutable ledger entry. Every change to a member's points balance is represented as a transaction. Fields: `id`, `memberId`, `type` (earn / burn / expiry / adjustment), `points` (signed integer — positive for earn/adjustment credit, negative for burn/expiry/adjustment debit), `idempotencyKey`, `partnerId` (nullable), `occurredAtUtc`, `createdAtUtc`.
+An immutable ledger entry. Every change to a member's points balance is represented as a transaction. Fields: `id`, `memberId`, `type` (earn / burn / expiry / adjustment), `points` (signed integer — positive for earn/adjustment credit, negative for burn/expiry/adjustment debit), `source` (the partner id for earns), `idempotencyKey`, `occurredAtUtc`.
 
 **PointsAccount**
-A projection of the ledger stored on the member document for fast reads. Holds `spendableBalance` and `qualifyingPoints` (rolling 12-month window sum). Recomputed from the ledger on every earn; an adjustment or expiry job also triggers a recompute. If the projection is stale after a crash it heals on the next event.
+A projection of the ledger stored on the member document for fast reads. Holds `spendableBalance` and `qualifyingPoints` (rolling 12-month window sum). `qualifyingPoints` is recomputed from the ledger on every earn, so a stale value after a crash self-heals on the next event. `spendableBalance` is a one-time increment per earn, protected by the idempotency dedup — a crash between the ledger insert and the projection update loses that increment (accepted for the demo; the production answer is a ledger-sum recompute, see ADR-0002).
 
 **Partner**
 An external earn source. Three partners exist in this demo:

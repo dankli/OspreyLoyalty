@@ -4,8 +4,10 @@ namespace Osprey.Members.Features;
 
 public static partial class ApplyEarn
 {
-    /// <summary>Wire contract from partners (see docs/domain.md). The rate travels with the
-    /// event so members never needs partner reference data.</summary>
+    /// <summary>Wire contract from partners (see docs/domain.md). Mirrors
+    /// services/partners/src/main/java/com/ospreyloyalty/partners/purchases/EarnEvent.java —
+    /// keep in sync by hand. The rate travels with the event so members never needs partner
+    /// reference data.</summary>
     public sealed record EarnEvent(
         string MemberId,
         string PartnerId,
