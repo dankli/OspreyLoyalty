@@ -10,15 +10,36 @@ services:
       timeout: 5s
       retries: 12
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports: ["5672:5672", "15672:15672"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
   members:
     build: ../services/members
     environment:
       ConnectionStrings__Mongo: mongodb://mongo:27017
       SeedDemoData: "true"
       ASPNETCORE_URLS: http://+:8080
+      RabbitMq__Host: rabbitmq
     ports: ["5080:8080"]
     depends_on:
       mongo:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  partners:
+    build: ../services/partners
+    environment:
+      RABBITMQ_HOST: rabbitmq
+    ports: ["8081:8080"]
+    depends_on:
+      rabbitmq:
         condition: service_healthy
 
   gateway:
