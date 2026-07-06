@@ -8,6 +8,8 @@ test("member query resolves through the members client", async () => {
       tier: "SILVER", qualifyingPoints: 32000, spendablePoints: 14500,
       pointsToNextTier: 13000, benefits: ["Priority boarding"], joinedAtUtc: "2024-03-12T00:00:00Z",
     }),
+    fetchPartners: async () => [],
+    fetchTransactions: async () => ({ items: [], page: 0, hasMore: false }),
   });
 
   const response = await yoga.fetch("http://gateway/graphql", {
@@ -22,7 +24,11 @@ test("member query resolves through the members client", async () => {
 });
 
 test("unknown member resolves to null", async () => {
-  const yoga = buildYoga({ fetchMember: async () => null });
+  const yoga = buildYoga({
+    fetchMember: async () => null,
+    fetchPartners: async () => [],
+    fetchTransactions: async () => ({ items: [], page: 0, hasMore: false }),
+  });
   const response = await yoga.fetch("http://gateway/graphql", {
     method: "POST",
     headers: { "content-type": "application/json" },

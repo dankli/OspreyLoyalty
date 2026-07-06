@@ -12,3 +12,34 @@ type Member {
 type Query {
   member(id: ID!): Member
 }
+
+type PointsTransaction {
+  id: ID!
+  type: String!
+  points: Int!
+  source: String!
+  occurredAtUtc: String!
+}
+
+type TransactionsPage {
+  items: [PointsTransaction!]!
+  page: Int!
+  hasMore: Boolean!
+}
+
+type Partner {
+  id: ID!
+  name: String!
+  rate: Float!
+}
+
+type Dashboard {
+  member: Member
+  partners: [Partner!]!
+}
+
+extend type Query {
+  transactions(memberId: ID!, page: Int! = 0): TransactionsPage!
+  partners: [Partner!]!
+  dashboard(memberId: ID!): Dashboard!
+}
