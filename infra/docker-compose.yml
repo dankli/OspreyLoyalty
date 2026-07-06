@@ -46,9 +46,10 @@ services:
     build: ../services/gateway
     environment:
       MEMBERS_URL: http://members:8080
+      PARTNERS_URL: http://partners:8080
       PORT: "4000"
     ports: ["4000:4000"]
-    depends_on: [members]
+    depends_on: [members, partners]
 
   member-portal:
     build: ../frontends/member-portal
