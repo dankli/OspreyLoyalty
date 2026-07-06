@@ -1,0 +1,14 @@
+type Member {
+  id: ID!
+  name: String!
+  email: String!
+  tier: String!
+  qualifyingPoints: Int!
+  spendablePoints: Int!
+  pointsToNextTier: Int
+  benefits: [String!]!
+}
+
+type Query {
+  member(id: ID!): Member
+}
