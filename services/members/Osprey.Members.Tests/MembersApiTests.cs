@@ -68,4 +68,32 @@ public sealed class MembersApiTests : IAsyncLifetime
         EnrollMember.Response enrolled = (await created.Content.ReadFromJsonAsync<EnrollMember.Response>())!;
         Assert.Equal("case.test@example.com", enrolled.Email);
     }
+
+    [Fact]
+    public async Task Transactions_are_paginated_newest_first()
+    {
+        HttpClient client = factory.CreateClient();
+        HttpResponseMessage created = await client.PostAsJsonAsync("/api/members",
+            new { name = "Pager", email = "pager@example.com" });
+        string memberId = (await created.Content.ReadFromJsonAsync<EnrollMember.Response>())!.Id;
+
+        var mongoClient = new MongoDB.Driver.MongoClient(mongo.GetConnectionString());
+        var transactions = mongoClient.GetDatabase("osprey")
+            .GetCollection<Osprey.Members.Storage.PointsTransactionDocument>("transactions");
+        for (int i = 0; i < 25; i++)
+            await transactions.InsertOneAsync(new(
+                Guid.NewGuid().ToString("N"), memberId, "earn", 100 + i, "cardco",
+                $"page-key-{i:D4}", DateTime.UtcNow.AddMinutes(-i)));
+
+        ListTransactions.Response page0 =
+            (await client.GetFromJsonAsync<ListTransactions.Response>($"/api/members/{memberId}/transactions"))!;
+        Assert.Equal(20, page0.Items.Count);
+        Assert.True(page0.HasMore);
+        Assert.Equal(100, page0.Items[0].Points); // i=0 is the newest (offset -0 minutes) and carries 100 points
+
+        ListTransactions.Response page1 =
+            (await client.GetFromJsonAsync<ListTransactions.Response>($"/api/members/{memberId}/transactions?page=1"))!;
+        Assert.Equal(5, page1.Items.Count);
+        Assert.False(page1.HasMore);
+    }
 }
