@@ -58,4 +58,14 @@ public sealed class MembersApiTests : IAsyncLifetime
         HttpResponseMessage response = await client.GetAsync("/api/members/nope");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Enrollment_normalizes_email_to_lowercase()
+    {
+        HttpClient client = factory.CreateClient();
+        HttpResponseMessage created = await client.PostAsJsonAsync("/api/members",
+            new { name = "Case Test", email = "  Case.Test@EXAMPLE.com " });
+        EnrollMember.Response enrolled = (await created.Content.ReadFromJsonAsync<EnrollMember.Response>())!;
+        Assert.Equal("case.test@example.com", enrolled.Email);
+    }
 }
