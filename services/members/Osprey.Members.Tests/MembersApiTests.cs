@@ -16,7 +16,10 @@ public sealed class MembersApiTests : IAsyncLifetime
     {
         await mongo.StartAsync();
         factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b =>
-            b.UseSetting("ConnectionStrings:Mongo", mongo.GetConnectionString()));
+        {
+            b.UseSetting("ConnectionStrings:Mongo", mongo.GetConnectionString());
+            b.UseSetting("ConsumeEarnEvents", "false"); // these tests never touch a broker
+        });
     }
 
     public async Task DisposeAsync()

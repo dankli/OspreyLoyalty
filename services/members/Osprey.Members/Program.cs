@@ -15,6 +15,11 @@ builder.Services.AddScoped<GetMemberProfile.Handler>();
 builder.Services.AddScoped<ApplyEarn.Handler>();
 builder.Services.AddScoped<ListTransactions.Handler>();
 
+// Kill switch: integration tests (and incident response) can turn the consumer off
+// without touching code — WebApplicationFactory tests must never require a broker.
+if (builder.Configuration.GetValue<bool>("ConsumeEarnEvents", true))
+    builder.Services.AddHostedService<ConsumeEarnEvents.Consumer>();
+
 var app = builder.Build();
 
 // Expected failures (validation) become clean 400s here; anything unexpected
