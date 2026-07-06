@@ -1,0 +1,28 @@
+name: osprey-loyalty
+
+services:
+  mongo:
+    image: mongo:7
+    ports: ["27018:27017"]
+
+  members:
+    build: ../services/members
+    environment:
+      ConnectionStrings__Mongo: mongodb://mongo:27017
+      SeedDemoData: "true"
+      ASPNETCORE_URLS: http://+:8080
+    ports: ["5080:8080"]
+    depends_on: [mongo]
+
+  gateway:
+    build: ../services/gateway
+    environment:
+      MEMBERS_URL: http://members:8080
+      PORT: "4000"
+    ports: ["4000:4000"]
+    depends_on: [members]
+
+  member-portal:
+    build: ../frontends/member-portal
+    ports: ["5173:80"]
+    depends_on: [gateway]
