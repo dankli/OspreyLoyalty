@@ -17,4 +17,14 @@ public static class MongoIndexes
                 new CreateIndexOptions { Name = "ix_member_occurred" }),
         ], cancellationToken: ct);
     }
+
+    /// <summary>NON-unique: enrollment does not enforce distinct emails, so the lookup index must not either.</summary>
+    public static async Task EnsureAsync(IMongoCollection<MemberDocument> members, CancellationToken ct = default)
+    {
+        await members.Indexes.CreateOneAsync(
+            new CreateIndexModel<MemberDocument>(
+                Builders<MemberDocument>.IndexKeys.Ascending(m => m.Email),
+                new CreateIndexOptions { Name = "ix_email" }),
+            cancellationToken: ct);
+    }
 }
