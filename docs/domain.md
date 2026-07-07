@@ -76,6 +76,9 @@ A request to spend spendable points on a Reward. Carries a client-generated `ide
 **Manual adjustment**
 An admin-portal signed points change with a mandatory reason. Appended to the ledger as a `PointsTransaction` with `type = adjustment` and `source = "admin: {reason}"`. Positive adjustments credit spendable points; negative adjustments debit them and cannot overdraw the balance (same conditional guard as redemption). Idempotency key required; duplicate key returns `alreadyApplied: true`.
 
+**Promotion**
+A multiplier applied to the earn formula before the floor is taken. Multipliers are combined multiplicatively across all active promotions. Constraints: each multiplier is in the range (0, 10]; at most 5 promotions may apply to a single calculation. Promotions exist today only in the points-engine (`services/points-engine`); the members earn path is unchanged. Adopting promotions in the earn flow is future work and would route earn calculations through the points-engine per ADR-0006.
+
 **Benefit**
 A tier-linked perk displayed to the member. No points logic — display only. Examples: lounge access (GOLD+), upgrade voucher (DIAMOND+). Content is driven by a static mapping.
 
@@ -83,7 +86,7 @@ A tier-linked perk displayed to the member. No points logic — display only. Ex
 
 ## Business rules
 
-1. **Earn formula.** `points = floor(amount × rate)`. The rate is the partner's configured rate-per-currency-unit and travels with the `EarnEvent`.
+1. **Earn formula.** Base: `points = floor(amount × rate)`. The rate is the partner's configured rate-per-currency-unit and travels with the `EarnEvent`. When promotions apply (points-engine only): `points = floor(amount × rate × Π multiplier)`, where `Π multiplier` is the product of all active promotion multipliers. The members service always uses the base formula; the promotion form is evaluated exclusively by the points-engine.
 
 2. **Tier qualification.** Qualifying points are the sum of earn transactions in a rolling 12-month window. Tier is recomputed after every earn event using the thresholds in the table above. A member's tier can decrease when old earn transactions fall out of the window. An invited PANDION member's tier is unaffected by any window computation.
 
