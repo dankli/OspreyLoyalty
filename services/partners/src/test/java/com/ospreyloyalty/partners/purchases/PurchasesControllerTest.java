@@ -1,5 +1,7 @@
 package com.ospreyloyalty.partners.purchases;
 
+import com.ospreyloyalty.partners.catalogue.PartnerCatalogue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,11 @@ class PurchasesControllerTest {
 
     @Autowired MockMvc mvc;
     @MockitoBean EarnEventPublisher publisher;
+
+    @BeforeEach
+    void resetRates() {
+        PartnerCatalogue.reset();
+    }
 
     @Test
     void purchase_emits_one_earn_event_with_the_partner_rate() throws Exception {
@@ -56,5 +63,17 @@ class PurchasesControllerTest {
         mvc.perform(post("/partners/cardco/purchases").contentType(APPLICATION_JSON)
                 .content("{\"memberId\":\"demo-erik\",\"amount\":0}"))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void purchase_after_rate_update_carries_the_new_rate() throws Exception {
+        PartnerCatalogue.updateRate("cardco", 0.9);
+        mvc.perform(post("/partners/cardco/purchases").contentType(APPLICATION_JSON)
+                .content("{\"memberId\":\"demo-erik\",\"amount\":1000}"))
+            .andExpect(status().isAccepted());
+
+        ArgumentCaptor<EarnEvent> event = ArgumentCaptor.forClass(EarnEvent.class);
+        verify(publisher).publish(event.capture());
+        assertThat(event.getValue().rate()).isEqualTo(0.9);
     }
 }
