@@ -15,10 +15,16 @@ import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-
  */
 type Documents = {
     "\n  query MemberDashboard($id: ID!) {\n    member(id: $id) {\n      id\n      name\n      tier\n      qualifyingPoints\n      spendablePoints\n      pointsToNextTier\n      benefits\n    }\n  }\n": typeof types.MemberDashboardDocument,
+    "\n  query RewardsCatalog {\n    rewards {\n      id\n      name\n      cost\n    }\n  }\n": typeof types.RewardsCatalogDocument,
+    "\n  query MemberBalance($id: ID!) {\n    member(id: $id) {\n      id\n      spendablePoints\n    }\n  }\n": typeof types.MemberBalanceDocument,
+    "\n  mutation RedeemReward($memberId: ID!, $rewardId: String!, $idempotencyKey: String!) {\n    redeem(memberId: $memberId, rewardId: $rewardId, idempotencyKey: $idempotencyKey) {\n      rewardId\n      pointsSpent\n      spendablePoints\n      alreadyApplied\n    }\n  }\n": typeof types.RedeemRewardDocument,
     "\n  query MemberTransactions($memberId: ID!, $page: Int!) {\n    transactions(memberId: $memberId, page: $page) {\n      items {\n        id\n        type\n        points\n        source\n        occurredAtUtc\n      }\n      page\n      hasMore\n    }\n  }\n": typeof types.MemberTransactionsDocument,
 };
 const documents: Documents = {
     "\n  query MemberDashboard($id: ID!) {\n    member(id: $id) {\n      id\n      name\n      tier\n      qualifyingPoints\n      spendablePoints\n      pointsToNextTier\n      benefits\n    }\n  }\n": types.MemberDashboardDocument,
+    "\n  query RewardsCatalog {\n    rewards {\n      id\n      name\n      cost\n    }\n  }\n": types.RewardsCatalogDocument,
+    "\n  query MemberBalance($id: ID!) {\n    member(id: $id) {\n      id\n      spendablePoints\n    }\n  }\n": types.MemberBalanceDocument,
+    "\n  mutation RedeemReward($memberId: ID!, $rewardId: String!, $idempotencyKey: String!) {\n    redeem(memberId: $memberId, rewardId: $rewardId, idempotencyKey: $idempotencyKey) {\n      rewardId\n      pointsSpent\n      spendablePoints\n      alreadyApplied\n    }\n  }\n": types.RedeemRewardDocument,
     "\n  query MemberTransactions($memberId: ID!, $page: Int!) {\n    transactions(memberId: $memberId, page: $page) {\n      items {\n        id\n        type\n        points\n        source\n        occurredAtUtc\n      }\n      page\n      hasMore\n    }\n  }\n": types.MemberTransactionsDocument,
 };
 
@@ -40,6 +46,18 @@ export function graphql(source: string): unknown;
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query MemberDashboard($id: ID!) {\n    member(id: $id) {\n      id\n      name\n      tier\n      qualifyingPoints\n      spendablePoints\n      pointsToNextTier\n      benefits\n    }\n  }\n"): (typeof documents)["\n  query MemberDashboard($id: ID!) {\n    member(id: $id) {\n      id\n      name\n      tier\n      qualifyingPoints\n      spendablePoints\n      pointsToNextTier\n      benefits\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query RewardsCatalog {\n    rewards {\n      id\n      name\n      cost\n    }\n  }\n"): (typeof documents)["\n  query RewardsCatalog {\n    rewards {\n      id\n      name\n      cost\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query MemberBalance($id: ID!) {\n    member(id: $id) {\n      id\n      spendablePoints\n    }\n  }\n"): (typeof documents)["\n  query MemberBalance($id: ID!) {\n    member(id: $id) {\n      id\n      spendablePoints\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation RedeemReward($memberId: ID!, $rewardId: String!, $idempotencyKey: String!) {\n    redeem(memberId: $memberId, rewardId: $rewardId, idempotencyKey: $idempotencyKey) {\n      rewardId\n      pointsSpent\n      spendablePoints\n      alreadyApplied\n    }\n  }\n"): (typeof documents)["\n  mutation RedeemReward($memberId: ID!, $rewardId: String!, $idempotencyKey: String!) {\n    redeem(memberId: $memberId, rewardId: $rewardId, idempotencyKey: $idempotencyKey) {\n      rewardId\n      pointsSpent\n      spendablePoints\n      alreadyApplied\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

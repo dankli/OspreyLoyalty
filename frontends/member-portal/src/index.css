@@ -58,5 +58,32 @@ body {
 .pager button { background: var(--navy-700); color: var(--text); border: 1px solid rgba(216,178,92,0.25); border-radius: 6px; padding: 0.35rem 0.9rem; cursor: pointer; }
 .pager button:disabled { opacity: 0.35; cursor: not-allowed; }
 
+/* ── rewards ── */
+.reward-grid {
+  list-style: none; padding: 0; margin: 1.5rem 0 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem;
+}
+.reward-card {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  background: var(--navy-700); border-radius: 12px; padding: 1.25rem;
+  border: 1px solid rgba(216, 178, 92, 0.25);
+}
+.reward-card .reward-name { font-weight: 600; }
+.reward-card .reward-cost { color: var(--gold-400); font-size: 0.9rem; }
+.reward-card button {
+  margin-top: auto; align-self: flex-start;
+  background: var(--gold-400); color: var(--navy-950); font-weight: 600;
+  border: none; border-radius: 6px; padding: 0.4rem 1rem; cursor: pointer;
+}
+.reward-card button:disabled { opacity: 0.35; cursor: not-allowed; }
+.redeem-error {
+  margin-top: 1rem; padding: 0.75rem 1rem; border-radius: 8px;
+  background: rgba(240, 120, 80, 0.15); border: 1px solid rgba(240, 120, 80, 0.4); color: #f07850;
+}
+.redeem-error .dismiss {
+  margin-left: 0.5rem; background: transparent; border: 1px solid rgba(240, 120, 80, 0.4);
+  color: #f07850; border-radius: 6px; padding: 0.15rem 0.6rem; cursor: pointer; font-size: 0.8rem;
+}
+
 /* ── type filter ── */
 label select { margin-left: 0.5rem; background: var(--navy-700); color: var(--text); border: 1px solid var(--navy-700); border-radius: 6px; padding: 0.3rem 0.6rem; }

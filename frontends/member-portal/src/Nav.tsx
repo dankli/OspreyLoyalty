@@ -12,6 +12,12 @@ export function Nav() {
       >
         Transactions
       </NavLink>
+      <NavLink
+        to="/rewards"
+        className={({ isActive }) => (isActive ? "active" : "")}
+      >
+        Rewards
+      </NavLink>
     </nav>
   );
 }
