@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: members
+  namespace: osprey
+  labels:
+    app: members
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: members
+  template:
+    metadata:
+      labels:
+        app: members
+    spec:
+      containers:
+        - name: members
+          image: osprey-loyalty-members:latest
+          imagePullPolicy: Never # kind: image is side-loaded
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ConnectionStrings__Mongo
+              value: mongodb://mongo:27017
+            - name: RabbitMq__Host
+              value: rabbitmq
+            - name: SeedDemoData
+              value: "true"
+            - name: ASPNETCORE_URLS
+              value: http://+:8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: members
+  namespace: osprey
+  labels:
+    app: members
+spec:
+  type: ClusterIP
+  selector:
+    app: members
+  ports:
+    - port: 8080
+      targetPort: 8080

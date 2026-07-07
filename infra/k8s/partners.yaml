@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: partners
+  namespace: osprey
+  labels:
+    app: partners
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: partners
+  template:
+    metadata:
+      labels:
+        app: partners
+    spec:
+      containers:
+        - name: partners
+          image: osprey-loyalty-partners:latest
+          imagePullPolicy: Never # kind: image is side-loaded
+          ports:
+            - containerPort: 8080
+          env:
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 40
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: partners
+  namespace: osprey
+  labels:
+    app: partners
+spec:
+  type: ClusterIP
+  selector:
+    app: partners
+  ports:
+    - port: 8080
+      targetPort: 8080
