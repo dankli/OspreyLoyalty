@@ -1,0 +1,24 @@
+name: points-engine
+on:
+  push:
+    branches: [main]
+    paths: ["services/points-engine/**", ".github/workflows/points-engine.yml"]
+  pull_request:
+    paths: ["services/points-engine/**", ".github/workflows/points-engine.yml"]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: services/points-engine }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: services/points-engine
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
