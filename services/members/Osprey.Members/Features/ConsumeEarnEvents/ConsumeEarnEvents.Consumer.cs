@@ -63,8 +63,9 @@ public static partial class ConsumeEarnEvents
 
                     ApplyEarn.Result result = await handler.Handle(earn, stoppingToken);
                     logger.LogInformation(
-                        "Earn {Key} for {MemberId}: applied={Applied} points={Points} tier={Tier}",
-                        earn.IdempotencyKey, earn.MemberId, !result.AlreadyApplied, result.Points, result.Tier);
+                        "Earn {Key} for {MemberId}: applied={Applied} points={Points} tier={Tier} correlationId={CorrelationId}",
+                        earn.IdempotencyKey, earn.MemberId, !result.AlreadyApplied, result.Points, result.Tier,
+                        earn.CorrelationId ?? "-");
                     await channel.BasicAckAsync(delivery.DeliveryTag, multiple: false, stoppingToken);
                 }
                 catch (Exception ex) when (ex is JsonException or ArgumentException)

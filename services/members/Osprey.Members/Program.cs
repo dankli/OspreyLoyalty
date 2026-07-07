@@ -1,8 +1,17 @@
 using MongoDB.Driver;
 using Osprey.Members.Features;
 using Osprey.Members.Storage;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Structured JSON logs to stdout — one line per event, scopes carry the correlation id.
+builder.Logging.ClearProviders();
+builder.Logging.AddJsonConsole(o =>
+{
+    o.IncludeScopes = true;
+    o.JsonWriterOptions = new System.Text.Json.JsonWriterOptions { Indented = false };
+});
 
 builder.Services.AddSingleton<IMongoClient>(_ =>
     new MongoClient(builder.Configuration.GetConnectionString("Mongo") ?? "mongodb://localhost:27017"));
@@ -30,6 +39,8 @@ if (builder.Configuration.GetValue<bool>("ExpirySweep", true))
 
 var app = builder.Build();
 
+Correlation.Use(app); // first — even error responses carry X-Correlation-Id
+
 app.UseCors(p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); // demo stack — the admin portal calls this API directly from the browser
 
 // Expected failures (validation) become clean 400s here; anything unexpected
@@ -44,6 +55,8 @@ app.Use(async (context, next) =>
     }
 });
 
+app.UseHttpMetrics(); // http_request_duration_seconds et al., labelled by endpoint/method/code
+
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 EnrollMember.MapEndpoints(app);
 GetMemberProfile.MapEndpoints(app);
@@ -53,6 +66,7 @@ Redeem.MapEndpoints(app);
 FindMemberByEmail.MapEndpoints(app);
 AdjustPoints.MapEndpoints(app);
 SetPandionInvitation.MapEndpoints(app);
+app.MapMetrics(); // Prometheus scrape endpoint at /metrics
 
 await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<PointsTransactionDocument>>());
 await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<MemberDocument>>());

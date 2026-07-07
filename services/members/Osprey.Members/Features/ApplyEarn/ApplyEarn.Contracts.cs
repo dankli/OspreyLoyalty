@@ -14,7 +14,8 @@ public static partial class ApplyEarn
         decimal Amount,
         decimal Rate,
         string IdempotencyKey,
-        DateTime OccurredAtUtc);
+        DateTime OccurredAtUtc,
+        string? CorrelationId = null); // last with a default: JSON missing the field still deserializes
 
     /// <summary>AlreadyApplied=true is a success, not an error — duplicate delivery is
     /// expected under at-least-once messaging. That distinction is the whole feature.</summary>

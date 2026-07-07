@@ -177,4 +177,30 @@ public sealed class MembersApiTests : IAsyncLifetime
         SetPandionInvitation.Response member = (await revoked.Content.ReadFromJsonAsync<SetPandionInvitation.Response>())!;
         Assert.Equal("MEMBER", member.Tier);
     }
+
+    [Fact]
+    public async Task Correlation_id_is_echoed_and_generated()
+    {
+        HttpClient client = factory.CreateClient();
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/health");
+        request.Headers.Add("X-Correlation-Id", "test-corr-0001");
+        HttpResponseMessage withHeader = await client.SendAsync(request);
+        Assert.Equal("test-corr-0001", withHeader.Headers.GetValues("X-Correlation-Id").Single());
+
+        HttpResponseMessage without = await client.GetAsync("/health");
+        string generated = without.Headers.GetValues("X-Correlation-Id").Single();
+        Assert.False(string.IsNullOrWhiteSpace(generated));
+    }
+
+    [Fact]
+    public async Task Metrics_endpoint_exposes_prometheus_text()
+    {
+        HttpClient client = factory.CreateClient();
+        await client.GetAsync("/health"); // generate at least one observation
+        HttpResponseMessage response = await client.GetAsync("/metrics");
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        string body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("http_request_duration_seconds", body);
+    }
 }
