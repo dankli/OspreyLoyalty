@@ -17,8 +17,9 @@ public static partial class Expiry
     /// IdempotencyKey turns a re-run (crash mid-pass, overlapping schedule, double
     /// deploy) into a no-op — insert fails, we skip, the balance is never decremented
     /// twice. Convergent too: DueLots treats prior expiry entries as FIFO consumption,
-    /// so once a lot has expired it never shows up as due again. Returns total points
-    /// expired this pass, for logging.
+    /// so once a lot has expired it never shows up as due again. Returns the points
+    /// whose balance decrement actually applied this pass, for logging — lots whose
+    /// decrement was skipped are excluded from the total.
     /// </summary>
     public static async Task<int> SweepAsync(
         IMongoCollection<MemberDocument> members,
@@ -58,13 +59,16 @@ public static partial class Expiry
 
                 // Conditional decrement: only after a successful ledger insert, and only if the
                 // balance still covers the lot. ModifiedCount 0 means the balance moved
-                // concurrently — log-worthy but tolerated: the ledger entry stands and
-                // domain.md's healing note covers reconciling the projection.
-                await members.UpdateOneAsync(
+                // concurrently — the ledger entry stands, but the lot is excluded from the
+                // returned total so it counts only decrements that applied (the next sweep
+                // converges: the unique key keeps it a no-op, and domain.md's healing note
+                // covers reconciling the projection).
+                UpdateResult decrement = await members.UpdateOneAsync(
                     m => m.Id == member.Id && m.SpendablePoints >= lot.PointsToExpire,
                     Builders<MemberDocument>.Update.Inc(m => m.SpendablePoints, -lot.PointsToExpire),
                     options: null, cts.Token);
 
+                if (decrement.ModifiedCount == 0) continue;
                 totalExpired += lot.PointsToExpire;
             }
         }
