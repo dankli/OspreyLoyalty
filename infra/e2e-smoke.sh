@@ -55,6 +55,7 @@ wait_for admin-portal http://localhost:5174/
 wait_for shell http://localhost:5170/
 wait_for prometheus http://localhost:9090/-/ready
 wait_for grafana http://localhost:3000/api/health
+wait_for points-engine http://localhost:8082/health
 
 echo ""
 echo "=== 3. Seeded data: demo-ada is SILVER ==="
@@ -272,6 +273,47 @@ for attempt in $(seq 1 30); do
 done
 [ -n "$grafana_ok" ] || fail "Grafana dashboard 'osprey-red' not found"
 echo "✓ Grafana dashboard uid osprey-red is provisioned"
+
+echo ""
+echo "=== 19. Points-engine: calculate, parity, promotion, bounds, correlation ==="
+
+# Base calculation: 40000 × 0.5, no promotions → 20000 points.
+pe_calc=$(curl -fsS -X POST http://localhost:8082/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 40000, "rate": 0.5, "promotions": []}')
+echo "$pe_calc" | grep -q '"points":20000' \
+  || fail "points-engine base calc did not return 20000: $pe_calc"
+echo "✓ points-engine: 40000 × 0.5 → 20000 points"
+
+# Parity contract (ADR-0006): the engine's no-promotion result must equal what
+# members' ApplyEarn produced for the same input earlier in this script.
+pe_points=$(echo "$pe_calc" | grep -o '"points":[0-9]*' | grep -o '[0-9]*$')
+[ "$pe_points" = "20000" ] \
+  || fail "parity breach (ADR-0006): engine returned $pe_points, members ledger shows 20000"
+echo "✓ parity (ADR-0006): engine result $pe_points equals members' ApplyEarn for 40000 × 0.5"
+
+# Promotion: 1000 × 0.5 × 2.0 multiplier → 1000 points.
+pe_promo=$(curl -fsS -X POST http://localhost:8082/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 1000, "rate": 0.5, "promotions": [{"multiplier": 2.0}]}')
+echo "$pe_promo" | grep -q '"points":1000' \
+  || fail "points-engine promotion calc did not return 1000: $pe_promo"
+echo "✓ points-engine: 1000 × 0.5 × 2.0 → 1000 points"
+
+# Bounds: rate 11 exceeds the allowed maximum → HTTP 400.
+pe_status=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8082/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 1000, "rate": 11, "promotions": []}')
+[ "$pe_status" = "400" ] \
+  || fail "points-engine bounds check: expected 400, got $pe_status"
+echo "✓ points-engine: rate 11 rejected with HTTP 400"
+
+# Correlation-Id echo.
+pe_corr_resp=$(curl -si -H "X-Correlation-Id: e2e-corr-pe-001" \
+  http://localhost:8082/health)
+echo "$pe_corr_resp" | grep -qi "x-correlation-id: e2e-corr-pe-001" \
+  || fail "points-engine did not echo X-Correlation-Id"
+echo "✓ points-engine echoes X-Correlation-Id: e2e-corr-pe-001"
 
 echo ""
 echo "All e2e smoke checks passed."

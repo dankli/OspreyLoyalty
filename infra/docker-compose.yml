@@ -80,3 +80,7 @@ services:
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports: ["3000:3000"]
     depends_on: [prometheus]
+
+  points-engine:
+    build: ../services/points-engine
+    ports: ["8082:8082"]
