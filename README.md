@@ -64,6 +64,10 @@ curl -X POST http://localhost:4000/graphql \
 
 Ada's spendable balance drops by 5 000. Run the exact same command again: the balance stays put and the response says `"alreadyApplied": true` — a retried redemption is a success that changed nothing, not a double spend. The overdraw guard is a single atomic conditional decrement, so two concurrent redemptions can never both pass it ([docs/decisions/0003](docs/decisions/0003-redemption-concurrency-conditional-update.md)).
 
+## What's deliberately missing
+
+There is no authentication anywhere, and CORS is wide open — a spec non-goal for this demo, so every endpoint you see above is exactly as public as it looks. In production the admin surfaces (point adjustments, PANDION invitations, partner rates) would sit behind OIDC with role checks, and the gateway would mask internal error details instead of passing them straight through (`maskedErrors: false` is a demo convenience, not a recommendation).
+
 ## What's inside
 
 | Path | Language | Role |
@@ -82,7 +86,7 @@ More services arrive in later phases (a Rust points engine). Each one has to jus
 These are principles I claim on my CV. Here they are as code you can click:
 
 - **Vertical Slice Architecture.** One folder per feature, everything the feature needs in one place: [`Features/EnrollMember`](services/members/Osprey.Members/Features/EnrollMember) holds contracts, validation, handler and endpoint. The domain core ([`Tiers.Core.cs`](services/members/Osprey.Members/Features/Tiers/Tiers.Core.cs)) is pure and I/O-free, which makes it trivially testable.
-- **TDD, visibly.** The commit history shows tests driving the implementation. 113 tests across six components so far (members 70, gateway 11, member portal 15, partners 9, admin portal 6, shell 2), including integration tests against a real Mongo and RabbitMQ via Testcontainers.
+- **TDD, visibly.** The commit history shows tests driving the implementation. 115 tests across six components so far (members 72, gateway 11, member portal 15, partners 9, admin portal 6, shell 2), including integration tests against a real Mongo and RabbitMQ via Testcontainers.
 - **Exceptions on the edges.** Validation throws with a human message; one middleware in [`Program.cs`](services/members/Osprey.Members/Program.cs) turns expected failures into clean 400s. The happy path reads top to bottom, with no Result types threaded through every method.
 - **Bounded everything.** The Mongo lookup carries a 5-second cap ([`GetMemberProfile.Handler.cs`](services/members/Osprey.Members/Features/GetMemberProfile/GetMemberProfile.Handler.cs)); the gateway calls members with a 2-second timeout ([`membersClient.ts`](services/gateway/src/features/member/membersClient.ts)). Small habit, cheap insurance.
 - **Standards over invention.** GraphQL Yoga, zod, TanStack Query, GraphQL codegen, Testcontainers, minimal APIs. Boring, current, well-documented choices; the creativity budget goes to the domain.

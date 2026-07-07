@@ -71,7 +71,7 @@ A request to spend spendable points on a Reward. Carries a client-generated `ide
 - Concurrent redemptions are arbitrated by a single atomic conditional decrement; see ADR-0003.
 
 **Manual adjustment**
-An admin-only signed points change with a mandatory reason. Appended to the ledger as a `PointsTransaction` with `type = adjustment` and `source = "admin: {reason}"`. Positive adjustments credit spendable points; negative adjustments debit them and cannot overdraw the balance (same conditional guard as redemption). Idempotency key required; duplicate key returns `alreadyApplied: true`.
+An admin-portal signed points change with a mandatory reason. Appended to the ledger as a `PointsTransaction` with `type = adjustment` and `source = "admin: {reason}"`. Positive adjustments credit spendable points; negative adjustments debit them and cannot overdraw the balance (same conditional guard as redemption). Idempotency key required; duplicate key returns `alreadyApplied: true`.
 
 **Benefit**
 A tier-linked perk displayed to the member. No points logic — display only. Examples: lounge access (GOLD+), upgrade voucher (DIAMOND+). Content is driven by a static mapping.
