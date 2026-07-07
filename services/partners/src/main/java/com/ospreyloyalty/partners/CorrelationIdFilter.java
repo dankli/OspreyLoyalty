@@ -6,16 +6,24 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-/** Accept-or-generate X-Correlation-Id, expose it to logging via MDC, echo it back. First in the chain. */
+/**
+ * Accept-or-generate X-Correlation-Id, expose it to logging via MDC, echo it back. First in the
+ * chain. Also emits one summary log line per request (method, URI, final status, duration) —
+ * logged before the MDC is cleared, so the line carries the correlation id.
+ */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class CorrelationIdFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(CorrelationIdFilter.class);
 
     public static final String HEADER = "X-Correlation-Id";
     public static final String MDC_KEY = "correlationId";
@@ -28,9 +36,13 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
             correlationId = UUID.randomUUID().toString().replace("-", "");
         response.setHeader(HEADER, correlationId);
         MDC.put(MDC_KEY, correlationId);
+        long startedNanos = System.nanoTime();
         try {
             chain.doFilter(request, response);
         } finally {
+            long elapsedMs = (System.nanoTime() - startedNanos) / 1_000_000;
+            log.info("{} {} => {} in {}ms",
+                    request.getMethod(), request.getRequestURI(), response.getStatus(), elapsedMs);
             MDC.remove(MDC_KEY);
         }
     }
