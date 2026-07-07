@@ -1,0 +1,82 @@
+/* Shared navy/gold palette — kept in sync with frontends/member-portal/src/index.css */
+:root {
+  --navy-950: #071426;
+  --navy-900: #0b1f3a;
+  --navy-700: #1d3a63;
+  --gold-400: #d8b25c;
+  --text: #e8eef7;
+  --muted: #8fa3bd;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(160deg, var(--navy-950), var(--navy-900));
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.site-header {
+  padding: 0.75rem 1.5rem;
+  background: var(--navy-900);
+  border-bottom: 1px solid var(--navy-700);
+}
+.site-header h1 { margin: 0; font-size: 1.1rem; color: var(--gold-400); letter-spacing: 0.04em; }
+
+.admin-main {
+  max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem;
+  display: flex; flex-direction: column; gap: 2rem;
+}
+
+.muted { color: var(--muted); }
+.error-text { color: #f07850; }
+.flash { color: #60c878; font-size: 0.85rem; }
+
+/* ── panel cards ── */
+.panel {
+  background: var(--navy-700); border-radius: 12px; padding: 1.5rem;
+  border: 1px solid rgba(216, 178, 92, 0.25);
+}
+.panel h2 { margin-top: 0; font-size: 1.05rem; }
+.panel h3 { margin-bottom: 0.5rem; font-size: 0.95rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+.panel input {
+  background: var(--navy-900); color: var(--text);
+  border: 1px solid rgba(216, 178, 92, 0.25); border-radius: 6px; padding: 0.4rem 0.6rem;
+}
+.panel button {
+  background: var(--gold-400); color: var(--navy-950); font-weight: 600;
+  border: none; border-radius: 6px; padding: 0.4rem 1rem; cursor: pointer;
+}
+.panel button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.lookup-form, .adjustment-form { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* ── member profile ── */
+.profile-card {
+  background: var(--navy-900); border-radius: 8px; padding: 1rem 1.25rem; margin-top: 1rem;
+  border: 1px solid rgba(216, 178, 92, 0.15);
+}
+.profile-head { display: flex; align-items: center; gap: 0.75rem; }
+.tier-badge {
+  display: inline-block; padding: 0.2rem 0.8rem; border-radius: 999px;
+  background: var(--navy-700); color: var(--text); font-weight: 700; letter-spacing: 0.06em; font-size: 0.8rem;
+}
+.tier-badge.pandion { background: var(--gold-400); color: var(--navy-950); }
+.balances { display: flex; gap: 2rem; margin: 0.75rem 0 0; }
+.balances dt { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.balances dd { margin: 0.15rem 0 0; font-size: 1.4rem; font-weight: 600; }
+
+/* ── transactions table ── */
+.transactions { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.transactions th { text-align: left; color: var(--muted); font-weight: 400; padding: 0.4rem 0.75rem; border-bottom: 1px solid var(--navy-700); }
+.transactions td { padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.type-badge { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; background: var(--navy-900); }
+.positive { color: #60c878; }
+.negative { color: #f07850; }
+
+/* ── partner rates ── */
+.rate-list { list-style: none; padding: 0; margin: 1rem 0 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.rate-row { display: flex; align-items: center; gap: 0.75rem; }
+.rate-row .rate-name { flex: 1; }
+.rate-row input { width: 6rem; }
