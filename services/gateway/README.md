@@ -21,4 +21,4 @@ Every request logs one JSON line with a correlation id (`X-Correlation-Id` is ac
 npm test
 ```
 
-5 vitest tests covering the GraphQL member query and the members client (response mapping, 404 handling, and 5xx error translation). The members client enforces a 2-second timeout at the call site.
+14 vitest tests covering the GraphQL member query and the members client (response mapping, 404 handling, and 5xx error translation). The members client enforces a 2-second timeout at the call site.

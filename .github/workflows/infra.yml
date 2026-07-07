@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker run --rm -v "$PWD/infra/k8s:/k8s" ghcr.io/yannh/kubeconform:latest -summary -strict -ignore-filename-pattern "README.*" /k8s
+      - run: docker run --rm -v "$PWD/infra/k8s:/k8s" ghcr.io/yannh/kubeconform:v0.6.7 -summary -strict -ignore-filename-pattern "README.*" /k8s
 
   terraform:
     runs-on: ubuntu-latest

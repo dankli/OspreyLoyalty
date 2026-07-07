@@ -49,9 +49,12 @@ Wire format — JSON, camelCase:
   "amount":         250.00,
   "rate":           2.0,
   "idempotencyKey": "stayinn-txn-98765",
-  "occurredAtUtc":  "2025-11-03T14:22:00Z"
+  "occurredAtUtc":  "2025-11-03T14:22:00Z",
+  "correlationId":  "d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5"
 }
 ```
+
+`correlationId` is optional — it carries the `X-Correlation-Id` of the originating request as a payload field so the earn flow is traceable in the logs; consumers must accept events without it.
 
 **Reward**
 A catalogue item that can be purchased with spendable points. Maintained in-memory by the members service.

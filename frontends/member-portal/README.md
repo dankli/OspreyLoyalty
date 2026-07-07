@@ -19,4 +19,4 @@ Opens on http://localhost:5173. Expects the gateway on http://localhost:4000. `n
 npm test
 ```
 
-6 vitest tests: pure tier-progress math plus Testing Library component tests.
+15 vitest tests: pure tier-progress math plus Testing Library component tests.
