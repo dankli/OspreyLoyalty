@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { ClientError } from "graphql-request";
 import { expect, test, vi } from "vitest";
 
 const requestMock = vi.fn();
@@ -27,7 +28,13 @@ function primeQueries(opts: { redeem: "succeed" | "fail" }) {
     if (doc.includes("RewardsCatalog")) return { rewards };
     if (doc.includes("MemberBalance")) return { member: { id: "demo-ada", spendablePoints: serverBalance } };
     if (doc.includes("RedeemReward")) {
-      if (opts.redeem === "fail") throw new Error("Insufficient spendable points.");
+      // A real ClientError, exactly what graphql-request throws on a GraphQL error:
+      // its .message carries the full response+request JSON, which must never reach the UI.
+      if (opts.redeem === "fail")
+        throw new ClientError(
+          { errors: [{ message: "Insufficient spendable points." }], status: 200 } as never,
+          { query: "" } as never,
+        );
       serverBalance = 9500;
       return { redeem: { rewardId: variables?.rewardId, pointsSpent: 5000, spendablePoints: 9500, alreadyApplied: false } };
     }
@@ -72,7 +79,10 @@ test("failed redeem rolls the optimistic balance back and shows the error", asyn
   renderPage();
   await screen.findByText("Lounge day pass");
   await userEvent.click(screen.getByRole("button", { name: /redeem cardco gift card/i }));
-  expect(await screen.findByRole("alert")).toHaveTextContent(/insufficient spendable points/i);
+  const alert = await screen.findByRole("alert");
+  expect(alert).toHaveTextContent(/insufficient spendable points/i);
+  // Only the human message — no leaked response/request JSON from ClientError.message.
+  expect(alert.textContent).not.toContain("{");
   // The rollback is the point: the pre-click balance must be back.
   expect(screen.getByText(/14\s?500/)).toBeInTheDocument();
 });

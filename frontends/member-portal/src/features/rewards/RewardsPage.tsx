@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ClientError } from "graphql-request";
 import { graphql } from "../../gql";
 import type { MemberBalanceQuery } from "../../gql/graphql";
 import { gatewayClient } from "../../gatewayClient";
@@ -76,7 +77,14 @@ export function RewardsPage({ memberId }: { memberId: string }) {
     onError: (err, _variables, context) => {
       // rollback: the server said no — restore the snapshot
       queryClient.setQueryData(balanceKey, context?.snapshot);
-      setError(err instanceof Error ? err.message : "Redeem failed.");
+      // ClientError.message appends the whole response+request as JSON; show only the human part.
+      const message =
+        err instanceof ClientError
+          ? (err.response.errors?.[0]?.message ?? "Redeem failed.")
+          : err instanceof Error
+            ? err.message
+            : "Redeem failed.";
+      setError(message);
     },
     onSettled: () => {
       // settle: reconcile with server truth

@@ -60,7 +60,14 @@ export function createShell(root: HTMLElement, remotes: Record<RemoteName, Remot
 
     const host = document.createElement("div");
     outlet.appendChild(host);
-    unmount = remote.mount(host);
+    try {
+      unmount = remote.mount(host);
+    } catch (error) {
+      // A throwing mount must leave a visible message, not an unhandled rejection.
+      outlet.textContent = `Failed to load ${LABELS[name]}.`;
+      console.error(`[shell] mounting ${name} failed`, error);
+      return;
+    }
 
     for (const [key, button] of buttons) {
       button.classList.toggle("active", key === name);
