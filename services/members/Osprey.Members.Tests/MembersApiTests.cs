@@ -194,6 +194,15 @@ public sealed class MembersApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Validation_failures_are_recorded_as_400_in_metrics()
+    {
+        HttpClient client = factory.CreateClient();
+        await client.PostAsJsonAsync("/api/members", new { name = "", email = "x@example.com" }); // 400
+        string body = await client.GetStringAsync("/metrics");
+        Assert.Contains("code=\"400\"", body);
+    }
+
+    [Fact]
     public async Task Metrics_endpoint_exposes_prometheus_text()
     {
         HttpClient client = factory.CreateClient();

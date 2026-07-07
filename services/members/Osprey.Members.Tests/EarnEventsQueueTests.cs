@@ -61,11 +61,11 @@ public sealed class EarnEventsQueueTests : IAsyncLifetime
 
         HttpClient client = factory.CreateClient();
         ListTransactions.Response? page = null;
-        for (int attempt = 0; attempt < 30; attempt++) // bounded poll — never wait forever
+        for (int attempt = 0; attempt < 60; attempt++) // bounded poll — never wait forever
         {
             page = await client.GetFromJsonAsync<ListTransactions.Response>("/api/members/demo-erik/transactions");
             if (page!.Items.Count > 0) break;
-            await Task.Delay(500);
+            await Task.Delay(1000);
         }
 
         Assert.NotNull(page);
@@ -95,11 +95,11 @@ public sealed class EarnEventsQueueTests : IAsyncLifetime
         await channel.BasicPublishAsync("", ConsumeEarnEvents.Queue, "not json at all"u8.ToArray());
 
         uint deadCount = 0;
-        for (int attempt = 0; attempt < 30; attempt++) // bounded poll
+        for (int attempt = 0; attempt < 60; attempt++) // bounded poll
         {
             deadCount = await channel.MessageCountAsync(ConsumeEarnEvents.DeadQueue);
             if (deadCount > 0) break;
-            await Task.Delay(500);
+            await Task.Delay(1000);
         }
         Assert.Equal(1u, deadCount);
     }

@@ -20,4 +20,4 @@ Every request logs one JSON line with a correlation id (`X-Correlation-Id` is ac
 dotnet test
 ```
 
-20 tests: pure domain and validation tests, plus an end-to-end API test against a real Mongo via Testcontainers (needs Docker).
+74 tests: pure domain and validation tests, plus end-to-end API and queue tests against real Mongo and RabbitMQ via Testcontainers (needs Docker).

@@ -41,6 +41,10 @@ var app = builder.Build();
 
 Correlation.Use(app); // first — even error responses carry X-Correlation-Id
 
+// Metrics wrap the error translation below so they observe the FINAL status code —
+// a validation failure is recorded as code="400", not the in-flight "200".
+app.UseHttpMetrics(); // http_request_duration_seconds et al., labelled by endpoint/method/code
+
 app.UseCors(p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); // demo stack — the admin portal calls this API directly from the browser
 
 // Expected failures (validation) become clean 400s here; anything unexpected
@@ -54,8 +58,6 @@ app.Use(async (context, next) =>
         await context.Response.WriteAsJsonAsync(new { error = ex.Message });
     }
 });
-
-app.UseHttpMetrics(); // http_request_duration_seconds et al., labelled by endpoint/method/code
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 EnrollMember.MapEndpoints(app);
