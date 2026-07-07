@@ -13,6 +13,8 @@ npm run dev
 
 Listens on http://localhost:4000 (GraphQL at `/graphql`). Expects the members service on http://localhost:5080; override with `MEMBERS_URL`.
 
+Every request logs one JSON line with a correlation id (`X-Correlation-Id` is accepted or generated, and forwarded on downstream calls); Prometheus metrics are at `/metrics`.
+
 ## Test
 
 ```bash

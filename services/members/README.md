@@ -12,6 +12,8 @@ dotnet run --project Osprey.Members
 
 Expects Mongo on `localhost:27017`. Or run the whole stack from the repo root: `docker compose -f infra/docker-compose.yml up --build` (members lands on http://localhost:5080).
 
+Every request logs one JSON line with a correlation id (`X-Correlation-Id` is accepted or generated, and echoed back); Prometheus metrics are at `/metrics`.
+
 ## Test
 
 ```bash

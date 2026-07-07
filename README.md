@@ -9,6 +9,7 @@ A miniature airline-style loyalty platform, built in public as a demo of full-st
 [![admin-portal](https://github.com/dankli/OspreyLoyalty/actions/workflows/admin-portal.yml/badge.svg)](https://github.com/dankli/OspreyLoyalty/actions/workflows/admin-portal.yml)
 [![shell](https://github.com/dankli/OspreyLoyalty/actions/workflows/shell.yml/badge.svg)](https://github.com/dankli/OspreyLoyalty/actions/workflows/shell.yml)
 [![e2e](https://github.com/dankli/OspreyLoyalty/actions/workflows/e2e.yml/badge.svg)](https://github.com/dankli/OspreyLoyalty/actions/workflows/e2e.yml)
+[![infra](https://github.com/dankli/OspreyLoyalty/actions/workflows/infra.yml/badge.svg)](https://github.com/dankli/OspreyLoyalty/actions/workflows/infra.yml)
 
 ## Run it
 
@@ -23,6 +24,8 @@ docker compose -f infra/docker-compose.yml up --build
 | http://localhost:5174 | Admin portal |
 | http://localhost:4000/graphql | Gateway GraphQL endpoint, with GraphiQL in the browser |
 | http://localhost:5080 | Members API (REST) |
+| http://localhost:9090 | Prometheus |
+| http://localhost:3000 | Grafana (admin/admin), with the RED dashboard pre-provisioned |
 
 The stack seeds three demo members:
 
@@ -64,6 +67,17 @@ curl -X POST http://localhost:4000/graphql \
 
 Ada's spendable balance drops by 5 000. Run the exact same command again: the balance stays put and the response says `"alreadyApplied": true` — a retried redemption is a success that changed nothing, not a double spend. The overdraw guard is a single atomic conditional decrement, so two concurrent redemptions can never both pass it ([docs/decisions/0003](docs/decisions/0003-redemption-concurrency-conditional-update.md)).
 
+### Watch it run
+
+Every service logs one JSON line per request, tagged with a correlation id. Send your own and follow it across the stack:
+
+```bash
+curl -si -H "X-Correlation-Id: my-trace-1" http://localhost:4000/health
+docker compose -f infra/docker-compose.yml logs | grep my-trace-1
+```
+
+The gateway accepts the id (or generates one), echoes it in the response, and forwards it downstream; on a partner purchase it even rides the earn event through RabbitMQ, so one grep traces a purchase from the initial POST to the ledger write. For the aggregate view, Grafana at http://localhost:3000 ships pre-provisioned with a RED dashboard — request rate, error rate, and p95 latency per service — fed by Prometheus scraping each service's metrics endpoint.
+
 ## What's deliberately missing
 
 There is no authentication anywhere, and CORS is wide open — a spec non-goal for this demo, so every endpoint you see above is exactly as public as it looks. In production the admin surfaces (point adjustments, PANDION invitations, partner rates) would sit behind OIDC with role checks, and the gateway would mask internal error details instead of passing them straight through (`maskedErrors: false` is a demo convenience, not a recommendation).
@@ -81,12 +95,16 @@ There is no authentication anywhere, and CORS is wide open — a spec non-goal f
 
 More services arrive in later phases (a Rust points engine). Each one has to justify its existence before it appears.
 
+## Kubernetes and IaC
+
+The compose stack has a Kubernetes twin in [`infra/k8s`](infra/k8s) — kubeconform-validated manifests with probes and resource limits, plus a [kind quickstart](infra/k8s/README.md) to run them locally. [`infra/terraform`](infra/terraform) is a deliberately tiny IaC sample — a namespace and its resource quota — with the reasoning in [its README](infra/terraform/README.md).
+
 ## How I build
 
 These are principles I claim on my CV. Here they are as code you can click:
 
 - **Vertical Slice Architecture.** One folder per feature, everything the feature needs in one place: [`Features/EnrollMember`](services/members/Osprey.Members/Features/EnrollMember) holds contracts, validation, handler and endpoint. The domain core ([`Tiers.Core.cs`](services/members/Osprey.Members/Features/Tiers/Tiers.Core.cs)) is pure and I/O-free, which makes it trivially testable.
-- **TDD, visibly.** The commit history shows tests driving the implementation. 115 tests across six components so far (members 72, gateway 11, member portal 15, partners 9, admin portal 6, shell 2), including integration tests against a real Mongo and RabbitMQ via Testcontainers.
+- **TDD, visibly.** The commit history shows tests driving the implementation. 123 tests across six components so far (members 74, gateway 14, member portal 15, partners 12, admin portal 6, shell 2), including integration tests against a real Mongo and RabbitMQ via Testcontainers.
 - **Exceptions on the edges.** Validation throws with a human message; one middleware in [`Program.cs`](services/members/Osprey.Members/Program.cs) turns expected failures into clean 400s. The happy path reads top to bottom, with no Result types threaded through every method.
 - **Bounded everything.** The Mongo lookup carries a 5-second cap ([`GetMemberProfile.Handler.cs`](services/members/Osprey.Members/Features/GetMemberProfile/GetMemberProfile.Handler.cs)); the gateway calls members with a 2-second timeout ([`membersClient.ts`](services/gateway/src/features/member/membersClient.ts)). Small habit, cheap insurance.
 - **Standards over invention.** GraphQL Yoga, zod, TanStack Query, GraphQL codegen, Testcontainers, minimal APIs. Boring, current, well-documented choices; the creativity budget goes to the domain.
@@ -100,7 +118,7 @@ This repo is built with agentic coding tools under disciplined human review. I w
 
 - **Phase 2 (done):** earn and tiers — partner purchases through RabbitMQ, idempotent ledger, rolling 12-month tier engine.
 - **Phase 3 (done):** redemption with concurrency safety, point expiry, admin endpoints, plus a micro-frontend shell hosting a Vue admin portal next to the React member portal.
-- **Phase 4:** production polish. Kubernetes manifests, Grafana dashboards, correlation ids, completed ADRs.
+- **Phase 4 (done):** production polish — observability, correlation ids, Kubernetes manifests, IaC sample.
 - **Phase 5:** a Rust points engine, extracted from members with an ADR on why.
 
 ---
