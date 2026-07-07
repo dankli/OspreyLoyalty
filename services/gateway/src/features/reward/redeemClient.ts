@@ -12,10 +12,11 @@ export async function postRedemption(
   memberId: string,
   rewardId: string,
   idempotencyKey: string,
+  correlationId?: string,
 ): Promise<RedemptionResult> {
   const response = await fetch(`${baseUrl}/api/members/${encodeURIComponent(memberId)}/redemptions`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { ...(correlationId ? { "x-correlation-id": correlationId } : {}), "content-type": "application/json" },
     body: JSON.stringify({ rewardId, idempotencyKey }),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });

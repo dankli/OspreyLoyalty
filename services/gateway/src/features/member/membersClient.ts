@@ -12,8 +12,9 @@ export type Member = {
   joinedAtUtc: string;
 };
 
-export async function fetchMember(baseUrl: string, id: string): Promise<Member | null> {
+export async function fetchMember(baseUrl: string, id: string, correlationId?: string): Promise<Member | null> {
   const response = await fetch(`${baseUrl}/api/members/${encodeURIComponent(id)}`, {
+    headers: { ...(correlationId ? { "x-correlation-id": correlationId } : {}) },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (response.status === 404) return null;

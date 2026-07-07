@@ -14,10 +14,18 @@ export type TransactionsPage = {
   hasMore: boolean;
 };
 
-export async function fetchTransactions(baseUrl: string, memberId: string, page: number): Promise<TransactionsPage> {
+export async function fetchTransactions(
+  baseUrl: string,
+  memberId: string,
+  page: number,
+  correlationId?: string,
+): Promise<TransactionsPage> {
   const response = await fetch(
     `${baseUrl}/api/members/${encodeURIComponent(memberId)}/transactions?page=${encodeURIComponent(page)}`,
-    { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
+    {
+      headers: { ...(correlationId ? { "x-correlation-id": correlationId } : {}) },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    },
   );
   if (!response.ok) throw new Error(`members service responded ${response.status}`);
   return (await response.json()) as TransactionsPage;
