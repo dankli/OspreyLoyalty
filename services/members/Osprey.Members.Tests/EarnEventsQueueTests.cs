@@ -26,6 +26,7 @@ public sealed class EarnEventsQueueTests : IAsyncLifetime
             b.UseSetting("RabbitMq:User", "rabbitmq");
             b.UseSetting("RabbitMq:Password", "rabbitmq");
             b.UseSetting("SeedDemoData", "true");
+            b.UseSetting("ExpirySweep", "false"); // a background sweep would make assertions racy
         });
         _ = factory.CreateClient(); // boot the host so the consumer starts
     }

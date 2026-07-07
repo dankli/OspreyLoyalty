@@ -21,6 +21,9 @@ builder.Services.AddScoped<Redeem.Handler>();
 if (builder.Configuration.GetValue<bool>("ConsumeEarnEvents", true))
     builder.Services.AddHostedService<ConsumeEarnEvents.Consumer>();
 
+if (builder.Configuration.GetValue<bool>("ExpirySweep", true))
+    builder.Services.AddHostedService<Expiry.HostedService>();
+
 var app = builder.Build();
 
 // Expected failures (validation) become clean 400s here; anything unexpected
