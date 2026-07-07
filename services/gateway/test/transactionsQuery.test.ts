@@ -12,6 +12,8 @@ test("transactions query resolves a page", async () => {
       page: 0,
       hasMore: false,
     }),
+    fetchRewards: async () => [],
+    postRedemption: async (): Promise<never> => { throw new Error("not used"); },
   });
 
   const response = await yoga.fetch("http://gateway/graphql", {

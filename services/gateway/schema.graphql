@@ -43,3 +43,24 @@ extend type Query {
   partners: [Partner!]!
   dashboard(memberId: ID!): Dashboard!
 }
+
+type Reward {
+  id: ID!
+  name: String!
+  cost: Int!
+}
+
+type RedemptionResult {
+  rewardId: String!
+  pointsSpent: Int!
+  spendablePoints: Int!
+  alreadyApplied: Boolean!
+}
+
+extend type Query {
+  rewards: [Reward!]!
+}
+
+type Mutation {
+  redeem(memberId: ID!, rewardId: String!, idempotencyKey: String!): RedemptionResult!
+}

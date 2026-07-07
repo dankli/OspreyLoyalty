@@ -10,6 +10,8 @@ test("member query resolves through the members client", async () => {
     }),
     fetchPartners: async () => [],
     fetchTransactions: async () => ({ items: [], page: 0, hasMore: false }),
+    fetchRewards: async () => [],
+    postRedemption: async (): Promise<never> => { throw new Error("not used"); },
   });
 
   const response = await yoga.fetch("http://gateway/graphql", {
@@ -28,6 +30,8 @@ test("unknown member resolves to null", async () => {
     fetchMember: async () => null,
     fetchPartners: async () => [],
     fetchTransactions: async () => ({ items: [], page: 0, hasMore: false }),
+    fetchRewards: async () => [],
+    postRedemption: async (): Promise<never> => { throw new Error("not used"); },
   });
   const response = await yoga.fetch("http://gateway/graphql", {
     method: "POST",
