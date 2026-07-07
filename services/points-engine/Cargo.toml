@@ -1,0 +1,12 @@
+[package]
+name = "osprey-points-engine"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rust_decimal = { version = "1.42.1", features = ["serde"] }
+serde = { version = "1.0.228", features = ["derive"] }
+
+[dev-dependencies]
+proptest = "1.11.0"
+rust_decimal_macros = "1.40.0"
