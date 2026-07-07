@@ -1,11 +1,13 @@
 package com.ospreyloyalty.partners.purchases;
 
+import com.ospreyloyalty.partners.CorrelationIdFilter;
 import com.ospreyloyalty.partners.catalogue.Partner;
 import com.ospreyloyalty.partners.catalogue.PartnerCatalogue;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,6 +48,6 @@ public class PurchasesController {
         if (request.amount() == null || request.amount().signum() <= 0 || request.amount().compareTo(MAX_AMOUNT) > 0)
             throw new IllegalArgumentException("amount must be positive and at most " + MAX_AMOUNT + ".");
         return new EarnEvent(request.memberId(), partner.id(), request.amount(), partner.rate(),
-            UUID.randomUUID().toString(), Instant.now());
+            UUID.randomUUID().toString(), Instant.now(), MDC.get(CorrelationIdFilter.MDC_KEY));
     }
 }

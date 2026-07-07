@@ -66,6 +66,18 @@ class PurchasesControllerTest {
     }
 
     @Test
+    void earn_event_carries_the_correlation_id_from_the_request() throws Exception {
+        mvc.perform(post("/partners/cardco/purchases").contentType(APPLICATION_JSON)
+                .header("X-Correlation-Id", "corr-earn-1")
+                .content("{\"memberId\":\"demo-erik\",\"amount\":1000}"))
+            .andExpect(status().isAccepted());
+
+        ArgumentCaptor<EarnEvent> event = ArgumentCaptor.forClass(EarnEvent.class);
+        verify(publisher).publish(event.capture());
+        assertThat(event.getValue().correlationId()).isEqualTo("corr-earn-1");
+    }
+
+    @Test
     void purchase_after_rate_update_carries_the_new_rate() throws Exception {
         PartnerCatalogue.updateRate("cardco", 0.9);
         mvc.perform(post("/partners/cardco/purchases").contentType(APPLICATION_JSON)
