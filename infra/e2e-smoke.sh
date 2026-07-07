@@ -53,6 +53,8 @@ wait_for partners http://localhost:8081/partners
 wait_for member-portal http://localhost:5173/
 wait_for admin-portal http://localhost:5174/
 wait_for shell http://localhost:5170/
+wait_for prometheus http://localhost:9090/-/ready
+wait_for grafana http://localhost:3000/api/health
 
 echo ""
 echo "=== 3. Seeded data: demo-ada is SILVER ==="
@@ -210,6 +212,61 @@ curl -fsS http://localhost:5173/assets/remoteEntry.js >/dev/null \
 curl -fsS http://localhost:5174/assets/remoteEntry.js >/dev/null \
   || fail "admin-portal remoteEntry.js not served"
 echo "✓ both portals serve /assets/remoteEntry.js — the federation contract holds"
+
+echo ""
+echo "=== 15. Metrics endpoints ==="
+curl -sf http://localhost:5080/metrics | grep -q 'http_request_duration_seconds' \
+  || fail "members /metrics missing http_request_duration_seconds"
+echo "✓ members /metrics exposes http_request_duration_seconds"
+
+curl -sf http://localhost:4000/metrics | grep -q 'http_request_duration_seconds' \
+  || fail "gateway /metrics missing http_request_duration_seconds"
+echo "✓ gateway /metrics exposes http_request_duration_seconds"
+
+curl -sf http://localhost:8081/actuator/prometheus | grep -q 'http_server_requests_seconds' \
+  || fail "partners /actuator/prometheus missing http_server_requests_seconds"
+echo "✓ partners /actuator/prometheus exposes http_server_requests_seconds"
+
+echo ""
+echo "=== 16. Correlation-Id echo ==="
+curl -si -H "X-Correlation-Id: e2e-corr-0001" http://localhost:4000/health \
+  | grep -qi "x-correlation-id: e2e-corr-0001" \
+  || fail "gateway did not echo X-Correlation-Id"
+echo "✓ gateway echoes X-Correlation-Id: e2e-corr-0001"
+
+curl -si -H "X-Correlation-Id: e2e-corr-0001" http://localhost:5080/health \
+  | grep -qi "x-correlation-id: e2e-corr-0001" \
+  || fail "members did not echo X-Correlation-Id"
+echo "✓ members echoes X-Correlation-Id: e2e-corr-0001"
+
+echo ""
+echo "=== 17. Prometheus targets healthy ==="
+prom_up=""
+for attempt in $(seq 1 30); do
+  up_count=$(curl -s http://localhost:9090/api/v1/targets \
+    | grep -o '"health":"up"' | wc -l)
+  if [ "$up_count" -ge 3 ]; then
+    prom_up=1
+    break
+  fi
+  sleep 2
+done
+[ -n "$prom_up" ] || fail "Prometheus does not have >= 3 targets in state 'up'"
+echo "✓ Prometheus has >= 3 targets in state 'up'"
+
+echo ""
+echo "=== 18. Grafana dashboard provisioned ==="
+grafana_ok=""
+for attempt in $(seq 1 30); do
+  dash=$(curl -s -u admin:admin http://localhost:3000/api/dashboards/uid/osprey-red || true)
+  if echo "$dash" | grep -q '"uid":"osprey-red"'; then
+    grafana_ok=1
+    break
+  fi
+  sleep 2
+done
+[ -n "$grafana_ok" ] || fail "Grafana dashboard 'osprey-red' not found"
+echo "✓ Grafana dashboard uid osprey-red is provisioned"
 
 echo ""
 echo "All e2e smoke checks passed."
