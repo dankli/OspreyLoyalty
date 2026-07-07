@@ -12,12 +12,12 @@ Pure points calculation with promotions over HTTP: `POST /calculate` returns `fl
 cargo run
 ```
 
-Listens on http://localhost:8082 (override with `PORT`); same port in the compose stack. `/health` is the liveness probe, and every request logs one JSON line with a correlation id (`X-Correlation-Id` accepted or generated).
+Listens on http://localhost:8082 (override with `PORT`); same port in the compose stack. `/health` is the liveness probe, and every request logs one JSON line with a correlation id (`X-Correlation-Id` accepted or generated). There is no `/metrics` endpoint and the engine is not on the RED dashboard — it has no consumers to measure (see the ADR).
 
 ## Test
 
 ```bash
-cargo test    # 16 tests: 3 unit, 6 proptest properties, 7 API
+cargo test    # 17 tests: 4 unit, 6 proptest properties, 7 API
 cargo bench   # criterion benchmark of the pure calculation
 ```
 
@@ -29,3 +29,6 @@ curl -X POST http://localhost:8082/calculate \
   -d '{"amount":"40000","rate":"0.5","promotions":[{"multiplier":"2.0"}]}'
 # {"points":40000}
 ```
+
+Amounts and rates are accepted as JSON numbers too, but plain numbers pass through
+f64 on the way in — send them as strings when exact decimal precision matters.

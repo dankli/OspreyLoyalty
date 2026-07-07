@@ -162,5 +162,19 @@ mod tests {
             ),
             Err(CalcError::TooManyPromotions)
         );
+        assert_eq!(
+            points(dec!(1000), dec!(1), &promos(&["11"])),
+            Err(CalcError::PromotionOutOfRange)
+        );
+    }
+
+    #[test]
+    fn inclusive_maxima_are_accepted() {
+        // The bounds are (0, max] — the maxima themselves must pass, so a mutated
+        // `>` -> `>=` rejection cannot survive this test.
+        assert_eq!(
+            points(dec!(1000000), dec!(10), &promos(&["10"])),
+            Ok(100_000_000)
+        );
     }
 }

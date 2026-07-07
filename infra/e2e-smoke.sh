@@ -81,10 +81,13 @@ done
 echo "✓ purchase accepted by partners"
 
 earned=""
+members_earn_points=""
 for attempt in $(seq 1 30); do
   txs=$(curl -fsS http://localhost:5080/api/members/demo-erik/transactions || true)
   if echo "$txs" | grep -q '"points":20000'; then
     earned=1
+    # Captured for the points-engine parity check (ADR-0006) in section 19.
+    members_earn_points=$(echo "$txs" | grep -o '"points":[0-9]*' | head -1 | cut -d: -f2)
     break
   fi
   sleep 2
@@ -286,11 +289,13 @@ echo "$pe_calc" | grep -q '"points":20000' \
 echo "✓ points-engine: 40000 × 0.5 → 20000 points"
 
 # Parity contract (ADR-0006): the engine's no-promotion result must equal what
-# members' ApplyEarn produced for the same input earlier in this script.
+# members' ApplyEarn produced for the same input earlier in this script — compared
+# against the LIVE value captured from demo-erik's ledger, not a literal.
 pe_points=$(echo "$pe_calc" | grep -o '"points":[0-9]*' | grep -o '[0-9]*$')
-[ "$pe_points" = "20000" ] \
-  || fail "parity breach (ADR-0006): engine returned $pe_points, members ledger shows 20000"
-echo "✓ parity (ADR-0006): engine result $pe_points equals members' ApplyEarn for 40000 × 0.5"
+[ -n "$members_earn_points" ] || fail "parity check has no captured members earn value"
+[ "$pe_points" = "$members_earn_points" ] \
+  || fail "parity breach (ADR-0006): engine returned $pe_points, members ledger shows $members_earn_points"
+echo "✓ parity (ADR-0006): engine result $pe_points equals members' ledger earn ($members_earn_points) for 40000 × 0.5"
 
 # Promotion: 1000 × 0.5 × 2.0 multiplier → 1000 points.
 pe_promo=$(curl -fsS -X POST http://localhost:8082/calculate \

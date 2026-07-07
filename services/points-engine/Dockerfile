@@ -1,4 +1,5 @@
-FROM rust:1-slim AS build
+# Pinned to bookworm so the build and runtime stages share a glibc generation.
+FROM rust:1-slim-bookworm AS build
 WORKDIR /src
 COPY Cargo.toml Cargo.lock ./
 # cache the dependency layer: build with a stub main before copying sources
