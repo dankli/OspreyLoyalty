@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: members
+    static_configs: [{ targets: ["members:8080"] }]
+  - job_name: gateway
+    static_configs: [{ targets: ["gateway:4000"] }]
+  - job_name: partners
+    metrics_path: /actuator/prometheus
+    static_configs: [{ targets: ["partners:8080"] }]
