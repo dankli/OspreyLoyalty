@@ -14,6 +14,7 @@ builder.Services.AddScoped<EnrollMember.Handler>();
 builder.Services.AddScoped<GetMemberProfile.Handler>();
 builder.Services.AddScoped<ApplyEarn.Handler>();
 builder.Services.AddScoped<ListTransactions.Handler>();
+builder.Services.AddScoped<Redeem.Handler>();
 
 // Kill switch: integration tests (and incident response) can turn the consumer off
 // without touching code — WebApplicationFactory tests must never require a broker.
@@ -39,6 +40,7 @@ EnrollMember.MapEndpoints(app);
 GetMemberProfile.MapEndpoints(app);
 ListTransactions.MapEndpoints(app);
 Rewards.MapEndpoints(app);
+Redeem.MapEndpoints(app);
 
 await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<PointsTransactionDocument>>());
 
