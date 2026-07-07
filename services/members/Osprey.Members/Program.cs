@@ -38,6 +38,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 EnrollMember.MapEndpoints(app);
 GetMemberProfile.MapEndpoints(app);
 ListTransactions.MapEndpoints(app);
+Rewards.MapEndpoints(app);
 
 await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<PointsTransactionDocument>>());
 
