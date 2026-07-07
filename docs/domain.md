@@ -20,7 +20,7 @@ The membership level assigned to a member. Five levels exist:
 | DIAMOND | 90 000                                        |
 | PANDION | Invitation only — no threshold                |
 
-Tier is recomputed on every earn event. A member drops a tier when the rolling window rolls off enough qualifying points. PANDION is granted by an admin or support flow via an `IsPandionInvited` flag; the criteria are secret and the points engine never computes it. An invited PANDION member is unaffected by window roll-off.
+Tier is recomputed on every earn event. A member drops a tier when the rolling window rolls off enough qualifying points. PANDION is granted exclusively by the `SetPandionInvitation` admin endpoint (`PUT /api/members/{id}/pandion`) via an `IsPandionInvited` flag; no other code path writes this flag. The criteria are secret and the points engine never computes PANDION from points. An invited PANDION member is unaffected by window roll-off.
 
 **PointsTransaction**
 An immutable ledger entry. Every change to a member's points balance is represented as a transaction. Fields: `id`, `memberId`, `type` (earn / burn / expiry / adjustment), `points` (signed integer — positive for earn/adjustment credit, negative for burn/expiry/adjustment debit), `source` (the partner id for earns), `idempotencyKey`, `occurredAtUtc`.
@@ -53,8 +53,25 @@ Wire format — JSON, camelCase:
 }
 ```
 
+**Reward**
+A catalogue item that can be purchased with spendable points. Maintained in-memory by the members service.
+
+| ID                 | Name                    | Cost (spendable points) |
+|--------------------|-------------------------|------------------------:|
+| `lounge-pass`      | Lounge day pass         | 15 000                  |
+| `upgrade-voucher`  | Cabin upgrade voucher   | 30 000                  |
+| `cardco-giftcard`  | CardCo gift card        |  5 000                  |
+
 **Redemption**
-A request to spend spendable points on a Reward. Appends a burn transaction to the ledger. Must not overdraw the balance. Concurrent redemptions are handled with optimistic concurrency (an ADR will document the choice when phase 3 is implemented).
+A request to spend spendable points on a Reward. Carries a client-generated `idempotencyKey` (8–100 characters). Rules:
+
+- Appends a burn transaction to the ledger; must not bring `spendableBalance` below zero.
+- Insufficient balance returns 400. Unknown member returns 404.
+- The same `idempotencyKey` submitted twice returns success with `alreadyApplied: true` and does not charge points a second time.
+- Concurrent redemptions are arbitrated by a single atomic conditional decrement; see ADR-0003.
+
+**Manual adjustment**
+An admin-only signed points change with a mandatory reason. Appended to the ledger as a `PointsTransaction` with `type = adjustment` and `source = "admin: {reason}"`. Positive adjustments credit spendable points; negative adjustments debit them and cannot overdraw the balance (same conditional guard as redemption). Idempotency key required; duplicate key returns `alreadyApplied: true`.
 
 **Benefit**
 A tier-linked perk displayed to the member. No points logic — display only. Examples: lounge access (GOLD+), upgrade voucher (DIAMOND+). Content is driven by a static mapping.
@@ -69,9 +86,9 @@ A tier-linked perk displayed to the member. No points logic — display only. Ex
 
 3. **Idempotency.** The same `EarnEvent` (same `idempotencyKey`) processed twice must produce exactly one `PointsTransaction`. This is enforced by a unique MongoDB index on `PointsTransaction.idempotencyKey`; a duplicate-key error is treated as "already applied" (ADR-0002). The duplicate-delivery test is a first-class showcase in the test suite.
 
-4. **Redemption balance check.** *(Phase 3.)* A burn transaction must not bring `spendableBalance` below zero. Concurrent redemptions must not double-spend.
+4. **Redemption balance check.** A burn transaction must not bring `spendableBalance` below zero. Concurrent redemptions must not double-spend. The arbiter is a single atomic conditional decrement: `UpdateOne(Id == member AND spendablePoints >= cost, $inc -cost)` (ADR-0003). `ModifiedCount = 0` combined with a found member means insufficient balance (400). The burn ledger entry follows the decrement and is deduped by the existing unique idempotency-key index; a duplicate-key race after the decrement is compensated by incrementing the balance back.
 
-5. **Point expiry.** *(Phase 3.)* Spendable points expire 24 months after the earn date. Consumption is FIFO.
+5. **Point expiry.** Spendable points expire 24 months after the earn date. Consumption is FIFO: every negative entry (burn, expiry, negative adjustment) consumes the oldest positive entries first. Whatever positive balance remains on an earn entry older than 24 months is due to expire. Positive adjustment entries age like earns. Expiry is applied by an idempotent daily sweep that writes `expiry` entries with deterministic keys `expiry-{earnId}`; a duplicate-key error means the lot was already expired on a previous run and is skipped.
 
 ---
 
