@@ -1,0 +1,21 @@
+name: shell
+on:
+  push:
+    branches: [main]
+    paths: ["frontends/shell/**", ".github/workflows/shell.yml"]
+  pull_request:
+    paths: ["frontends/shell/**", ".github/workflows/shell.yml"]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: frontends/shell }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm test
+      - run: npm run build

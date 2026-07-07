@@ -1,0 +1,21 @@
+name: admin-portal
+on:
+  push:
+    branches: [main]
+    paths: ["frontends/admin-portal/**", ".github/workflows/admin-portal.yml"]
+  pull_request:
+    paths: ["frontends/admin-portal/**", ".github/workflows/admin-portal.yml"]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: frontends/admin-portal }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
