@@ -35,4 +35,5 @@ None of those conditions hold in this repo. The extraction is justified here as 
 - Two implementations of the same formula (mitigated by the e2e parity check and by promotions existing only in the engine, so the feature sets deliberately diverge).
 - One additional container image and CI pipeline (`points-engine.yml`).
 - A Criterion benchmark in the service quantifies the throughput claim. Numbers land in the service README once measured.
+- The engine logs JSON and echoes correlation ids but exposes no Prometheus metrics and sits outside the RED dashboard — it has no consumers to measure. A metrics endpoint rides along the day it is wired into the earn path.
 - Promotion rules are today a points-engine concept only. Adopting them in the members earn flow is future work and would require routing earn calculations through the engine per this ADR — a decision with real latency implications that must be made deliberately.
