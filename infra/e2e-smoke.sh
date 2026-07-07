@@ -215,15 +215,20 @@ echo "✓ both portals serve /assets/remoteEntry.js — the federation contract 
 
 echo ""
 echo "=== 15. Metrics endpoints ==="
-curl -sf http://localhost:5080/metrics | grep -q 'http_request_duration_seconds' \
+# Capture first, grep second: `curl | grep -q` under pipefail dies with SIGPIPE (exit 23)
+# when grep closes the pipe early on a body larger than the pipe buffer.
+members_metrics=$(curl -sf http://localhost:5080/metrics) || fail "members /metrics unreachable"
+grep -q 'http_request_duration_seconds' <<<"$members_metrics" \
   || fail "members /metrics missing http_request_duration_seconds"
 echo "✓ members /metrics exposes http_request_duration_seconds"
 
-curl -sf http://localhost:4000/metrics | grep -q 'http_request_duration_seconds' \
+gateway_metrics=$(curl -sf http://localhost:4000/metrics) || fail "gateway /metrics unreachable"
+grep -q 'http_request_duration_seconds' <<<"$gateway_metrics" \
   || fail "gateway /metrics missing http_request_duration_seconds"
 echo "✓ gateway /metrics exposes http_request_duration_seconds"
 
-curl -sf http://localhost:8081/actuator/prometheus | grep -q 'http_server_requests_seconds' \
+partners_metrics=$(curl -sf http://localhost:8081/actuator/prometheus) || fail "partners metrics unreachable"
+grep -q 'http_server_requests_seconds' <<<"$partners_metrics" \
   || fail "partners /actuator/prometheus missing http_server_requests_seconds"
 echo "✓ partners /actuator/prometheus exposes http_server_requests_seconds"
 
