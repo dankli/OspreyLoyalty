@@ -28,4 +28,12 @@
     <ProjectReference Include="..\Osprey.Members\Osprey.Members.csproj" />
   </ItemGroup>
 
+  <!-- Shared EarnEvent contract fixtures (single source of truth for the wire shape).
+       Copied next to the test assembly so EarnEventContractTests can deserialize them. -->
+  <ItemGroup>
+    <Content Include="..\..\..\contracts\earn-event\*.json"
+             Link="contracts\earn-event\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

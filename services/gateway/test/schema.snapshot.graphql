@@ -1,0 +1,66 @@
+type Member {
+  id: ID!
+  name: String!
+  email: String!
+  tier: String!
+  qualifyingPoints: Int!
+  spendablePoints: Int!
+  pointsToNextTier: Int
+  benefits: [String!]!
+}
+
+type Query {
+  member(id: ID!): Member
+}
+
+type PointsTransaction {
+  id: ID!
+  type: String!
+  points: Int!
+  source: String!
+  occurredAtUtc: String!
+}
+
+type TransactionsPage {
+  items: [PointsTransaction!]!
+  page: Int!
+  hasMore: Boolean!
+}
+
+type Partner {
+  id: ID!
+  name: String!
+  rate: Float!
+}
+
+type Dashboard {
+  member: Member
+  partners: [Partner!]!
+}
+
+extend type Query {
+  transactions(memberId: ID!, page: Int! = 0): TransactionsPage!
+  partners: [Partner!]!
+  dashboard(memberId: ID!): Dashboard!
+}
+
+type Reward {
+  id: ID!
+  name: String!
+  cost: Int!
+}
+
+type RedemptionResult {
+  rewardId: String!
+  pointsSpent: Int!
+  spendablePoints: Int!
+  alreadyApplied: Boolean!
+}
+
+extend type Query {
+  rewards: [Reward!]!
+}
+
+type Mutation {
+  redeem(memberId: ID!, rewardId: String!, idempotencyKey: String!): RedemptionResult!
+}

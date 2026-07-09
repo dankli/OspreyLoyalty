@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ospreyloyalty/contracts/earn-event.schema.json",
+  "title": "EarnEvent",
+  "description": "Wire contract for the earn-events queue. Producer: services/partners (Java record com.ospreyloyalty.partners.purchases.EarnEvent, serialized by Spring AMQP Jackson2JsonMessageConverter). Consumer: services/members (ApplyEarn.EarnEvent, deserialized with JsonSerializerDefaults.Web). This schema is the single source of truth for that shape; both sides declare they keep it in sync by hand. See docs/decisions/0014-contract-testing.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "memberId",
+    "partnerId",
+    "amount",
+    "rate",
+    "idempotencyKey",
+    "occurredAtUtc"
+  ],
+  "properties": {
+    "memberId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Osprey member id the points accrue to."
+    },
+    "partnerId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Partner that originated the purchase."
+    },
+    "amount": {
+      "type": "number",
+      "description": "Purchase amount. Java BigDecimal / .NET decimal. Serialized as a JSON number."
+    },
+    "rate": {
+      "type": "number",
+      "description": "Earn rate travelling with the event so members needs no partner reference data. Java double / .NET decimal."
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Dedup key. At-least-once delivery means members may see the same key twice; a duplicate is a success, not an error (ADR-0002)."
+    },
+    "occurredAtUtc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 instant. Partners serializes with WRITE_DATES_AS_TIMESTAMPS disabled, so this is a string, never an epoch number."
+    },
+    "correlationId": {
+      "type": ["string", "null"],
+      "description": "Optional trailing field (ADR-0002 additive convention). Older payloads omit it; the .NET record binds it to null."
+    },
+    "authToken": {
+      "type": ["string", "null"],
+      "description": "Optional zero-trust service token partners stamps (ADR-0007). Null when auth is off; members ignores it then."
+    }
+  }
+}

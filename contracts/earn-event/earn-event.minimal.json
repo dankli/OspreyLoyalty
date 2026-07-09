@@ -1,0 +1,8 @@
+{
+  "memberId": "demo-erik",
+  "partnerId": "cardco",
+  "amount": 40000,
+  "rate": 0.5,
+  "idempotencyKey": "contract-earn-minimal-0001",
+  "occurredAtUtc": "2026-07-09T12:00:00Z"
+}

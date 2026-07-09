@@ -1,0 +1,45 @@
+name: contract-tests
+on:
+  push:
+    branches: [main]
+    paths:
+      - "contracts/**"
+      - "services/gateway/**"
+      - "services/members/**"
+      - "services/partners/src/main/java/com/ospreyloyalty/partners/purchases/EarnEvent.java"
+      - ".github/workflows/contract-tests.yml"
+  pull_request:
+    paths:
+      - "contracts/**"
+      - "services/gateway/**"
+      - "services/members/**"
+      - "services/partners/src/main/java/com/ospreyloyalty/partners/purchases/EarnEvent.java"
+      - ".github/workflows/contract-tests.yml"
+
+# Contract tests across the service seams (ADR-0014). Both jobs run without any external
+# service (no broker, no Mongo), so they are reliably green and kept blocking.
+jobs:
+  # GraphQL schema breaking-change guard + EarnEvent producer-side schema validation.
+  gateway-contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: services/gateway }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npx vitest run test/schemaContract.test.ts test/earnEventContract.test.ts
+
+  # EarnEvent consumer-side contract: members deserializes the shared fixtures with its
+  # real JsonSerializerDefaults.Web options. Filtered to the contract class so this job
+  # needs no Testcontainers (Mongo/RabbitMQ).
+  members-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet test services/members --nologo --filter "FullyQualifiedName~EarnEventContractTests"

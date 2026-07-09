@@ -1,0 +1,10 @@
+{
+  "memberId": "demo-erik",
+  "partnerId": "cardco",
+  "amount": 40000,
+  "rate": 0.5,
+  "idempotencyKey": "contract-earn-0001",
+  "occurredAtUtc": "2026-07-09T12:00:00Z",
+  "correlationId": "corr-abc-123",
+  "authToken": "eyJhbGciOiJIUzI1NiJ9.service-token.sig"
+}
