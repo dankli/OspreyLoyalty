@@ -10,7 +10,7 @@ jobs:
   kubeconform:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: docker run --rm -v "$PWD/infra/k8s:/k8s" ghcr.io/yannh/kubeconform:v0.6.7 -summary -strict -ignore-filename-pattern "README.*" /k8s
 
   terraform:
@@ -18,7 +18,7 @@ jobs:
     defaults:
       run: { working-directory: infra/terraform }
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: "1.9.*"
