@@ -1,0 +1,57 @@
+name: load-test
+
+# Load tests are slow and must NEVER gate a push or turn `main` red, so this
+# workflow runs ONLY on manual dispatch and on a weekly schedule. Per-push
+# correctness is covered by the `e2e` workflow (infra/e2e-smoke.sh).
+on:
+  workflow_dispatch:
+  schedule:
+    # 06:00 UTC every Monday.
+    - cron: '0 6 * * 1'
+
+jobs:
+  k6-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      # Boot the full compose stack (same approach as the e2e workflow).
+      - name: Start the stack
+        run: docker compose -f infra/docker-compose.yml up --build -d
+
+      # Wait for the three services the load test drives to answer 2xx.
+      - name: Wait for readiness
+        run: |
+          wait_for() {
+            local name="$1" url="$2" attempt
+            for attempt in $(seq 1 60); do
+              if curl -fsS "$url" >/dev/null 2>&1; then
+                echo "ready: ${name} (${url})"
+                return 0
+              fi
+              sleep 2
+            done
+            echo "timed out waiting for ${name} (${url})" >&2
+            return 1
+          }
+          wait_for members  http://localhost:5080/health
+          wait_for gateway  http://localhost:4000/health
+          wait_for partners http://localhost:8081/partners
+
+      # Run the k6 smoke script via the official image, on the host network so
+      # localhost defaults reach the published compose ports.
+      - name: Run k6 smoke
+        run: |
+          docker run --rm --network host \
+            -v "$PWD/infra/load:/scripts" \
+            grafana/k6 run /scripts/smoke.js
+
+      # Dump logs on failure to help diagnose a threshold breach or a crash.
+      - name: Compose logs (on failure)
+        if: failure()
+        run: docker compose -f infra/docker-compose.yml logs --no-color --tail=200
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f infra/docker-compose.yml down
