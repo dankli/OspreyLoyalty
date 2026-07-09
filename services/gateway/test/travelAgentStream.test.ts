@@ -70,3 +70,15 @@ test("emits an error event when the members fetch throws", async () => {
   expect(res.body()).toContain("event: error");
   expect(res.ended).toBe(true);
 });
+
+test("streams Swedish narration when lang=sv", async () => {
+  const res = fakeRes();
+  await handleTravelAgentStream(
+    fakeReq("/travel-agent/stream?memberId=demo-ada&lang=sv") as never,
+    res as never,
+    { membersUrl: "http://members", delayMs: 0, fetchMember: async () => ada },
+  );
+  const out = res.body();
+  // Swedish intro token contains "resenärer" (travellers); the English one would not.
+  expect(out).toContain("resen");
+});
