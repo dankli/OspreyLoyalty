@@ -119,6 +119,9 @@ flowchart TD
 | [ADR-0010](decisions/0010-in-app-help.md) | An in-app, localized "?" help dialog per page, sourced from the i18n catalogs so help ships in all five languages for free |
 | [ADR-0011](decisions/0011-traefik-ingress.md) | Traefik as the ingress controller — a single entry point routing to every service and frontend in the local cluster |
 | [ADR-0012](decisions/0012-compute-model-k8s-over-serverless.md) | Kubernetes over serverless for the whole fleet — a conscious showcase choice; the stateless edges (points-engine, expiry sweep, earn consumer) are the first to move to functions if cost, not demonstration, were the goal |
+| [ADR-0013](decisions/0013-slo-and-alerting.md) | SLOs plus symptom-based (RED) Prometheus alerting through Alertmanager, each alert backed by a runbook |
+| [ADR-0014](decisions/0014-contract-testing.md) | Contract testing via a GraphQL schema breaking-change guard and a shared `EarnEvent` message contract — no Pact broker at demo scale |
+| [ADR-0015](decisions/0015-load-testing-and-finops.md) | k6 load/soak tests run on a schedule (not per-push) plus FinOps cost reasoning tied to ADR-0012 |
 
 ---
 
