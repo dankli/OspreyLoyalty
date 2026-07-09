@@ -68,7 +68,10 @@ export async function ensureAuthenticated(): Promise<void> {
   if (params.has("code") && params.has("state")) {
     const manager = await userManager();
     writeSession(toSession(await manager.signinRedirectCallback()));
-    window.history.replaceState({}, document.title, window.location.pathname);
+    // Reset to the app root, NOT window.location.pathname — the redirect lands on "/callback", which
+    // is not an app route, so a client-side router (the member portal) would match nothing and render
+    // a blank page. "/" is the entry the portals route from.
+    window.history.replaceState({}, document.title, "/");
     return;
   }
   if (readSession()) return;

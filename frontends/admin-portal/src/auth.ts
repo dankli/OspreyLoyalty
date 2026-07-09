@@ -70,7 +70,9 @@ export async function ensureAuthenticated(): Promise<void> {
   if (params.has("code") && params.has("state")) {
     const manager = await userManager();
     writeSession(toSession(await manager.signinRedirectCallback()));
-    window.history.replaceState({}, document.title, window.location.pathname);
+    // Reset to "/" rather than the "/callback" redirect path (keeps the URL clean and matches the
+    // shell/member-portal, whose client-side routers match nothing at "/callback").
+    window.history.replaceState({}, document.title, "/");
     return;
   }
   if (readSession()) return;

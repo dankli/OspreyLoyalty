@@ -88,7 +88,9 @@ export async function ensureAuthenticated(): Promise<void> {
   if (params.has("code") && params.has("state")) {
     const manager = await userManager();
     writeSession(toSession(await manager.signinRedirectCallback()));
-    window.history.replaceState({}, document.title, window.location.pathname);
+    // Reset to "/" (not the "/callback" redirect path, which no app route matches — React Router
+    // would render nothing / warn "No routes matched location /callback").
+    window.history.replaceState({}, document.title, "/");
     return;
   }
   if (readSession()) return; // the shell (or a prior login) already populated the shared session
