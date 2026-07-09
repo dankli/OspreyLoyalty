@@ -14,11 +14,31 @@ A miniature airline-style loyalty platform, built in public as a demo of full-st
 
 ## Run it
 
+### Kubernetes — the full experience
+
+The way this is meant to run: every service and frontend behind a **Traefik ingress**, with liveness/readiness probes, resource limits, zero-trust login and the full observability stack — wired the way ADR-0011 and ADR-0012 describe. The helper script builds the images, applies the manifests to a local cluster (Docker Desktop's built-in Kubernetes or kind), waits for every rollout, and prints the URLs:
+
+```powershell
+./run-local-k8s.ps1          # Windows / PowerShell
+```
+
+```bash
+./run-local-k8s.sh           # Linux / macOS / Git Bash
+```
+
+Useful flags (same on both): `-PortForward` / `--port-forward` (use `localhost:<port>` instead of the ingress), `-NoAuth` / `--no-auth` (skip the zero-trust login), `-NoBuild` / `--no-build` (re-apply without rebuilding), `-Delete` / `--delete` (tear it all down). Full walkthrough — Docker Desktop vs. kind — in the [Kubernetes quickstart](infra/k8s/README.md).
+
+By default the stack answers behind Traefik at `*.osprey.localtest.me` (a wildcard resolving to `127.0.0.1`, so no hosts-file edit): entry point **http://app.osprey.localtest.me**, GraphQL at http://api.osprey.localtest.me, Grafana at http://grafana.osprey.localtest.me, Jaeger at http://jaeger.osprey.localtest.me. Sign in with a demo user (`demo-ada` / `demo-erik` / `demo-yusra`, or `admin`).
+
+### Docker Compose — the quick start
+
+Lighter, no cluster — the fastest way to poke at the domain:
+
 ```bash
 docker compose -f infra/docker-compose.yml up --build
 ```
 
-Or use the convenience scripts, which build and start the stack, wait until the
+Or the convenience scripts, which build and start the stack, wait until the
 gateway and frontends answer, then print the relevant URLs:
 
 ```powershell
@@ -32,7 +52,7 @@ gateway and frontends answer, then print the relevant URLs:
 Stop it again with `./stop-docker-compose.ps1` / `./stop-docker-compose.sh` (add `-Volumes` / `--volumes` to
 also wipe the seeded Mongo data), or `docker compose -f infra/docker-compose.yml down`.
 
-> **Docker Compose is the quick start; Kubernetes is the full experience.** Compose is the fastest way to poke at the domain. But the closest thing to how this actually runs — every service and frontend behind a Traefik ingress, with liveness/readiness probes and resource limits — is the Kubernetes twin: `./run-local-k8s.ps1` / `./run-local-k8s.sh` (see [Kubernetes and IaC](#kubernetes-and-iac)). Reach for it when you want the whole cloud-native picture — ingress, zero-trust and the observability stack wired the way ADR-0011 and ADR-0012 describe — not just the app.
+The compose stack — and `run-local-k8s` with `--port-forward` — expose everything on `localhost`; these are the endpoints the `curl` demos below use:
 
 | URL | What |
 |---|---|
