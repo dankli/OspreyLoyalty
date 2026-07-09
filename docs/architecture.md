@@ -125,6 +125,8 @@ flowchart TD
 | [ADR-0016](decisions/0016-transactional-outbox.md) | A transactional outbox in partners (durable on Mongo, drained by a relay) so a purchase survives RabbitMQ downtime instead of being lost on a fire-and-forget publish |
 | [ADR-0017](decisions/0017-audit-log.md) | An append-only audit log of privileged actions, actor taken from the JWT `sub` (anonymous under the auth kill-switch) |
 | [ADR-0018](decisions/0018-gdpr-erasure.md) | GDPR right-to-erasure by pseudonymizing member PII while retaining the numeric ledger, with a resurrection guard |
+| [ADR-0019](decisions/0019-gitops-argocd.md) | Declarative GitOps via ArgoCD syncing `infra/k8s` — drift control, auditable deploys, self-heal |
+| [ADR-0020](decisions/0020-progressive-delivery-argo-rollouts.md) | Canary progressive delivery via Argo Rollouts with Prometheus analysis that reuses the SLO/RED metrics and auto-rolls-back on breach |
 
 ---
 
