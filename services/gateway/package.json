@@ -12,6 +12,12 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/auto-instrumentations-node": "^0.78.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.220.0",
+    "@opentelemetry/resources": "^2.9.0",
+    "@opentelemetry/sdk-node": "^0.220.0",
+    "@opentelemetry/semantic-conventions": "^1.42.0",
     "graphql": "^16.14.2",
     "graphql-yoga": "^5.21.2",
     "pino": "^10.3.1",

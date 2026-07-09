@@ -4,7 +4,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
+import com.ospreyloyalty.partners.SecurityConfig;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -12,6 +14,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(CatalogueController.class)
+@Import(SecurityConfig.class)
 class CatalogueControllerTest {
 
     @Autowired MockMvc mvc;
@@ -19,6 +22,13 @@ class CatalogueControllerTest {
     @BeforeEach
     void resetRates() {
         PartnerCatalogue.reset();
+    }
+
+    @Test
+    void catalogue_is_reachable_cross_origin_so_the_admin_portal_can_call_it_directly() throws Exception {
+        mvc.perform(get("/partners").header("Origin", "http://localhost:5174"))
+            .andExpect(status().isOk())
+            .andExpect(header().string("Access-Control-Allow-Origin", "*"));
     }
 
     @Test

@@ -9,11 +9,11 @@ import type { Reward } from "./features/reward/rewardsClient.js";
 import type { RedemptionResult } from "./features/reward/redeemClient.js";
 
 export type Deps = {
-  fetchMember: (baseUrl: string, id: string, correlationId?: string) => Promise<Member | null>;
-  fetchTransactions: (baseUrl: string, memberId: string, page: number, correlationId?: string) => Promise<TransactionsPage>;
-  fetchPartners: (baseUrl: string, correlationId?: string) => Promise<Partner[]>;
-  fetchRewards: (baseUrl: string, correlationId?: string) => Promise<Reward[]>;
-  postRedemption: (baseUrl: string, memberId: string, rewardId: string, idempotencyKey: string, correlationId?: string) => Promise<RedemptionResult>;
+  fetchMember: (baseUrl: string, id: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Member | null>;
+  fetchTransactions: (baseUrl: string, memberId: string, page: number, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<TransactionsPage>;
+  fetchPartners: (baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Partner[]>;
+  fetchRewards: (baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Reward[]>;
+  postRedemption: (baseUrl: string, memberId: string, rewardId: string, idempotencyKey: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<RedemptionResult>;
 };
 
 const typeDefs = readFileSync(new URL("../schema.graphql", import.meta.url), "utf8");
@@ -23,28 +23,38 @@ type RequestContext = { request: Request };
 const correlationIdOf = (context: RequestContext): string | undefined =>
   context.request.headers.get("x-correlation-id") ?? undefined;
 
+// Forward the caller's bearer token downstream so each service enforces zero-trust itself.
+const authorizationOf = (context: RequestContext): string | undefined =>
+  context.request.headers.get("authorization") ?? undefined;
+
+// Forward the caller's language so downstream services localize their own error messages.
+const acceptLanguageOf = (context: RequestContext): string | undefined =>
+  context.request.headers.get("accept-language") ?? undefined;
+
 export function schema(deps: Deps): GraphQLSchemaWithContext<YogaInitialContext> {
   return createSchema({
     typeDefs,
     resolvers: {
       Query: {
         member: (_parent: unknown, args: { id: string }, context: RequestContext) =>
-          deps.fetchMember(env.MEMBERS_URL, args.id, correlationIdOf(context)),
+          deps.fetchMember(env.MEMBERS_URL, args.id, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
         transactions: (_parent: unknown, args: { memberId: string; page: number }, context: RequestContext) =>
-          deps.fetchTransactions(env.MEMBERS_URL, args.memberId, args.page, correlationIdOf(context)),
+          deps.fetchTransactions(env.MEMBERS_URL, args.memberId, args.page, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
         partners: (_parent: unknown, _args: unknown, context: RequestContext) =>
-          deps.fetchPartners(env.PARTNERS_URL, correlationIdOf(context)),
+          deps.fetchPartners(env.PARTNERS_URL, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
         dashboard: async (_parent: unknown, args: { memberId: string }, context: RequestContext) => {
           // Fan-out: both legs run concurrently, each bounded by its client's own 2s timeout.
           const correlationId = correlationIdOf(context);
+          const authorization = authorizationOf(context);
+          const acceptLanguage = acceptLanguageOf(context);
           const [member, partners] = await Promise.all([
-            deps.fetchMember(env.MEMBERS_URL, args.memberId, correlationId),
-            deps.fetchPartners(env.PARTNERS_URL, correlationId),
+            deps.fetchMember(env.MEMBERS_URL, args.memberId, correlationId, authorization, acceptLanguage),
+            deps.fetchPartners(env.PARTNERS_URL, correlationId, authorization, acceptLanguage),
           ]);
           return { member, partners };
         },
         rewards: (_parent: unknown, _args: unknown, context: RequestContext) =>
-          deps.fetchRewards(env.MEMBERS_URL, correlationIdOf(context)),
+          deps.fetchRewards(env.MEMBERS_URL, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
       },
       Mutation: {
         redeem: (
@@ -52,7 +62,7 @@ export function schema(deps: Deps): GraphQLSchemaWithContext<YogaInitialContext>
           args: { memberId: string; rewardId: string; idempotencyKey: string },
           context: RequestContext,
         ) =>
-          deps.postRedemption(env.MEMBERS_URL, args.memberId, args.rewardId, args.idempotencyKey, correlationIdOf(context)),
+          deps.postRedemption(env.MEMBERS_URL, args.memberId, args.rewardId, args.idempotencyKey, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
       },
     },
   });

@@ -17,16 +17,16 @@ public static partial class AdjustPoints
         public static void Require(string memberId, Request request)
         {
             if (string.IsNullOrWhiteSpace(memberId) || memberId.Length > MaxIdLength)
-                throw new ArgumentException("Member id is required and at most 64 characters.");
+                throw Messages.Fail("member_id_invalid");
             if (request.Points == 0)
-                throw new ArgumentException("Adjustment points must not be zero.");
+                throw Messages.Fail("adjust_points_zero");
             if (request.Points is > MaxAdjustment or < -MaxAdjustment)
-                throw new ArgumentException($"Adjustment magnitude must be at most {MaxAdjustment} points.");
+                throw Messages.Fail("adjust_magnitude", MaxAdjustment);
             if (string.IsNullOrWhiteSpace(request.Reason) || request.Reason.Trim().Length > MaxReasonLength)
-                throw new ArgumentException($"Reason is required and at most {MaxReasonLength} characters.");
+                throw Messages.Fail("adjust_reason", MaxReasonLength);
             if (string.IsNullOrWhiteSpace(request.IdempotencyKey)
                 || request.IdempotencyKey.Length is < MinKeyLength or > MaxKeyLength)
-                throw new ArgumentException($"Idempotency key must be {MinKeyLength}-{MaxKeyLength} characters.");
+                throw Messages.Fail("idempotency_key", MinKeyLength, MaxKeyLength);
         }
     }
 }

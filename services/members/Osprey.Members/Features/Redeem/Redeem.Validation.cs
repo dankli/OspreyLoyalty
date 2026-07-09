@@ -13,12 +13,12 @@ public static partial class Redeem
         public static void Require(string memberId, Request request)
         {
             if (string.IsNullOrWhiteSpace(memberId) || memberId.Length > MaxIdLength)
-                throw new ArgumentException("Member id is required and at most 64 characters.");
+                throw Messages.Fail("member_id_invalid");
             if (string.IsNullOrWhiteSpace(request.RewardId) || request.RewardId.Length > MaxIdLength)
-                throw new ArgumentException("Reward id is required and at most 64 characters.");
+                throw Messages.Fail("reward_id_invalid");
             if (string.IsNullOrWhiteSpace(request.IdempotencyKey)
                 || request.IdempotencyKey.Length is < MinKeyLength or > MaxKeyLength)
-                throw new ArgumentException($"Idempotency key must be {MinKeyLength}-{MaxKeyLength} characters.");
+                throw Messages.Fail("idempotency_key", MinKeyLength, MaxKeyLength);
         }
     }
 }

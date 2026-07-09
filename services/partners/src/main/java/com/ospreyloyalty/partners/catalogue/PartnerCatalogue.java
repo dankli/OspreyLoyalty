@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import com.ospreyloyalty.partners.LocalizedBadRequest;
 
 /**
  * In-memory reference data — three partners is the whole universe of this demo.
@@ -34,10 +35,10 @@ public final class PartnerCatalogue {
 
     public static Partner updateRate(String id, double rate) {
         if (rate <= 0 || rate > 10)
-            throw new IllegalArgumentException("rate must be positive and at most 10.");
+            throw new LocalizedBadRequest("rate.invalid", "rate must be positive and at most 10.");
         Partner updated = byId(id)
             .map(p -> new Partner(p.id(), p.name(), rate))
-            .orElseThrow(() -> new IllegalArgumentException("Unknown partner: " + id));
+            .orElseThrow(() -> new LocalizedBadRequest("partner.unknown", "Unknown partner: " + id, id));
         current.put(id, updated);
         return updated;
     }

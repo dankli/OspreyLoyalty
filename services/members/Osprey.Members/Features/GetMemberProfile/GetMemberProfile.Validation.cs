@@ -11,7 +11,7 @@ public static partial class GetMemberProfile
         public static void RequireId(string id)
         {
             if (string.IsNullOrWhiteSpace(id) || id.Length > MaxIdLength)
-                throw new ArgumentException("Member id is required and at most 64 characters.");
+                throw Messages.Fail("member_id_invalid");
         }
     }
 }

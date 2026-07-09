@@ -1,0 +1,26 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: osprey-security
+osprey:
+  oidc:
+    issuer: ${OIDC_ISSUER:http://localhost:9000}
+    member-portal-redirect: ${MEMBER_PORTAL_REDIRECT:http://localhost:5173/callback}
+    admin-portal-redirect: ${ADMIN_PORTAL_REDIRECT:http://localhost:5174/callback}
+    shell-redirect: ${SHELL_REDIRECT:http://localhost:5170/callback}
+otel:
+  service:
+    name: ${OTEL_SERVICE_NAME:osprey-security}
+  exporter:
+    otlp:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+  metrics:
+    exporter: none
+  logs:
+    exporter: none
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus

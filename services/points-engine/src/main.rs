@@ -1,6 +1,7 @@
 //! Points-engine service binary: JSON tracing + axum server on `PORT` (default 8082).
 
 mod api;
+mod i18n;
 
 use std::net::SocketAddr;
 
@@ -26,7 +27,7 @@ async fn main() {
         .await
         .unwrap_or_else(|err| panic!("failed to bind {addr}: {err}"));
     tracing::info!(%addr, "points-engine listening");
-    axum::serve(listener, api::router())
+    axum::serve(listener, api::build_router(api::AuthConfig::from_env()))
         .with_graceful_shutdown(shutdown_signal())
         .await
         .expect("server error");

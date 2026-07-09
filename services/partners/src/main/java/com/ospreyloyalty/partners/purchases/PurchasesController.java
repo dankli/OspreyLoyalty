@@ -1,6 +1,7 @@
 package com.ospreyloyalty.partners.purchases;
 
 import com.ospreyloyalty.partners.CorrelationIdFilter;
+import com.ospreyloyalty.partners.LocalizedBadRequest;
 import com.ospreyloyalty.partners.catalogue.Partner;
 import com.ospreyloyalty.partners.catalogue.PartnerCatalogue;
 import java.math.BigDecimal;
@@ -17,9 +18,11 @@ public class PurchasesController {
     private static final BigDecimal MAX_AMOUNT = new BigDecimal(1_000_000);
 
     private final EarnEventPublisher publisher;
+    private final ServiceTokenProvider tokenProvider;
 
-    public PurchasesController(EarnEventPublisher publisher) {
+    public PurchasesController(EarnEventPublisher publisher, ServiceTokenProvider tokenProvider) {
         this.publisher = publisher;
+        this.tokenProvider = tokenProvider;
     }
 
     @PostMapping("/partners/{partnerId}/purchases")
@@ -40,14 +43,17 @@ public class PurchasesController {
         return Map.of("idempotencyKey", event.idempotencyKey(), "deliveries", "2");
     }
 
-    private static EarnEvent toEvent(String partnerId, PurchaseRequest request) {
+    private EarnEvent toEvent(String partnerId, PurchaseRequest request) {
         Partner partner = PartnerCatalogue.byId(partnerId)
-            .orElseThrow(() -> new IllegalArgumentException("Unknown partner: " + partnerId));
+            .orElseThrow(() -> new LocalizedBadRequest("partner.unknown", "Unknown partner: " + partnerId, partnerId));
         if (request.memberId() == null || request.memberId().isBlank() || request.memberId().length() > 64)
-            throw new IllegalArgumentException("memberId is required and at most 64 characters.");
+            throw new LocalizedBadRequest("member.id.invalid", "memberId is required and at most 64 characters.");
         if (request.amount() == null || request.amount().signum() <= 0 || request.amount().compareTo(MAX_AMOUNT) > 0)
-            throw new IllegalArgumentException("amount must be positive and at most " + MAX_AMOUNT + ".");
+            throw new LocalizedBadRequest("amount.invalid",
+                "amount must be positive and at most " + MAX_AMOUNT + ".", MAX_AMOUNT.toString());
+        // Stamp the zero-trust service token (null when auth is off) so members can authenticate
+        // this event off the queue — the async counterpart to forwarding the caller's bearer.
         return new EarnEvent(request.memberId(), partner.id(), request.amount(), partner.rate(),
-            UUID.randomUUID().toString(), Instant.now(), MDC.get(CorrelationIdFilter.MDC_KEY));
+            UUID.randomUUID().toString(), Instant.now(), MDC.get(CorrelationIdFilter.MDC_KEY), tokenProvider.mint());
     }
 }

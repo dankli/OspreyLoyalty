@@ -11,9 +11,9 @@ public static partial class FindMemberByEmail
         public static void RequireEmail(string? email)
         {
             if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
-                throw new ArgumentException("Email must be a valid address.");
+                throw Messages.Fail("email_invalid");
             if (email.Length > MaxEmailLength)
-                throw new ArgumentException($"Email must be at most {MaxEmailLength} characters.");
+                throw Messages.Fail("email_too_long", MaxEmailLength);
         }
     }
 }

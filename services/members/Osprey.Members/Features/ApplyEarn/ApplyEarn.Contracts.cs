@@ -15,7 +15,8 @@ public static partial class ApplyEarn
         decimal Rate,
         string IdempotencyKey,
         DateTime OccurredAtUtc,
-        string? CorrelationId = null); // last with a default: JSON missing the field still deserializes
+        string? CorrelationId = null, // trailing defaults: JSON missing the field still deserializes
+        string? AuthToken = null); // zero-trust service token partners stamps (ADR-0007); null when auth is off
 
     /// <summary>AlreadyApplied=true is a success, not an error — duplicate delivery is
     /// expected under at-least-once messaging. That distinction is the whole feature.</summary>

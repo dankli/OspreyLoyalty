@@ -21,7 +21,10 @@ public static partial class Correlation
                 ?? Guid.NewGuid().ToString("N");
             context.Response.Headers[Header] = correlationId;
 
-            var logger = context.RequestServices.GetRequiredService<ILogger<WebApplication>>();
+            // A dedicated "Osprey.*" category — NOT under Microsoft.AspNetCore, which appsettings
+            // filters to Warning — so this per-request Information summary actually reaches the logs.
+            var logger = context.RequestServices.GetRequiredService<ILoggerFactory>()
+                .CreateLogger("Osprey.Members.Http");
             using (logger.BeginScope(new Dictionary<string, object> { ["correlationId"] = correlationId }))
             {
                 long started = Stopwatch.GetTimestamp();

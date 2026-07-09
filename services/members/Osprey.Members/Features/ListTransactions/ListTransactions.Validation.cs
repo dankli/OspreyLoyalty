@@ -11,9 +11,9 @@ public static partial class ListTransactions
         public static void Require(string memberId, int page)
         {
             if (string.IsNullOrWhiteSpace(memberId) || memberId.Length > 64)
-                throw new ArgumentException("Member id is required and at most 64 characters.");
+                throw Messages.Fail("member_id_invalid");
             if (page is < 0 or > MaxPage)
-                throw new ArgumentException($"Page must be between 0 and {MaxPage}.");
+                throw Messages.Fail("list_page", MaxPage);
         }
     }
 }

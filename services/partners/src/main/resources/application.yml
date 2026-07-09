@@ -3,9 +3,50 @@ server:
 spring:
   application:
     name: osprey-partners
+  messages:
+    # Localized validation/error messages (messages_{sv,es,de,it}.properties); the default
+    # AcceptHeaderLocaleResolver drives the locale. Unsupported languages fall back to
+    # messages.properties (English) rather than the server's system locale.
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Signature keys fetched internally; issuer stays the browser-facing URL.
+          jwk-set-uri: ${OIDC_JWKS_URI:http://security:8080/oauth2/jwks}
+osprey:
+  auth:
+    enabled: ${AUTH_ENABLED:false}
+    # Service token stamped on each EarnEvent for the RabbitMQ leg of zero-trust (ADR-0007).
+    # Minted only when auth is enabled AND a secret is set; the shared HS256 key mirrors what
+    # members validates in demo/test. Prod would fetch a client-credentials token instead.
+    service-token:
+      # Real (RS256) path: when token-endpoint is set, fetch a client-credentials token from the
+      # identity service (partners-service client). Leave it blank to fall back to the HS256 demo
+      # secret below. members validates whichever it receives (RS256 via JWKS, or the shared HS256).
+      token-endpoint: ${AUTH_TOKEN_ENDPOINT:}
+      client-id: ${AUTH_CLIENT_ID:partners-service}
+      client-secret: ${AUTH_CLIENT_SECRET:}
+      secret: ${AUTH_SERVICE_TOKEN_SECRET:}
+      issuer: ${AUTH_ISSUER:http://localhost:9000}
+      audience: ${AUTH_MEMBERS_AUDIENCE:osprey-members}
+otel:
+  service:
+    name: ${OTEL_SERVICE_NAME:osprey-partners}
+  exporter:
+    otlp:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+  # Traces go to the collector via OTLP; metrics stay on /actuator/prometheus
+  # (scraped by Prometheus) and logs travel Promtail -> Loki.
+  metrics:
+    exporter: none
+  logs:
+    exporter: none
 management:
   endpoints:
     web:

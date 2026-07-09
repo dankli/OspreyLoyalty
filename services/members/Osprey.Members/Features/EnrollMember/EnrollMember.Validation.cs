@@ -16,13 +16,13 @@ public static partial class EnrollMember
         public static void Require(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.Name))
-                throw new ArgumentException("Name is required.");
+                throw Messages.Fail("name_required");
             if (request.Name.Length > MaxNameLength)
-                throw new ArgumentException($"Name must be at most {MaxNameLength} characters.");
+                throw Messages.Fail("name_too_long", MaxNameLength);
             if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
-                throw new ArgumentException("Email must be a valid address.");
+                throw Messages.Fail("email_invalid");
             if (request.Email.Length > MaxEmailLength)
-                throw new ArgumentException($"Email must be at most {MaxEmailLength} characters.");
+                throw Messages.Fail("email_too_long", MaxEmailLength);
         }
     }
 }

@@ -14,16 +14,16 @@ public static partial class ApplyEarn
         public static void Require(EarnEvent earn)
         {
             if (string.IsNullOrWhiteSpace(earn.MemberId) || earn.MemberId.Length > 64)
-                throw new ArgumentException("Member id is required and at most 64 characters.");
+                throw Messages.Fail("member_id_invalid");
             if (string.IsNullOrWhiteSpace(earn.PartnerId) || earn.PartnerId.Length > 64)
-                throw new ArgumentException("Partner id is required and at most 64 characters.");
+                throw Messages.Fail("partner_id_invalid");
             if (earn.Amount <= 0m || earn.Amount > MaxAmount)
-                throw new ArgumentException($"Amount must be positive and at most {MaxAmount}.");
+                throw Messages.Fail("earn_amount", MaxAmount);
             if (earn.Rate <= 0m || earn.Rate > MaxRate)
-                throw new ArgumentException($"Rate must be positive and at most {MaxRate}.");
+                throw Messages.Fail("earn_rate", MaxRate);
             if (string.IsNullOrWhiteSpace(earn.IdempotencyKey)
                 || earn.IdempotencyKey.Length is < MinKeyLength or > MaxKeyLength)
-                throw new ArgumentException($"Idempotency key must be {MinKeyLength}-{MaxKeyLength} characters.");
+                throw Messages.Fail("idempotency_key", MinKeyLength, MaxKeyLength);
         }
     }
 }

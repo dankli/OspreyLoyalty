@@ -19,11 +19,13 @@ export async function fetchTransactions(
   memberId: string,
   page: number,
   correlationId?: string,
+  authorization?: string,
+  acceptLanguage?: string,
 ): Promise<TransactionsPage> {
   const response = await fetch(
     `${baseUrl}/api/members/${encodeURIComponent(memberId)}/transactions?page=${encodeURIComponent(page)}`,
     {
-      headers: { ...(correlationId ? { "x-correlation-id": correlationId } : {}) },
+      headers: { ...(correlationId ? { "x-correlation-id": correlationId } : {}), ...(authorization ? { authorization } : {}), ...(acceptLanguage ? { "accept-language": acceptLanguage } : {}) },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     },
   );

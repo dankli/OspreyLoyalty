@@ -4,7 +4,7 @@ namespace Osprey.Members.Features;
 
 public static partial class AdjustPoints
 {
-    public static void MapEndpoints(IEndpointRouteBuilder app) =>
+    public static RouteHandlerBuilder MapEndpoints(IEndpointRouteBuilder app) =>
         app.MapPost("/api/members/{id}/adjustments", async (string id, Request request, Handler handler, CancellationToken ct) =>
         {
             Response? response = await handler.Handle(id, request, ct);

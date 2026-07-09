@@ -6,8 +6,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import com.ospreyloyalty.partners.SecurityConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -16,10 +18,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PurchasesController.class)
+@Import(SecurityConfig.class)
 class PurchasesControllerTest {
 
     @Autowired MockMvc mvc;
     @MockitoBean EarnEventPublisher publisher;
+    @MockitoBean ServiceTokenProvider tokenProvider;
 
     @BeforeEach
     void resetRates() {
@@ -36,6 +40,8 @@ class PurchasesControllerTest {
         ArgumentCaptor<EarnEvent> event = ArgumentCaptor.forClass(EarnEvent.class);
         verify(publisher, times(1)).publish(event.capture());
         assertThat(event.getValue().rate()).isEqualTo(0.5);
+        assertThat(event.getValue().amount().multiply(java.math.BigDecimal.valueOf(event.getValue().rate())).intValue())
+            .isEqualTo(20_000);
         assertThat(event.getValue().memberId()).isEqualTo("demo-erik");
     }
 
@@ -47,8 +53,12 @@ class PurchasesControllerTest {
 
         ArgumentCaptor<EarnEvent> events = ArgumentCaptor.forClass(EarnEvent.class);
         verify(publisher, times(2)).publish(events.capture());
+        assertThat(events.getAllValues()).hasSize(2);
         assertThat(events.getAllValues().get(0).idempotencyKey())
             .isEqualTo(events.getAllValues().get(1).idempotencyKey());
+        assertThat(events.getAllValues().get(0))
+            .usingRecursiveComparison()
+            .isEqualTo(events.getAllValues().get(1));
     }
 
     @Test
@@ -63,6 +73,35 @@ class PurchasesControllerTest {
         mvc.perform(post("/partners/cardco/purchases").contentType(APPLICATION_JSON)
                 .content("{\"memberId\":\"demo-erik\",\"amount\":0}"))
             .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void validation_error_is_localized_by_accept_language() throws Exception {
+        mvc.perform(post("/partners/nope/purchases").contentType(APPLICATION_JSON)
+                .header("Accept-Language", "sv-SE,sv;q=0.9,en;q=0.8")
+                .content("{\"memberId\":\"demo-erik\",\"amount\":100}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("Okänd partner: nope"));
+    }
+
+    @Test
+    void validation_error_defaults_to_english_without_accept_language() throws Exception {
+        mvc.perform(post("/partners/nope/purchases").contentType(APPLICATION_JSON)
+                .content("{\"memberId\":\"demo-erik\",\"amount\":100}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("Unknown partner: nope"));
+    }
+
+    @Test
+    void purchase_stamps_the_service_token_on_the_event() throws Exception {
+        when(tokenProvider.mint()).thenReturn("service-token-xyz");
+        mvc.perform(post("/partners/cardco/purchases").contentType(APPLICATION_JSON)
+                .content("{\"memberId\":\"demo-erik\",\"amount\":40000}"))
+            .andExpect(status().isAccepted());
+
+        ArgumentCaptor<EarnEvent> event = ArgumentCaptor.forClass(EarnEvent.class);
+        verify(publisher).publish(event.capture());
+        assertThat(event.getValue().authToken()).isEqualTo("service-token-xyz");
     }
 
     @Test

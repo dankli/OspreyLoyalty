@@ -56,6 +56,22 @@ public sealed class MembersApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Validation_error_is_localized_by_accept_language()
+    {
+        HttpClient client = factory.CreateClient();
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/members")
+        {
+            Content = JsonContent.Create(new { name = "", email = "x@example.com" }),
+        };
+        request.Headers.Add("Accept-Language", "sv-SE,sv;q=0.9,en;q=0.8");
+        HttpResponseMessage response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<Dictionary<string, string>>();
+        Assert.Equal("Namn är obligatoriskt.", body!["error"]);
+    }
+
+    [Fact]
     public async Task Unknown_member_is_a_404()
     {
         HttpClient client = factory.CreateClient();

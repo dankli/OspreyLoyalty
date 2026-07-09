@@ -1,3 +1,4 @@
+import "./otel.js"; // must be first — starts tracing before anything else loads
 import { createServer } from "node:http";
 import pino from "pino";
 import { buildYoga } from "./server.js";
@@ -54,11 +55,55 @@ const server = createServer((req, res) => {
     return;
   }
 
+  // Browser telemetry sink: frontends POST structured events here; we emit them as
+  // server logs (carrying the correlation id) so Promtail ships them to Loki. Bounded
+  // to 4 KB so a chatty or hostile client can't flood the pipe.
+  if (req.url === "/client-logs") {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "content-type, x-correlation-id");
+    if (req.method === "OPTIONS") {
+      res.writeHead(204).end();
+      return;
+    }
+    if (req.method === "POST") {
+      let body = "";
+      let tooLarge = false;
+      req.on("data", (chunk) => {
+        body += chunk;
+        if (body.length > 4096) {
+          tooLarge = true;
+          req.destroy();
+        }
+      });
+      req.on("end", () => {
+        if (tooLarge) {
+          res.writeHead(413).end();
+          return;
+        }
+        try {
+          const entry = JSON.parse(body) as { level?: string; message?: string; context?: unknown; app?: string };
+          logger.info(
+            { source: "frontend", app: entry.app, clientLevel: entry.level, clientMessage: entry.message, context: entry.context, correlationId },
+            "client-log",
+          );
+        } catch {
+          // ignore malformed client payloads — never let telemetry break the request
+        }
+        res.writeHead(204).end();
+      });
+      return;
+    }
+    res.writeHead(405).end();
+    return;
+  }
+
   const memberMatch = req.url?.match(/^\/api\/member\/([^/]+)$/);
   if (memberMatch) {
     void (async () => {
       try {
-        const member = await fetchMember(env.MEMBERS_URL, decodeURIComponent(memberMatch[1]!), correlationId);
+        const authorization = typeof req.headers.authorization === "string" ? req.headers.authorization : undefined;
+        const member = await fetchMember(env.MEMBERS_URL, decodeURIComponent(memberMatch[1]!), correlationId, authorization);
         res.writeHead(member ? 200 : 404, { "content-type": "application/json" });
         res.end(JSON.stringify(member ?? { error: "not found" }));
       } catch {

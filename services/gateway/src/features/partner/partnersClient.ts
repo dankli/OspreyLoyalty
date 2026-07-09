@@ -6,9 +6,9 @@ export type Partner = {
   rate: number;
 };
 
-export async function fetchPartners(baseUrl: string, correlationId?: string): Promise<Partner[]> {
+export async function fetchPartners(baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string): Promise<Partner[]> {
   const response = await fetch(`${baseUrl}/partners`, {
-    headers: { ...(correlationId ? { "x-correlation-id": correlationId } : {}) },
+    headers: { ...(correlationId ? { "x-correlation-id": correlationId } : {}), ...(authorization ? { authorization } : {}), ...(acceptLanguage ? { "accept-language": acceptLanguage } : {}) },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`partners service responded ${response.status}`);
