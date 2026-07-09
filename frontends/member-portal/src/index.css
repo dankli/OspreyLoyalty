@@ -223,6 +223,9 @@ label select:focus-visible { outline: none; border-color: var(--amber-500); box-
   font-weight: 700; letter-spacing: 0.04em; cursor: pointer;
 }
 .travel-agent .generate:disabled { opacity: 0.6; cursor: progress; }
+/* Breathing room between the generate button and whatever result renders below it. */
+.travel-agent .generate { margin-bottom: 0.75rem; }
+.travel-agent .balance-card { margin-top: 1.75rem; }
 .agent-reply { margin-top: 1.5rem; font-size: 1.05rem; line-height: 1.6; color: var(--cream-50); }
 .suggestion-card { display: flex; flex-direction: column; gap: 0.5rem; }
 .suggestion-card .go-badge {

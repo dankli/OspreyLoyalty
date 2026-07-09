@@ -46,7 +46,7 @@ export async function handleTravelAgentStream(req: IncomingMessage, res: ServerR
     }
     const plan = planTrips(member.spendablePoints, catalogue);
     send(res, "meta", { spendablePoints: member.spendablePoints });
-    const delay = deps.delayMs ?? 35; // ~28 tokens/sec — a natural typewriter cadence; 0 in tests
+    const delay = deps.delayMs ?? 70; // ~14 tokens/sec — an unhurried typewriter cadence; 0 in tests
     for (const token of tokenize(narrate(plan, lang))) {
       send(res, "token", { text: token });
       if (delay) await sleep(delay);
