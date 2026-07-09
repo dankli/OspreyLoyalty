@@ -24,6 +24,30 @@ data:
             "includeAll": true,
             "multi": true,
             "current": { "text": "All", "value": "$__all" }
+          },
+          {
+            "name": "level",
+            "label": "Level",
+            "type": "custom",
+            "query": "ERROR,WARN,INFO,DEBUG,TRACE,FATAL",
+            "includeAll": true,
+            "allValue": ".*",
+            "multi": true,
+            "current": { "text": "All", "value": "$__all" }
+          },
+          {
+            "name": "search",
+            "label": "Search (regex, case-insensitive)",
+            "type": "textbox",
+            "query": "",
+            "current": { "text": "", "value": "" }
+          },
+          {
+            "name": "traceId",
+            "label": "Trace ID",
+            "type": "textbox",
+            "query": "",
+            "current": { "text": "", "value": "" }
           }
         ]
       },
@@ -64,7 +88,7 @@ data:
         },
         {
           "id": 3,
-          "title": "Logs — expand a line and click its TraceID to open the trace dashboard",
+          "title": "Logs — filter with Level / Search / Trace ID above; click a line's TraceID to open the trace dashboard",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "osprey-loki" },
           "gridPos": { "h": 15, "w": 24, "x": 0, "y": 8 },
@@ -80,7 +104,7 @@ data:
               "refId": "A",
               "editorMode": "code",
               "queryType": "range",
-              "expr": "{namespace=\"osprey\", service=~\"$service\"} | json | regexp `(?i)trace[_]?id[\"\\s:=]+(?P<tid>[0-9a-f]{16,32})` | line_format `{{with (or .level .LogLevel)}}{{printf \"%-5s\" .}} {{end}}{{or .Message .message .msg .fields_message __line__}}{{with .tid}}  traceId={{.}}{{end}}` | drop __error__, __error_details__"
+              "expr": "{namespace=\"osprey\", service=~\"$service\"} |~ `(?i)$search` |~ `(?i)$traceId` | json | label_format lvl=`{{ $l := lower (or .level .LogLevel .severity .s \"\") }}{{ if or (hasPrefix \"err\" $l) (eq $l \"50\") }}ERROR{{ else if or (hasPrefix \"warn\" $l) (eq $l \"40\") }}WARN{{ else if or (hasPrefix \"info\" $l) (eq $l \"30\") (eq $l \"i\") }}INFO{{ else if or (hasPrefix \"debug\" $l) (eq $l \"20\") }}DEBUG{{ else if or (hasPrefix \"trace\" $l) (eq $l \"10\") }}TRACE{{ else if or (hasPrefix \"fatal\" $l) (eq $l \"60\") }}FATAL{{ else }}{{ upper $l }}{{ end }}` | lvl=~`$level` | regexp `(?i)trace[_]?id[\"\\s:=]+(?P<tid>[0-9a-f]{16,32})` | line_format `{{with .lvl}}{{printf \"%-5s\" .}} {{end}}{{.service}}: {{or .Message .message .msg .fields_message __line__}}{{with .tid}}  traceId={{.}}{{end}}` | drop __error__, __error_details__"
             }
           ]
         }
@@ -110,6 +134,23 @@ data:
             "includeAll": true,
             "multi": true,
             "current": { "text": "All", "value": "$__all" }
+          },
+          {
+            "name": "level",
+            "label": "Level",
+            "type": "custom",
+            "query": "ERROR,WARN,INFO,DEBUG,TRACE,FATAL",
+            "includeAll": true,
+            "allValue": ".*",
+            "multi": true,
+            "current": { "text": "All", "value": "$__all" }
+          },
+          {
+            "name": "search",
+            "label": "Search (regex, case-insensitive)",
+            "type": "textbox",
+            "query": "",
+            "current": { "text": "", "value": "" }
           }
         ]
       },
@@ -150,7 +191,7 @@ data:
         },
         {
           "id": 3,
-          "title": "Logs — databases, broker, observability stack, gateways & frontends",
+          "title": "Logs — filter with Level / Search above (databases, broker, observability stack, gateways & frontends)",
           "type": "logs",
           "datasource": { "type": "loki", "uid": "osprey-loki" },
           "gridPos": { "h": 15, "w": 24, "x": 0, "y": 8 },
@@ -166,7 +207,7 @@ data:
               "refId": "A",
               "editorMode": "code",
               "queryType": "range",
-              "expr": "{namespace=\"osprey\", service=~\"$service\"} | json | line_format `{{with (or .level .LogLevel .s .severity)}}{{printf \"%-5s\" .}} {{end}}{{or .Message .message .msg .fields_message __line__}}` | drop __error__, __error_details__"
+              "expr": "{namespace=\"osprey\", service=~\"$service\"} |~ `(?i)$search` | json | label_format lvl=`{{ $l := lower (or .level .LogLevel .severity .s \"\") }}{{ if or (hasPrefix \"err\" $l) (eq $l \"50\") }}ERROR{{ else if or (hasPrefix \"warn\" $l) (eq $l \"40\") }}WARN{{ else if or (hasPrefix \"info\" $l) (eq $l \"30\") (eq $l \"i\") }}INFO{{ else if or (hasPrefix \"debug\" $l) (eq $l \"20\") }}DEBUG{{ else if or (hasPrefix \"trace\" $l) (eq $l \"10\") }}TRACE{{ else if or (hasPrefix \"fatal\" $l) (eq $l \"60\") }}FATAL{{ else }}{{ upper $l }}{{ end }}` | lvl=~`$level` | line_format `{{with .lvl}}{{printf \"%-5s\" .}} {{end}}{{.service}}: {{or .Message .message .msg .fields_message __line__}}` | drop __error__, __error_details__"
             }
           ]
         }
