@@ -53,7 +53,10 @@ public class SecurityConfig {
 	@Bean
 	CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration config = new CorsConfiguration();
-		config.setAllowedOriginPatterns(List.of("*"));
+		// setAllowedOrigins("*") — not setAllowedOriginPatterns — so the response header is a literal
+		// "*" rather than the reflected request origin. Credentials are off, so "*" is valid, and it
+		// preserves the original CorsConfig's wide-open semantics the admin portal relies on.
+		config.setAllowedOrigins(List.of("*"));
 		config.setAllowedMethods(List.of("*"));
 		config.setAllowedHeaders(List.of("*"));
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
