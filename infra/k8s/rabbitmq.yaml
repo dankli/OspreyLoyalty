@@ -27,27 +27,32 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/rabbitmq
-          # `rabbitmq-diagnostics ping` spins up its own Erlang VM and is slow on a busy node;
-          # give the broker a generous startup window so liveness never kills it mid-boot.
+          # Readiness runs the real broker check (rabbitmq-diagnostics ping), but ping boots a fresh
+          # Erlang CLI node each call and takes ~7-10s under CPU pressure — so give it a generous
+          # timeout and period, or a slow-but-healthy node gets pulled from the Service endpoints.
           readinessProbe:
             exec:
               command: ["rabbitmq-diagnostics", "-q", "ping"]
             initialDelaySeconds: 20
-            periodSeconds: 15
-            timeoutSeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 30
+            failureThreshold: 3
+          # Liveness is a cheap TCP check on the AMQP port. A ping-based liveness would time out under
+          # load and let kubelet kill (SIGTERM) a perfectly healthy broker — which then force-closes
+          # every client connection and takes the partners service down with it. A socket check can't
+          # time out, and "is the listener accepting?" is the right liveness question.
           livenessProbe:
-            exec:
-              command: ["rabbitmq-diagnostics", "-q", "ping"]
+            tcpSocket:
+              port: 5672
             initialDelaySeconds: 90
             periodSeconds: 30
-            timeoutSeconds: 10
             failureThreshold: 5
           resources:
             requests:
-              cpu: 100m
+              cpu: 250m
               memory: 256Mi
             limits:
-              cpu: 500m
+              cpu: 1000m
               memory: 1Gi
   volumeClaimTemplates:
     - metadata:
