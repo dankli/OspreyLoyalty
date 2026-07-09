@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PurchasesControllerTest {
 
     @Autowired MockMvc mvc;
-    @MockitoBean EarnEventPublisher publisher;
+    @MockitoBean OutboxWriter outbox;
     @MockitoBean ServiceTokenProvider tokenProvider;
 
     @BeforeEach
@@ -31,14 +31,14 @@ class PurchasesControllerTest {
     }
 
     @Test
-    void purchase_emits_one_earn_event_with_the_partner_rate() throws Exception {
+    void purchase_writes_one_outbox_entry_with_the_partner_rate() throws Exception {
         mvc.perform(post("/partners/cardco/purchases").contentType(APPLICATION_JSON)
                 .content("{\"memberId\":\"demo-erik\",\"amount\":40000}"))
             .andExpect(status().isAccepted())
             .andExpect(jsonPath("$.idempotencyKey").isNotEmpty());
 
         ArgumentCaptor<EarnEvent> event = ArgumentCaptor.forClass(EarnEvent.class);
-        verify(publisher, times(1)).publish(event.capture());
+        verify(outbox, times(1)).write(event.capture());
         assertThat(event.getValue().rate()).isEqualTo(0.5);
         assertThat(event.getValue().amount().multiply(java.math.BigDecimal.valueOf(event.getValue().rate())).intValue())
             .isEqualTo(20_000);
@@ -46,13 +46,13 @@ class PurchasesControllerTest {
     }
 
     @Test
-    void duplicate_demo_publishes_the_same_event_twice() throws Exception {
+    void duplicate_demo_writes_two_outbox_entries_for_the_same_event() throws Exception {
         mvc.perform(post("/partners/cardco/purchases/duplicate-demo").contentType(APPLICATION_JSON)
                 .content("{\"memberId\":\"demo-erik\",\"amount\":40000}"))
             .andExpect(status().isAccepted());
 
         ArgumentCaptor<EarnEvent> events = ArgumentCaptor.forClass(EarnEvent.class);
-        verify(publisher, times(2)).publish(events.capture());
+        verify(outbox, times(2)).write(events.capture());
         assertThat(events.getAllValues()).hasSize(2);
         assertThat(events.getAllValues().get(0).idempotencyKey())
             .isEqualTo(events.getAllValues().get(1).idempotencyKey());
@@ -100,7 +100,7 @@ class PurchasesControllerTest {
             .andExpect(status().isAccepted());
 
         ArgumentCaptor<EarnEvent> event = ArgumentCaptor.forClass(EarnEvent.class);
-        verify(publisher).publish(event.capture());
+        verify(outbox).write(event.capture());
         assertThat(event.getValue().authToken()).isEqualTo("service-token-xyz");
     }
 
@@ -112,7 +112,7 @@ class PurchasesControllerTest {
             .andExpect(status().isAccepted());
 
         ArgumentCaptor<EarnEvent> event = ArgumentCaptor.forClass(EarnEvent.class);
-        verify(publisher).publish(event.capture());
+        verify(outbox).write(event.capture());
         assertThat(event.getValue().correlationId()).isEqualTo("corr-earn-1");
     }
 
@@ -124,7 +124,7 @@ class PurchasesControllerTest {
             .andExpect(status().isAccepted());
 
         ArgumentCaptor<EarnEvent> event = ArgumentCaptor.forClass(EarnEvent.class);
-        verify(publisher).publish(event.capture());
+        verify(outbox).write(event.capture());
         assertThat(event.getValue().rate()).isEqualTo(0.9);
     }
 }

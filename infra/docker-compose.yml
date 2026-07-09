@@ -53,12 +53,18 @@ services:
     build: ../services/partners
     environment:
       RABBITMQ_HOST: rabbitmq
+      # Durable transactional outbox on the shared Mongo (ADR-0016): a purchase persists an outbox
+      # row and returns success even while RabbitMQ is down; the relay publishes it later. Its own
+      # database (osprey_partners) so it never collides with members' collections.
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/osprey_partners
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318 # Java OTel defaults to OTLP/HTTP
       OTEL_SERVICE_NAME: partners
       AUTH_ENABLED: ${AUTH_ENABLED:-false}
       AUTH_SERVICE_TOKEN_SECRET: ${AUTH_SHARED_SECRET:-} # same value as members' Auth__TestSigningKey
     ports: ["8081:8080"]
     depends_on:
+      mongo:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
 

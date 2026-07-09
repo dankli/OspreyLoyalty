@@ -17,29 +17,37 @@ public class PurchasesController {
 
     private static final BigDecimal MAX_AMOUNT = new BigDecimal(1_000_000);
 
-    private final EarnEventPublisher publisher;
+    private final OutboxWriter outbox;
     private final ServiceTokenProvider tokenProvider;
 
-    public PurchasesController(EarnEventPublisher publisher, ServiceTokenProvider tokenProvider) {
-        this.publisher = publisher;
+    public PurchasesController(OutboxWriter outbox, ServiceTokenProvider tokenProvider) {
+        this.outbox = outbox;
         this.tokenProvider = tokenProvider;
     }
 
+    // The API no longer depends on RabbitMQ being up: it durably writes ONE outbox row per intended
+    // delivery and returns immediately (ADR-0016). The OutboxRelay publishes to the broker
+    // asynchronously; if the broker is down the earn waits in Mongo instead of 500ing and being lost.
     @PostMapping("/partners/{partnerId}/purchases")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String, String> purchase(@PathVariable String partnerId, @RequestBody PurchaseRequest request) {
         EarnEvent event = toEvent(partnerId, request);
-        publisher.publish(event);
+        outbox.write(event);
         return Map.of("idempotencyKey", event.idempotencyKey());
     }
 
-    /** Deliberately publishes the SAME event twice — proves downstream idempotency (spec §4.3). */
+    /**
+     * Deliberately enqueues the SAME event twice — proves downstream idempotency (spec §4.3).
+     * Two outbox rows carry the same idempotencyKey (keyed by distinct _id, no unique index on the
+     * business key — ADR-0016); the relay publishes both and the members consumer dedups to one
+     * ledger entry (ADR-0002).
+     */
     @PostMapping("/partners/{partnerId}/purchases/duplicate-demo")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String, String> duplicateDemo(@PathVariable String partnerId, @RequestBody PurchaseRequest request) {
         EarnEvent event = toEvent(partnerId, request);
-        publisher.publish(event);
-        publisher.publish(event);
+        outbox.write(event);
+        outbox.write(event);
         return Map.of("idempotencyKey", event.idempotencyKey(), "deliveries", "2");
     }
 

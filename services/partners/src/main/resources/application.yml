@@ -3,6 +3,11 @@ server:
 spring:
   application:
     name: osprey-partners
+  data:
+    mongodb:
+      # Durable transactional outbox (ADR-0016). Default targets a local mvnw run; compose/k8s
+      # override SPRING_DATA_MONGODB_URI to point at the shared mongo service.
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/osprey_partners}
   messages:
     # Localized validation/error messages (messages_{sv,es,de,it}.properties); the default
     # AcceptHeaderLocaleResolver drives the locale. Unsupported languages fall back to
@@ -35,6 +40,14 @@ osprey:
       secret: ${AUTH_SERVICE_TOKEN_SECRET:}
       issuer: ${AUTH_ISSUER:http://localhost:9000}
       audience: ${AUTH_MEMBERS_AUDIENCE:osprey-members}
+  # Transactional outbox relay (ADR-0016): the async drain that publishes durable earns to RabbitMQ.
+  # All bounds are configurable; a ~1s interval publishes within the e2e retry window.
+  outbox:
+    relay-interval-ms: ${OUTBOX_RELAY_INTERVAL_MS:1000}
+    batch-size: ${OUTBOX_BATCH_SIZE:50}
+    max-attempts: ${OUTBOX_MAX_ATTEMPTS:10}
+    lease-ms: ${OUTBOX_LEASE_MS:30000}
+    backoff-base-ms: ${OUTBOX_BACKOFF_BASE_MS:2000}
 otel:
   service:
     name: ${OTEL_SERVICE_NAME:osprey-partners}
