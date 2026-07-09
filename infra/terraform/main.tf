@@ -29,12 +29,16 @@ resource "kubernetes_resource_quota" "osprey" {
     namespace = kubernetes_namespace.osprey.metadata[0].name
   }
   spec {
+    # Bumped for Phase 6: the namespace now also runs security (IdP), points-engine, and the
+    # observability stack (jaeger, otel-collector, loki, and a promtail DaemonSet per node).
     hard = {
-      pods              = "20"
-      "requests.cpu"    = "4"
-      "requests.memory" = "4Gi"
-      "limits.cpu"      = "8"
-      "limits.memory"   = "8Gi"
+      pods              = "30"
+      "requests.cpu"    = "6"
+      "requests.memory" = "6Gi"
+      "limits.cpu"      = "12"
+      "limits.memory"   = "12Gi"
+      # mongo + rabbitmq are StatefulSets with PVCs; bound the persistent storage too.
+      "requests.storage" = "20Gi"
     }
   }
 }

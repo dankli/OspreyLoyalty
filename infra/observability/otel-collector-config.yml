@@ -1,0 +1,47 @@
+# OpenTelemetry Collector — single OTLP sink for the fleet.
+# Traces are forwarded to Jaeger; any OTLP metrics are re-exposed for Prometheus
+# to scrape. Logs travel a separate path (Promtail -> Loki), so there is no logs
+# pipeline here.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+  # Drop health-check / metrics-scrape spans — pure probe & scrape noise, not real requests.
+  filter/noise:
+    error_mode: ignore
+    traces:
+      span:
+        - 'IsMatch(name, "(?i).*(health|metrics|prometheus).*")'
+        - 'attributes["url.path"] != nil and IsMatch(attributes["url.path"], "(?i).*(health|metrics|prometheus).*")'
+        - 'attributes["http.target"] != nil and IsMatch(attributes["http.target"], "(?i).*(health|metrics|prometheus).*")'
+
+exporters:
+  # Jaeger all-in-one ingests OTLP directly (COLLECTOR_OTLP_ENABLED=true).
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  # Re-expose OTLP metrics on :8889 for Prometheus (see prometheus.yml).
+  prometheus:
+    endpoint: 0.0.0.0:8889
+
+service:
+  telemetry:
+    logs:
+      level: warn
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [filter/noise, batch]
+      exporters: [otlp/jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]

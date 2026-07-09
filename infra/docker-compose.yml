@@ -13,12 +13,24 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     ports: ["5672:5672", "15672:15672"]
+    # Keep broker state (incl. the Erlang cookie) on an ephemeral tmpfs so a
+    # fresh cookie is created on every start. Avoids the "Error when reading
+    # /var/lib/rabbitmq/.erlang.cookie: eacces" a stale anonymous volume can
+    # cause on Docker Desktop. Safe for a demo: the queues are transient.
+    tmpfs:
+      - /var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
       timeout: 5s
       retries: 12
 
+  # Zero-trust is OFF by default (AUTH_ENABLED unset → false), so the demo/e2e run open. To turn
+  # it on end-to-end, set AUTH_ENABLED=true AND AUTH_SHARED_SECRET=<32+ char key>: the SAME key is
+  # the HS256 signing secret on both the members validator (Auth__TestSigningKey) and the partners
+  # minter (AUTH_SERVICE_TOKEN_SECRET), which is what makes the RabbitMQ earn hop validate. Enabling
+  # AUTH_ENABLED without AUTH_SHARED_SECRET would dead-letter every earn — so they travel together.
+  # (Browser login additionally needs the frontends rebuilt with VITE_AUTH_ENABLED=true — see ADR-0007.)
   members:
     build: ../services/members
     environment:
@@ -26,6 +38,10 @@ services:
       SeedDemoData: "true"
       ASPNETCORE_URLS: http://+:8080
       RabbitMq__Host: rabbitmq
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: members
+      Auth__Enabled: ${AUTH_ENABLED:-false}
+      Auth__TestSigningKey: ${AUTH_SHARED_SECRET:-}
     ports: ["5080:8080"]
     depends_on:
       mongo:
@@ -37,6 +53,10 @@ services:
     build: ../services/partners
     environment:
       RABBITMQ_HOST: rabbitmq
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318 # Java OTel defaults to OTLP/HTTP
+      OTEL_SERVICE_NAME: partners
+      AUTH_ENABLED: ${AUTH_ENABLED:-false}
+      AUTH_SERVICE_TOKEN_SECRET: ${AUTH_SHARED_SECRET:-} # same value as members' Auth__TestSigningKey
     ports: ["8081:8080"]
     depends_on:
       rabbitmq:
@@ -48,8 +68,21 @@ services:
       MEMBERS_URL: http://members:8080
       PARTNERS_URL: http://partners:8080
       PORT: "4000"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: gateway
     ports: ["4000:4000"]
     depends_on: [members, partners]
+
+  # First-party OIDC/OAuth2 identity service (Spring Authorization Server).
+  # Issuer is the browser-facing URL; resource servers fetch JWKS internally.
+  security:
+    build: ../services/security
+    environment:
+      OIDC_ISSUER: http://localhost:9000
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318 # Java OTel defaults to OTLP/HTTP
+      OTEL_SERVICE_NAME: security
+    ports: ["9000:8080"]
+    depends_on: [otel-collector]
 
   member-portal:
     build: ../frontends/member-portal
@@ -79,8 +112,41 @@ services:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports: ["3000:3000"]
-    depends_on: [prometheus]
+    depends_on: [prometheus, jaeger, loki]
 
   points-engine:
     build: ../services/points-engine
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: points-engine
     ports: ["8082:8082"]
+
+  # ── Observability: traces (Jaeger), logs (Loki via Promtail), OTLP collector ──
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports: ["16686:16686"]
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.109.0
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./observability/otel-collector-config.yml:/etc/otel-collector-config.yml:ro
+    ports: ["4317:4317", "4318:4318"]
+    depends_on: [jaeger]
+
+  loki:
+    image: grafana/loki:3.1.1
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - ./observability/loki-config.yml:/etc/loki/config.yml:ro
+    ports: ["3100:3100"]
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./observability/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on: [loki]

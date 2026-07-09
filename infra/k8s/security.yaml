@@ -1,41 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: partners
+  name: security
   namespace: osprey
   labels:
-    app: partners
+    app: security
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: partners
+      app: security
   template:
     metadata:
       labels:
-        app: partners
+        app: security
     spec:
-      # k8s injects Docker-link-style env for every Service (e.g. RABBITMQ_PORT=tcp://IP:5672),
-      # which would clobber this app's own RABBITMQ_PORT and break Spring's spring.rabbitmq.port.
-      # Disable the legacy service links; we address services by DNS name instead.
-      enableServiceLinks: false
       containers:
-        - name: partners
-          image: osprey-loyalty-partners:latest
+        - name: security
+          image: osprey-loyalty-security:latest
           imagePullPolicy: Never # kind: image is side-loaded
           ports:
             - containerPort: 8080
           env:
-            - name: RABBITMQ_HOST
-              value: rabbitmq
-            - name: RABBITMQ_PORT
-              value: "5672"
+            - name: OIDC_ISSUER
+              value: http://localhost:9000
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://otel-collector:4318 # Java OTel defaults to OTLP/HTTP → the collector's HTTP receiver
             - name: OTEL_SERVICE_NAME
-              value: partners
-            # Auth is off by default; run-local-k8s.* turns it on at deploy time with
-            # `kubectl set env` (RS256 client-credentials), so no auth env is baked here. ADR-0007.
+              value: security
           readinessProbe:
             httpGet:
               path: /actuator/health
@@ -50,7 +42,7 @@ spec:
             periodSeconds: 20
           resources:
             requests:
-              cpu: 200m
+              cpu: 250m
               memory: 256Mi
             limits:
               cpu: 1000m
@@ -59,14 +51,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: partners
+  name: security
   namespace: osprey
   labels:
-    app: partners
+    app: security
 spec:
   type: ClusterIP
   selector:
-    app: partners
+    app: security
   ports:
     - port: 8080
       targetPort: 8080

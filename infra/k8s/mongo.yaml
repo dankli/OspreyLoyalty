@@ -1,12 +1,13 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: mongo
   namespace: osprey
   labels:
     app: mongo
 spec:
-  replicas: 1 # demo: single replica, emptyDir — data dies with the pod
+  serviceName: mongo # the headless Service below — gives the pod a stable DNS identity (mongo-0)
+  replicas: 1
   selector:
     matchLabels:
       app: mongo
@@ -15,13 +16,15 @@ spec:
       labels:
         app: mongo
     spec:
+      securityContext:
+        fsGroup: 999 # make the PVC writable by the mongodb group
       containers:
         - name: mongo
           image: mongo:7
           ports:
             - containerPort: 27017
           volumeMounts:
-            - name: mongo-data
+            - name: data
               mountPath: /data/db
           readinessProbe:
             tcpSocket:
@@ -40,9 +43,14 @@ spec:
             limits:
               cpu: 500m
               memory: 1Gi
-      volumes:
-        - name: mongo-data
-          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
 ---
 apiVersion: v1
 kind: Service
@@ -52,7 +60,7 @@ metadata:
   labels:
     app: mongo
 spec:
-  type: ClusterIP
+  clusterIP: None # headless: required by the StatefulSet; clients still resolve mongo:27017
   selector:
     app: mongo
   ports:

@@ -1,68 +1,63 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gateway
+  name: points-engine
   namespace: osprey
   labels:
-    app: gateway
+    app: points-engine
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: gateway
+      app: points-engine
   template:
     metadata:
       labels:
-        app: gateway
+        app: points-engine
     spec:
       containers:
-        - name: gateway
-          image: osprey-loyalty-gateway:latest
+        - name: points-engine
+          image: osprey-loyalty-points-engine:latest
           imagePullPolicy: Never # kind: image is side-loaded
           ports:
-            - containerPort: 4000
+            - containerPort: 8082
           env:
-            - name: MEMBERS_URL
-              value: http://members:8080
-            - name: PARTNERS_URL
-              value: http://partners:8080
-            - name: PORT
-              value: "4000"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://otel-collector:4318 # Node OTel exports OTLP/HTTP
+              value: http://otel-collector:4317
             - name: OTEL_SERVICE_NAME
-              value: gateway
+              value: points-engine
+            # Off the request path — left auth-off in k8s (see ADR-0007).
           readinessProbe:
             httpGet:
               path: /health
-              port: 4000
+              port: 8082
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /health
-              port: 4000
+              port: 8082
             initialDelaySeconds: 15
             periodSeconds: 20
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
+              cpu: 50m
+              memory: 32Mi
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 250m
+              memory: 128Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: gateway
+  name: points-engine
   namespace: osprey
   labels:
-    app: gateway
+    app: points-engine
 spec:
   type: ClusterIP
   selector:
-    app: gateway
+    app: points-engine
   ports:
-    - port: 4000
-      targetPort: 4000
+    - port: 8082
+      targetPort: 8082

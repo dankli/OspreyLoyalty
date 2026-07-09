@@ -1,0 +1,85 @@
+{
+  "uid": "osprey-logs-domain",
+  "title": "Osprey — Domain logs",
+  "tags": ["osprey", "logs"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "osprey-loki" },
+        "query": "label_values(service)",
+        "regex": "/^(members|gateway|partners|security|points-engine)$/",
+        "sort": 1,
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Log volume by service",
+      "type": "timeseries",
+      "datasource": { "type": "loki", "uid": "osprey-loki" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 40, "stacking": { "mode": "normal" } } } },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "queryType": "range",
+          "expr": "sum by (service) (count_over_time({namespace=\"osprey\", service=~\"$service\"} [$__auto]))",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Warnings & errors by service",
+      "type": "timeseries",
+      "datasource": { "type": "loki", "uid": "osprey-loki" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 40, "stacking": { "mode": "normal" } }, "color": { "mode": "fixed", "fixedColor": "red" } } },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "queryType": "range",
+          "expr": "sum by (service) (count_over_time({namespace=\"osprey\", service=~\"$service\", level=~\"(?i).*(error|warn).*|40|50\"} [$__auto]))",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Logs — expand a line and click its TraceID to open the trace dashboard",
+      "type": "logs",
+      "datasource": { "type": "loki", "uid": "osprey-loki" },
+      "gridPos": { "h": 15, "w": 24, "x": 0, "y": 8 },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "queryType": "range",
+          "expr": "{namespace=\"osprey\", service=~\"$service\"} | json | regexp `(?i)trace[_]?id[\"\\s:=]+(?P<tid>[0-9a-f]{16,32})` | line_format `{{with (or .level .LogLevel)}}{{printf \"%-5s\" .}} {{end}}{{or .Message .message .msg .fields_message __line__}}{{with .tid}}  traceId={{.}}{{end}}` | drop __error__, __error_details__"
+        }
+      ]
+    }
+  ]
+}

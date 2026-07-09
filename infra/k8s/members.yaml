@@ -30,6 +30,12 @@ spec:
               value: "true"
             - name: ASPNETCORE_URLS
               value: http://+:8080
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector:4317
+            - name: OTEL_SERVICE_NAME
+              value: members
+            # Auth is off by default; run-local-k8s.* turns it on at deploy time with
+            # `kubectl set env` (RS256/JWKS), so no auth env is baked here. See ADR-0007.
           readinessProbe:
             httpGet:
               path: /health

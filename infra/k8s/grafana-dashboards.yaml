@@ -1,0 +1,362 @@
+apiVersion: v1
+data:
+  osprey-logs-domain.json: |
+    {
+      "uid": "osprey-logs-domain",
+      "title": "Osprey — Domain logs",
+      "tags": ["osprey", "logs"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "10s",
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "service",
+            "label": "Service",
+            "type": "query",
+            "datasource": { "type": "loki", "uid": "osprey-loki" },
+            "query": "label_values(service)",
+            "regex": "/^(members|gateway|partners|security|points-engine)$/",
+            "sort": 1,
+            "refresh": 2,
+            "includeAll": true,
+            "multi": true,
+            "current": { "text": "All", "value": "$__all" }
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Log volume by service",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "osprey-loki" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 40, "stacking": { "mode": "normal" } } } },
+          "targets": [
+            {
+              "refId": "A",
+              "editorMode": "code",
+              "queryType": "range",
+              "expr": "sum by (service) (count_over_time({namespace=\"osprey\", service=~\"$service\"} [$__auto]))",
+              "legendFormat": "{{service}}"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Warnings & errors by service",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "osprey-loki" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 40, "stacking": { "mode": "normal" } }, "color": { "mode": "fixed", "fixedColor": "red" } } },
+          "targets": [
+            {
+              "refId": "A",
+              "editorMode": "code",
+              "queryType": "range",
+              "expr": "sum by (service) (count_over_time({namespace=\"osprey\", service=~\"$service\", level=~\"(?i).*(error|warn).*|40|50\"} [$__auto]))",
+              "legendFormat": "{{service}}"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Logs — expand a line and click its TraceID to open the trace dashboard",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "osprey-loki" },
+          "gridPos": { "h": 15, "w": 24, "x": 0, "y": 8 },
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "editorMode": "code",
+              "queryType": "range",
+              "expr": "{namespace=\"osprey\", service=~\"$service\"} | json | regexp `(?i)trace[_]?id[\"\\s:=]+(?P<tid>[0-9a-f]{16,32})` | line_format `{{with (or .level .LogLevel)}}{{printf \"%-5s\" .}} {{end}}{{or .Message .message .msg .fields_message __line__}}{{with .tid}}  traceId={{.}}{{end}}` | drop __error__, __error_details__"
+            }
+          ]
+        }
+      ]
+    }
+  osprey-logs-infra.json: |
+    {
+      "uid": "osprey-logs-infra",
+      "title": "Osprey — Infrastructure logs",
+      "tags": ["osprey", "logs"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "10s",
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "service",
+            "label": "Service",
+            "type": "query",
+            "datasource": { "type": "loki", "uid": "osprey-loki" },
+            "query": "label_values(service)",
+            "regex": "/^(?!(?:members|gateway|partners|security|points-engine)$)(.+)$/",
+            "sort": 1,
+            "refresh": 2,
+            "includeAll": true,
+            "multi": true,
+            "current": { "text": "All", "value": "$__all" }
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Log volume by component",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "osprey-loki" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 40, "stacking": { "mode": "normal" } } } },
+          "targets": [
+            {
+              "refId": "A",
+              "editorMode": "code",
+              "queryType": "range",
+              "expr": "sum by (service) (count_over_time({namespace=\"osprey\", service=~\"$service\"} [$__auto]))",
+              "legendFormat": "{{service}}"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Error / warning lines by component (matched in the log body)",
+          "type": "timeseries",
+          "datasource": { "type": "loki", "uid": "osprey-loki" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 40, "stacking": { "mode": "normal" } }, "color": { "mode": "fixed", "fixedColor": "red" } } },
+          "targets": [
+            {
+              "refId": "A",
+              "editorMode": "code",
+              "queryType": "range",
+              "expr": "sum by (service) (count_over_time({namespace=\"osprey\", service=~\"$service\"} |~ `(?i)\\b(error|err|warn|fatal|panic)\\b` [$__auto]))",
+              "legendFormat": "{{service}}"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "Logs — databases, broker, observability stack, gateways & frontends",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "osprey-loki" },
+          "gridPos": { "h": 15, "w": 24, "x": 0, "y": 8 },
+          "options": {
+            "showTime": true,
+            "wrapLogMessage": true,
+            "enableLogDetails": true,
+            "dedupStrategy": "none",
+            "sortOrder": "Descending"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "editorMode": "code",
+              "queryType": "range",
+              "expr": "{namespace=\"osprey\", service=~\"$service\"} | json | line_format `{{with (or .level .LogLevel .s .severity)}}{{printf \"%-5s\" .}} {{end}}{{or .Message .message .msg .fields_message __line__}}` | drop __error__, __error_details__"
+            }
+          ]
+        }
+      ]
+    }
+  osprey-red.json: "{\r\n  \"uid\": \"osprey-red\",\r\n  \"title\": \"Osprey RED\",\r\n
+    \ \"schemaVersion\": 39,\r\n  \"version\": 1,\r\n  \"editable\": true,\r\n  \"refresh\":
+    \"5s\",\r\n  \"time\": { \"from\": \"now-15m\", \"to\": \"now\" },\r\n  \"timezone\":
+    \"browser\",\r\n  \"panels\": [\r\n    {\r\n      \"id\": 1,\r\n      \"type\":
+    \"timeseries\",\r\n      \"title\": \"Members - Request Rate\",\r\n      \"datasource\":
+    { \"type\": \"prometheus\", \"uid\": \"osprey-prom\" },\r\n      \"gridPos\":
+    { \"h\": 8, \"w\": 8, \"x\": 0, \"y\": 0 },\r\n      \"fieldConfig\": { \"defaults\":
+    { \"unit\": \"reqps\" }, \"overrides\": [] },\r\n      \"targets\": [\r\n        {\r\n
+    \         \"refId\": \"A\",\r\n          \"datasource\": { \"type\": \"prometheus\",
+    \"uid\": \"osprey-prom\" },\r\n          \"expr\": \"sum(rate(http_request_duration_seconds_count{job=\\\"members\\\"}[1m]))\",\r\n
+    \         \"legendFormat\": \"req/s\"\r\n        }\r\n      ]\r\n    },\r\n    {\r\n
+    \     \"id\": 2,\r\n      \"type\": \"timeseries\",\r\n      \"title\": \"Members
+    - Error Rate (5xx)\",\r\n      \"datasource\": { \"type\": \"prometheus\", \"uid\":
+    \"osprey-prom\" },\r\n      \"gridPos\": { \"h\": 8, \"w\": 8, \"x\": 8, \"y\":
+    0 },\r\n      \"fieldConfig\": { \"defaults\": { \"unit\": \"reqps\" }, \"overrides\":
+    [] },\r\n      \"targets\": [\r\n        {\r\n          \"refId\": \"A\",\r\n
+    \         \"datasource\": { \"type\": \"prometheus\", \"uid\": \"osprey-prom\"
+    },\r\n          \"expr\": \"sum(rate(http_request_duration_seconds_count{job=\\\"members\\\",code=~\\\"5..\\\"}[1m]))\",\r\n
+    \         \"legendFormat\": \"5xx/s\"\r\n        }\r\n      ]\r\n    },\r\n    {\r\n
+    \     \"id\": 3,\r\n      \"type\": \"timeseries\",\r\n      \"title\": \"Members
+    - p95 Latency\",\r\n      \"datasource\": { \"type\": \"prometheus\", \"uid\":
+    \"osprey-prom\" },\r\n      \"gridPos\": { \"h\": 8, \"w\": 8, \"x\": 16, \"y\":
+    0 },\r\n      \"fieldConfig\": { \"defaults\": { \"unit\": \"s\" }, \"overrides\":
+    [] },\r\n      \"targets\": [\r\n        {\r\n          \"refId\": \"A\",\r\n
+    \         \"datasource\": { \"type\": \"prometheus\", \"uid\": \"osprey-prom\"
+    },\r\n          \"expr\": \"histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\\\"members\\\"}[5m]))
+    by (le))\",\r\n          \"legendFormat\": \"p95\"\r\n        }\r\n      ]\r\n
+    \   },\r\n    {\r\n      \"id\": 4,\r\n      \"type\": \"timeseries\",\r\n      \"title\":
+    \"Gateway - Request Rate\",\r\n      \"datasource\": { \"type\": \"prometheus\",
+    \"uid\": \"osprey-prom\" },\r\n      \"gridPos\": { \"h\": 8, \"w\": 8, \"x\":
+    0, \"y\": 8 },\r\n      \"fieldConfig\": { \"defaults\": { \"unit\": \"reqps\"
+    }, \"overrides\": [] },\r\n      \"targets\": [\r\n        {\r\n          \"refId\":
+    \"A\",\r\n          \"datasource\": { \"type\": \"prometheus\", \"uid\": \"osprey-prom\"
+    },\r\n          \"expr\": \"sum(rate(http_request_duration_seconds_count{job=\\\"gateway\\\"}[1m]))\",\r\n
+    \         \"legendFormat\": \"req/s\"\r\n        }\r\n      ]\r\n    },\r\n    {\r\n
+    \     \"id\": 5,\r\n      \"type\": \"timeseries\",\r\n      \"title\": \"Gateway
+    - Error Rate (5xx)\",\r\n      \"datasource\": { \"type\": \"prometheus\", \"uid\":
+    \"osprey-prom\" },\r\n      \"gridPos\": { \"h\": 8, \"w\": 8, \"x\": 8, \"y\":
+    8 },\r\n      \"fieldConfig\": { \"defaults\": { \"unit\": \"reqps\" }, \"overrides\":
+    [] },\r\n      \"targets\": [\r\n        {\r\n          \"refId\": \"A\",\r\n
+    \         \"datasource\": { \"type\": \"prometheus\", \"uid\": \"osprey-prom\"
+    },\r\n          \"expr\": \"sum(rate(http_request_duration_seconds_count{job=\\\"gateway\\\",status=~\\\"5..\\\"}[1m]))\",\r\n
+    \         \"legendFormat\": \"5xx/s\"\r\n        }\r\n      ]\r\n    },\r\n    {\r\n
+    \     \"id\": 6,\r\n      \"type\": \"timeseries\",\r\n      \"title\": \"Gateway
+    - p95 Latency\",\r\n      \"datasource\": { \"type\": \"prometheus\", \"uid\":
+    \"osprey-prom\" },\r\n      \"gridPos\": { \"h\": 8, \"w\": 8, \"x\": 16, \"y\":
+    8 },\r\n      \"fieldConfig\": { \"defaults\": { \"unit\": \"s\" }, \"overrides\":
+    [] },\r\n      \"targets\": [\r\n        {\r\n          \"refId\": \"A\",\r\n
+    \         \"datasource\": { \"type\": \"prometheus\", \"uid\": \"osprey-prom\"
+    },\r\n          \"expr\": \"histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\\\"gateway\\\"}[5m]))
+    by (le))\",\r\n          \"legendFormat\": \"p95\"\r\n        }\r\n      ]\r\n
+    \   },\r\n    {\r\n      \"id\": 7,\r\n      \"type\": \"timeseries\",\r\n      \"title\":
+    \"Partners - Request Rate\",\r\n      \"datasource\": { \"type\": \"prometheus\",
+    \"uid\": \"osprey-prom\" },\r\n      \"gridPos\": { \"h\": 8, \"w\": 8, \"x\":
+    0, \"y\": 16 },\r\n      \"fieldConfig\": { \"defaults\": { \"unit\": \"reqps\"
+    }, \"overrides\": [] },\r\n      \"targets\": [\r\n        {\r\n          \"refId\":
+    \"A\",\r\n          \"datasource\": { \"type\": \"prometheus\", \"uid\": \"osprey-prom\"
+    },\r\n          \"expr\": \"sum(rate(http_server_requests_seconds_count{job=\\\"partners\\\"}[1m]))\",\r\n
+    \         \"legendFormat\": \"req/s\"\r\n        }\r\n      ]\r\n    },\r\n    {\r\n
+    \     \"id\": 8,\r\n      \"type\": \"timeseries\",\r\n      \"title\": \"Partners
+    - Error Rate (5xx)\",\r\n      \"datasource\": { \"type\": \"prometheus\", \"uid\":
+    \"osprey-prom\" },\r\n      \"gridPos\": { \"h\": 8, \"w\": 8, \"x\": 8, \"y\":
+    16 },\r\n      \"fieldConfig\": { \"defaults\": { \"unit\": \"reqps\" }, \"overrides\":
+    [] },\r\n      \"targets\": [\r\n        {\r\n          \"refId\": \"A\",\r\n
+    \         \"datasource\": { \"type\": \"prometheus\", \"uid\": \"osprey-prom\"
+    },\r\n          \"expr\": \"sum(rate(http_server_requests_seconds_count{job=\\\"partners\\\",status=~\\\"5..\\\"}[1m]))\",\r\n
+    \         \"legendFormat\": \"5xx/s\"\r\n        }\r\n      ]\r\n    },\r\n    {\r\n
+    \     \"id\": 9,\r\n      \"type\": \"timeseries\",\r\n      \"title\": \"Partners
+    - p95 Latency\",\r\n      \"datasource\": { \"type\": \"prometheus\", \"uid\":
+    \"osprey-prom\" },\r\n      \"gridPos\": { \"h\": 8, \"w\": 8, \"x\": 16, \"y\":
+    16 },\r\n      \"fieldConfig\": { \"defaults\": { \"unit\": \"s\" }, \"overrides\":
+    [] },\r\n      \"targets\": [\r\n        {\r\n          \"refId\": \"A\",\r\n
+    \         \"datasource\": { \"type\": \"prometheus\", \"uid\": \"osprey-prom\"
+    },\r\n          \"expr\": \"histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\\\"partners\\\"}[5m]))
+    by (le))\",\r\n          \"legendFormat\": \"p95\"\r\n        }\r\n      ]\r\n
+    \   }\r\n  ]\r\n}\r\n"
+  osprey-trace-detail.json: |
+    {
+      "uid": "osprey-trace",
+      "title": "Osprey — Trace detail",
+      "tags": ["osprey"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "traceId",
+            "label": "Trace ID",
+            "type": "textbox",
+            "query": "",
+            "current": { "text": "", "value": "" }
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Trace $traceId",
+          "type": "traces",
+          "datasource": { "type": "jaeger", "uid": "osprey-jaeger" },
+          "gridPos": { "h": 24, "w": 24, "x": 0, "y": 0 },
+          "targets": [
+            { "refId": "A", "query": "$traceId" }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "Logs for this trace",
+          "type": "logs",
+          "datasource": { "type": "loki", "uid": "osprey-loki" },
+          "gridPos": { "h": 12, "w": 24, "x": 0, "y": 24 },
+          "options": { "showTime": true, "wrapLogMessage": true, "enableLogDetails": true, "sortOrder": "Ascending" },
+          "targets": [
+            {
+              "refId": "A",
+              "editorMode": "code",
+              "queryType": "range",
+              "expr": "{namespace=\"osprey\"} |= \"$traceId\" | json | line_format `{{with (or .level .LogLevel)}}{{printf \"%-5s\" .}} {{end}}{{or .Message .message .msg .fields_message __line__}}` | drop __error__, __error_details__"
+            }
+          ]
+        }
+      ]
+    }
+  osprey-traces.json: |
+    {
+      "uid": "osprey-traces",
+      "title": "Osprey — Traces",
+      "tags": ["osprey"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "10s",
+      "time": { "from": "now-1h", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "service",
+            "label": "Service",
+            "type": "custom",
+            "query": "members,gateway,partners,security,points-engine",
+            "current": { "text": "members", "value": "members" }
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 1,
+          "title": "Recent traces — $service (click a Trace ID to open it in the trace dashboard)",
+          "type": "table",
+          "datasource": { "type": "jaeger", "uid": "osprey-jaeger" },
+          "gridPos": { "h": 20, "w": 24, "x": 0, "y": 0 },
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": [
+              {
+                "matcher": { "id": "byName", "options": "traceID" },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Open trace dashboard",
+                        "url": "/d/osprey-trace/osprey-trace-detail?var-traceId=${__value.raw}&${__url_time_range}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "queryType": "search",
+              "service": "$service"
+            }
+          ]
+        }
+      ]
+    }
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: osprey
+  labels:
+    app: grafana

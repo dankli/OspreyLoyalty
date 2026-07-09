@@ -1,0 +1,140 @@
+# Traefik v3 as the ingress controller for the Osprey stack — a modern alternative to ingress-nginx.
+# Kept in this subdirectory so the default `kubectl apply -f infra/k8s` (non-recursive) does NOT pull
+# it in; run-local-k8s applies `infra/k8s/ingress/` only in ingress mode. On Docker Desktop the
+# LoadBalancer Service binds to localhost, so Traefik answers on http://localhost:80 and routes by the
+# Host header — pair it with *.localtest.me (which resolves to 127.0.0.1) for hostname-based access.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: traefik
+  namespace: osprey
+  labels: { app: traefik }
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: traefik-ingress
+  labels: { app: traefik }
+rules:
+  - apiGroups: [""]
+    resources: [services, endpoints, secrets, nodes]
+    verbs: [get, list, watch]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    verbs: [get, list, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses, ingressclasses]
+    verbs: [get, list, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses/status]
+    verbs: [update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: traefik-ingress
+  labels: { app: traefik }
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: traefik-ingress
+subjects:
+  - kind: ServiceAccount
+    name: traefik
+    namespace: osprey
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: traefik
+  labels: { app: traefik }
+spec:
+  controller: traefik.io/ingress-controller
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefik
+  namespace: osprey
+  labels: { app: traefik }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: traefik }
+  template:
+    metadata:
+      labels: { app: traefik }
+    spec:
+      serviceAccountName: traefik
+      containers:
+        - name: traefik
+          image: traefik:v3.1
+          args:
+            - --providers.kubernetesingress=true
+            - --providers.kubernetesingress.ingressclass=traefik
+            - --entrypoints.web.address=:80
+            - --entrypoints.websecure.address=:443
+            # TLS-terminate every router on :443 by default (cert comes from the Ingress tls secret via
+            # SNI). Without this, Ingress routers land on websecure WITHOUT tls and Traefik won't route
+            # TLS requests to them → 404 on HTTPS.
+            - --entrypoints.websecure.http.tls=true
+            # Send all plain-http traffic to https so browsers always land in a secure context
+            # (WebCrypto / crypto.subtle — which oidc-client-ts needs for PKCE — requires HTTPS on
+            # non-localhost hosts). The TLS cert comes from the Ingress `tls` secret (osprey-tls).
+            - --entrypoints.web.http.redirections.entrypoint.to=websecure
+            - --entrypoints.web.http.redirections.entrypoint.scheme=https
+            - --entrypoints.traefik.address=:8080
+            - --api.dashboard=true
+            - --api.insecure=true
+            - --ping=true
+            - --log.level=INFO
+          ports:
+            - name: web
+              containerPort: 80
+            - name: websecure
+              containerPort: 443
+            - name: dashboard
+              containerPort: 8080
+          readinessProbe:
+            httpGet: { path: /ping, port: 8080 }
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /ping, port: 8080 }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+  namespace: osprey
+  labels: { app: traefik }
+spec:
+  type: LoadBalancer
+  selector: { app: traefik }
+  ports:
+    - name: web
+      port: 80
+      targetPort: 80
+    - name: websecure
+      port: 443
+      targetPort: 443
+---
+# Dashboard reachable in-cluster / via its own ingress host (traefik.osprey.localtest.me).
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-dashboard
+  namespace: osprey
+  labels: { app: traefik }
+spec:
+  type: ClusterIP
+  selector: { app: traefik }
+  ports:
+    - name: dashboard
+      port: 8080
+      targetPort: 8080

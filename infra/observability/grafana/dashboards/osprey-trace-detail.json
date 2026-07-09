@@ -1,0 +1,48 @@
+{
+  "uid": "osprey-trace",
+  "title": "Osprey — Trace detail",
+  "tags": ["osprey"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "traceId",
+        "label": "Trace ID",
+        "type": "textbox",
+        "query": "",
+        "current": { "text": "", "value": "" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Trace $traceId",
+      "type": "traces",
+      "datasource": { "type": "jaeger", "uid": "osprey-jaeger" },
+      "gridPos": { "h": 24, "w": 24, "x": 0, "y": 0 },
+      "targets": [
+        { "refId": "A", "query": "$traceId" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Logs for this trace",
+      "type": "logs",
+      "datasource": { "type": "loki", "uid": "osprey-loki" },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 24 },
+      "options": { "showTime": true, "wrapLogMessage": true, "enableLogDetails": true, "sortOrder": "Ascending" },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "queryType": "range",
+          "expr": "{namespace=\"osprey\"} |= \"$traceId\" | json | line_format `{{with (or .level .LogLevel)}}{{printf \"%-5s\" .}} {{end}}{{or .Message .message .msg .fields_message __line__}}` | drop __error__, __error_details__"
+        }
+      ]
+    }
+  ]
+}

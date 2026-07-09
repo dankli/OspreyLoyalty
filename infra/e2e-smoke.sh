@@ -57,6 +57,33 @@ wait_for prometheus http://localhost:9090/-/ready
 wait_for grafana http://localhost:3000/api/health
 wait_for points-engine http://localhost:8082/health
 
+# ── Opt-in zero-trust check (auth is OFF by default, so the flow below needs no tokens) ──
+# When the stack is brought up with auth ON across the services (AUTH_ENABLED=true — see
+# ADR-0007), set AUTH_ENABLED=true for this script too: it fetches a service token from the
+# identity service and proves a protected endpoint rejects anonymous calls but accepts the
+# token. Admin flows (adjustments, rate updates) need a user login (authorization code + PKCE,
+# a browser flow), so the demo-flow sections below deliberately assume auth OFF.
+if [ "${AUTH_ENABLED:-}" = "true" ]; then
+  echo ""
+  echo "=== 2b. Zero-trust: token issuance and 401/200 (auth on) ==="
+  wait_for security http://localhost:9000/.well-known/openid-configuration
+  token=$(curl -fsS -X POST http://localhost:9000/oauth2/token \
+    -u partners-service:partners-secret \
+    -d 'grant_type=client_credentials&scope=member' \
+    | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+  [ -n "$token" ] || fail "identity service did not issue a client-credentials token"
+  echo "✓ identity service issued an access token"
+
+  anon_code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5080/api/members/demo-ada)
+  [ "$anon_code" = "401" ] || fail "expected 401 without a token, got $anon_code"
+  echo "✓ members rejects an anonymous request (401)"
+
+  auth_code=$(curl -s -o /dev/null -w '%{http_code}' \
+    -H "Authorization: Bearer $token" http://localhost:5080/api/members/demo-ada)
+  [ "$auth_code" = "200" ] || fail "expected 200 with a token, got $auth_code"
+  echo "✓ members accepts the bearer token (200)"
+fi
+
 echo ""
 echo "=== 3. Seeded data: demo-ada is SILVER ==="
 ada=$(curl -fsS http://localhost:5080/api/members/demo-ada)

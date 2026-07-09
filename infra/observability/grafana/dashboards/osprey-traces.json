@@ -1,0 +1,56 @@
+{
+  "uid": "osprey-traces",
+  "title": "Osprey — Traces",
+  "tags": ["osprey"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "custom",
+        "query": "members,gateway,partners,security,points-engine",
+        "current": { "text": "members", "value": "members" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Recent traces — $service (click a Trace ID to open it in the trace dashboard)",
+      "type": "table",
+      "datasource": { "type": "jaeger", "uid": "osprey-jaeger" },
+      "gridPos": { "h": 20, "w": 24, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "traceID" },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open trace dashboard",
+                    "url": "/d/osprey-trace/osprey-trace-detail?var-traceId=${__value.raw}&${__url_time_range}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "search",
+          "service": "$service"
+        }
+      ]
+    }
+  ]
+}

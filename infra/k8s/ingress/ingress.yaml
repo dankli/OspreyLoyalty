@@ -1,0 +1,96 @@
+# Host-based routing for the Osprey stack via Traefik. Hosts use *.osprey.localtest.me, a public
+# wildcard domain that resolves to 127.0.0.1 — no /etc/hosts editing needed on Docker Desktop, where
+# Traefik's LoadBalancer binds localhost:80. Frontends are built with these URLs (see run-local-k8s)
+# and the identity service is reconfigured to issue tokens with issuer http://id.osprey.localtest.me.
+#
+#   app      -> shell (module-federation host, the entry point)
+#   member   -> member-portal remote      admin -> admin-portal remote
+#   id       -> security (OIDC issuer)     api   -> gateway (GraphQL BFF)
+#   members / partners -> resource servers the admin portal calls directly
+#   grafana / jaeger / traefik -> ops dashboards
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: osprey
+  namespace: osprey
+  labels: { app: osprey }
+spec:
+  ingressClassName: traefik
+  # TLS for every host from one wildcard cert. run-local-k8s creates the `osprey-tls` secret from a
+  # mkcert-issued cert for *.osprey.localtest.me (locally trusted → no browser warnings, secure
+  # context so WebCrypto/PKCE works). If the secret is absent Traefik serves its default self-signed
+  # cert instead (browser warning, and cross-origin fetches to id./api. will fail until trusted).
+  tls:
+    - secretName: osprey-tls
+      hosts:
+        - app.osprey.localtest.me
+        - member.osprey.localtest.me
+        - admin.osprey.localtest.me
+        - id.osprey.localtest.me
+        - api.osprey.localtest.me
+        - members.osprey.localtest.me
+        - partners.osprey.localtest.me
+        - grafana.osprey.localtest.me
+        - jaeger.osprey.localtest.me
+        - traefik.osprey.localtest.me
+  rules:
+    - host: app.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: shell, port: { number: 80 } } }
+    - host: member.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: member-portal, port: { number: 80 } } }
+    - host: admin.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: admin-portal, port: { number: 80 } } }
+    - host: id.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: security, port: { number: 8080 } } }
+    - host: api.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: gateway, port: { number: 4000 } } }
+    - host: members.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: members, port: { number: 8080 } } }
+    - host: partners.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: partners, port: { number: 8080 } } }
+    - host: grafana.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: grafana, port: { number: 3000 } } }
+    - host: jaeger.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: jaeger, port: { number: 16686 } } }
+    - host: traefik.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: traefik-dashboard, port: { number: 8080 } } }

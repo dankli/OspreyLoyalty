@@ -1,0 +1,39 @@
+# Promtail — ships every compose container's stdout to Loki via the Docker
+# daemon. Language-agnostic: all four backends already log structured JSON with
+# correlationId (and, after Phase A, traceId), so one query traces a request
+# across services. The Docker socket is mounted read-only in docker-compose.yml.
+server:
+  http_listen_port: 9080
+  log_level: warn
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: ["__meta_docker_container_name"]
+        regex: "/(.*)"
+        target_label: container
+      - source_labels: ["__meta_docker_container_label_com_docker_compose_service"]
+        target_label: service
+    pipeline_stages:
+      # Drop health-check & metrics-scrape lines — pure probe/scrape noise, not real traffic.
+      - drop:
+          expression: ".*(/health|/metrics|/actuator/prometheus).*"
+          drop_counter_reason: probe_scrape_noise
+      # Best-effort parse of the JSON log line so level/correlationId/traceId
+      # become queryable labels; non-JSON lines pass through untouched.
+      - json:
+          expressions:
+            level: level
+            correlationId: correlationId
+            traceId: traceId
+      - labels:
+          level:
