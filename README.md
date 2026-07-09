@@ -83,22 +83,24 @@ with a demo user (`demo-ada` / `demo-erik` / `demo-yusra`, or `admin`).
 | https://jaeger.osprey.localtest.me | Jaeger — distributed traces |
 | https://traefik.osprey.localtest.me | Traefik dashboard |
 
-Hit the backends directly — the mkcert cert is trusted in the browser; for `curl` add `-k`:
+Two demos are open and answer plain `curl` against the ingress (the mkcert cert is trusted in the
+browser; add `-k` for curl):
 
 ```bash
-# a member's live profile (REST)
-curl -k https://members.osprey.localtest.me/api/members/demo-ada
-
-# the Rust points calculator (REST)
+# the Rust points calculator — off the request path, so no auth
 curl -k -X POST https://points-engine.osprey.localtest.me/calculate \
   -H "Content-Type: application/json" \
   -d '{"amount":"40000","rate":"0.5","promotions":[{"multiplier":"2.0"}]}'
 
-# the GraphQL gateway, via the ingress host
-curl -k -X POST https://api.osprey.localtest.me/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query":"mutation { redeem(memberId: \"demo-ada\", rewardId: \"cardco-giftcard\", idempotencyKey: \"k8s-demo-1\") { spendablePoints alreadyApplied } }"}'
+# any service's liveness endpoint
+curl -k https://api.osprey.localtest.me/health
 ```
+
+The member, partner and admin surfaces sit behind the **zero-trust layer**, which
+`run-local-k8s` turns on by default — so an unauthenticated call returns `401` (and a GraphQL
+mutation comes back with `"members service responded 401"`). To run the [Try it](#try-it) flows
+from the terminal against the ingress, start the cluster with `--no-auth`; in the browser, the
+portals sign you in and carry the token for you.
 
 ### Docker Compose / port-forward (localhost)
 
@@ -135,8 +137,11 @@ The stack seeds three members:
 
 ## Try it
 
-The commands below use the Compose/localhost URLs; in Kubernetes mode swap the host per the
-[URLs](#urls) table (and add `-k` for the local cert).
+The commands below use the Compose/localhost URLs. They run the same against the Kubernetes ingress
+hosts (swap the host per the [URLs](#urls) table, add `-k`) — but the cluster runs zero-trust auth
+**on** by default, so the earn, redeem and travel-agent calls (which touch members) return `401`
+there unless you start it with `--no-auth` or pass a bearer token. `points-engine` and `/health`
+answer either way.
 
 ### Earn
 
