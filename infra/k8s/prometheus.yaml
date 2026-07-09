@@ -6,11 +6,20 @@ metadata:
   labels:
     app: prometheus
 data:
-  # Mirrors infra/observability/prometheus.yml — the service names + ports match k8s, so it is
-  # reused verbatim. actuator/metrics endpoints stay public even with auth on (permitAll).
+  # The app scrape jobs mirror infra/observability/prometheus.yml — the service names + ports match
+  # k8s, so they are reused verbatim. actuator/metrics endpoints stay public even with auth on
+  # (permitAll). The cluster-metrics jobs at the bottom are k8s-only (kubelet/cAdvisor + the
+  # kube-state-metrics and node-exporter exporters) and have no Docker Compose equivalent.
   prometheus.yml: |
     global:
       scrape_interval: 5s
+    # Symptom-based (RED) alerting — rules live in the prometheus-alert-rules
+    # ConfigMap, mounted at /etc/prometheus/rules. See ADR-0013.
+    rule_files:
+      - /etc/prometheus/rules/alert-rules.yml
+    alerting:
+      alertmanagers:
+        - static_configs: [{ targets: ["alertmanager:9093"] }]
     scrape_configs:
       - job_name: members
         static_configs: [{ targets: ["members:8080"] }]
@@ -26,6 +35,188 @@ data:
         static_configs: [{ targets: ["security:8080"] }]
       - job_name: otel-collector
         static_configs: [{ targets: ["otel-collector:8889"] }]
+
+      # --- Cluster metrics (k8s-only; no Docker Compose equivalent) ---
+      # The kubelet's own metrics, scraped through the API server proxy so we don't depend on the
+      # kubelet's cert or the (disabled) read-only port. Needs the prometheus ServiceAccount's token
+      # and the nodes/proxy RBAC below.
+      - job_name: kubernetes-nodes
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs: [{ role: node }]
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics
+      # Per-container CPU/memory/network from the kubelet's cAdvisor endpoint (same proxy hop).
+      - job_name: kubernetes-cadvisor
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs: [{ role: node }]
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+      # k8s object state (deployments, pod phases, restarts). Single Deployment — static target.
+      - job_name: kube-state-metrics
+        static_configs: [{ targets: ["kube-state-metrics:8080"] }]
+      # node-level CPU/memory/disk/network. DaemonSet, so discover each pod via endpoints rather
+      # than load-balancing the Service, and label each series with its node name.
+      - job_name: node-exporter
+        kubernetes_sd_configs: [{ role: endpoints, namespaces: { names: [osprey] } }]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            regex: node-exporter
+            action: keep
+          - source_labels: [__meta_kubernetes_endpoint_node_name]
+            target_label: instance
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+  namespace: osprey
+  labels:
+    app: prometheus
+data:
+  # Mirrors infra/observability/alert-rules.yml — symptom-based (RED) alerts.
+  # Kept in sync by hand for the demo; a real deploy would generate both from
+  # one source. See ADR-0013 and docs/runbooks/.
+  alert-rules.yml: |
+    groups:
+      - name: osprey-availability
+        rules:
+          - alert: TargetDown
+            expr: up == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Target {{ $labels.job }} is down"
+              description: "Prometheus cannot scrape {{ $labels.job }} ({{ $labels.instance }}) for over 1 minute."
+              runbook: "docs/runbooks/target-down.md"
+      - name: osprey-errors
+        rules:
+          - alert: MembersHighErrorRate
+            expr: |
+              sum(rate(http_request_duration_seconds_count{job="members",code=~"5.."}[5m]))
+                / sum(rate(http_request_duration_seconds_count{job="members"}[5m])) > 0.05
+            for: 5m
+            labels:
+              severity: critical
+              service: members
+            annotations:
+              summary: "members 5xx ratio above 5%"
+              description: "members 5xx ratio over 5% for 5m (current: {{ $value | humanizePercentage }})."
+              runbook: "docs/runbooks/high-error-rate.md"
+          - alert: GatewayHighErrorRate
+            expr: |
+              sum(rate(http_request_duration_seconds_count{job="gateway",status=~"5.."}[5m]))
+                / sum(rate(http_request_duration_seconds_count{job="gateway"}[5m])) > 0.05
+            for: 5m
+            labels:
+              severity: critical
+              service: gateway
+            annotations:
+              summary: "gateway 5xx ratio above 5%"
+              description: "gateway 5xx ratio over 5% for 5m (current: {{ $value | humanizePercentage }})."
+              runbook: "docs/runbooks/high-error-rate.md"
+          - alert: PartnersHighErrorRate
+            expr: |
+              sum(rate(http_server_requests_seconds_count{job="partners",status=~"5.."}[5m]))
+                / sum(rate(http_server_requests_seconds_count{job="partners"}[5m])) > 0.05
+            for: 5m
+            labels:
+              severity: critical
+              service: partners
+            annotations:
+              summary: "partners 5xx ratio above 5%"
+              description: "partners 5xx ratio over 5% for 5m (current: {{ $value | humanizePercentage }})."
+              runbook: "docs/runbooks/high-error-rate.md"
+      - name: osprey-latency
+        rules:
+          - alert: MembersHighLatencyWarning
+            expr: |
+              histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="members"}[5m])) by (le)) > 0.3
+            for: 10m
+            labels:
+              severity: warning
+              service: members
+            annotations:
+              summary: "members p95 latency above 300ms"
+              description: "members p95 over 300ms for 10m (current: {{ $value | humanizeDuration }})."
+              runbook: "docs/runbooks/high-latency.md"
+          - alert: MembersHighLatencyCritical
+            expr: |
+              histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="members"}[5m])) by (le)) > 0.75
+            for: 5m
+            labels:
+              severity: critical
+              service: members
+            annotations:
+              summary: "members p95 latency above 750ms"
+              description: "members p95 over 750ms for 5m (current: {{ $value | humanizeDuration }})."
+              runbook: "docs/runbooks/high-latency.md"
+          - alert: GatewayHighLatencyWarning
+            expr: |
+              histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="gateway"}[5m])) by (le)) > 0.5
+            for: 10m
+            labels:
+              severity: warning
+              service: gateway
+            annotations:
+              summary: "gateway p95 latency above 500ms"
+              description: "gateway p95 over 500ms for 10m (current: {{ $value | humanizeDuration }})."
+              runbook: "docs/runbooks/high-latency.md"
+          - alert: GatewayHighLatencyCritical
+            expr: |
+              histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job="gateway"}[5m])) by (le)) > 1.0
+            for: 5m
+            labels:
+              severity: critical
+              service: gateway
+            annotations:
+              summary: "gateway p95 latency above 1s"
+              description: "gateway p95 over 1s for 5m (current: {{ $value | humanizeDuration }})."
+              runbook: "docs/runbooks/high-latency.md"
+          - alert: PartnersHighLatencyWarning
+            expr: |
+              histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job="partners"}[5m])) by (le)) > 0.3
+            for: 10m
+            labels:
+              severity: warning
+              service: partners
+            annotations:
+              summary: "partners p95 latency above 300ms"
+              description: "partners p95 over 300ms for 10m (current: {{ $value | humanizeDuration }})."
+              runbook: "docs/runbooks/high-latency.md"
+          - alert: PartnersHighLatencyCritical
+            expr: |
+              histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job="partners"}[5m])) by (le)) > 0.75
+            for: 5m
+            labels:
+              severity: critical
+              service: partners
+            annotations:
+              summary: "partners p95 latency above 750ms"
+              description: "partners p95 over 750ms for 5m (current: {{ $value | humanizeDuration }})."
+              runbook: "docs/runbooks/high-latency.md"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -44,6 +235,7 @@ spec:
       labels:
         app: prometheus
     spec:
+      serviceAccountName: prometheus
       containers:
         - name: prometheus
           image: prom/prometheus:v2.53.0
@@ -55,6 +247,9 @@ spec:
             - name: config
               mountPath: /etc/prometheus/prometheus.yml
               subPath: prometheus.yml
+              readOnly: true
+            - name: alert-rules
+              mountPath: /etc/prometheus/rules
               readOnly: true
           readinessProbe:
             httpGet:
@@ -79,6 +274,9 @@ spec:
         - name: config
           configMap:
             name: prometheus-config
+        - name: alert-rules
+          configMap:
+            name: prometheus-alert-rules
 ---
 apiVersion: v1
 kind: Service
@@ -95,3 +293,40 @@ spec:
     - name: http
       port: 9090
       targetPort: 9090
+---
+# RBAC so Prometheus can discover nodes and scrape the kubelet/cAdvisor through the API server proxy.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: osprey
+  labels:
+    app: prometheus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+  labels:
+    app: prometheus
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "nodes/proxy", "nodes/metrics", "services", "endpoints", "pods"]
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs: ["/metrics", "/metrics/cadvisor"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+  labels:
+    app: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: osprey

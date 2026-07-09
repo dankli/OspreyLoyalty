@@ -1,0 +1,207 @@
+# Symptom-based (RED) alerting rules for the Osprey loyalty demo.
+#
+# These fire on what a user would actually feel — requests failing, requests
+# getting slow, a service being gone — not on internal causes (CPU, GC, queue
+# depth). That is the RED method (Rate / Errors / Duration) and it keeps the
+# alert set small and honest. See ADR-0013.
+#
+# Metric names differ by stack, so the rules are grouped per exposition format:
+#   - members  + gateway   → http_request_duration_seconds_* (prometheus-net / prom-client)
+#                            members labels status as `code`, gateway as `status`.
+#   - partners             → http_server_requests_seconds_*   (Spring actuator/Micrometer)
+#   - points-engine        → has /metrics but no HTTP request histogram (Rust, off the
+#                            earn path per ADR-0006), so we only alert on target-down.
+#
+# Thresholds are demo-tuned, not derived from a real error budget burn-rate model.
+# `for:` windows are short so an alert is visible within a demo session; a real
+# deployment would widen them and add multi-window burn-rate alerting.
+
+groups:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Availability: is the scrape target up at all? This is the cheapest, most
+  # reliable signal — if Prometheus cannot scrape a service, nothing else the
+  # service reports can be trusted.
+  # ─────────────────────────────────────────────────────────────────────────
+  - name: osprey-availability
+    rules:
+      - alert: TargetDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Target {{ $labels.job }} is down"
+          description: >-
+            Prometheus has been unable to scrape {{ $labels.job }}
+            ({{ $labels.instance }}) for over 1 minute. The service is
+            crashed, unreachable, or not exposing /metrics.
+          runbook: "docs/runbooks/target-down.md"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Errors: ratio of 5xx responses to all responses. A ratio (not an absolute
+  # count) so a low-traffic demo does not fire on a single blip, and a busy
+  # service is not held to the same absolute bar as an idle one.
+  # ─────────────────────────────────────────────────────────────────────────
+  - name: osprey-errors
+    rules:
+      # members + gateway share http_request_duration_seconds_count, but the
+      # status label name differs (members: code, gateway: status), so they get
+      # one rule each rather than a fragile OR across label names.
+      - alert: MembersHighErrorRate
+        expr: |
+          sum(rate(http_request_duration_seconds_count{job="members",code=~"5.."}[5m]))
+            /
+          sum(rate(http_request_duration_seconds_count{job="members"}[5m]))
+            > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: members
+        annotations:
+          summary: "members 5xx ratio above 5%"
+          description: >-
+            More than 5% of members responses have been 5xx for 5 minutes
+            (current: {{ $value | humanizePercentage }}). The earn/redeem/dashboard
+            APIs are failing for some users.
+          runbook: "docs/runbooks/high-error-rate.md"
+
+      - alert: GatewayHighErrorRate
+        expr: |
+          sum(rate(http_request_duration_seconds_count{job="gateway",status=~"5.."}[5m]))
+            /
+          sum(rate(http_request_duration_seconds_count{job="gateway"}[5m]))
+            > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: gateway
+        annotations:
+          summary: "gateway 5xx ratio above 5%"
+          description: >-
+            More than 5% of gateway (GraphQL BFF) responses have been 5xx for
+            5 minutes (current: {{ $value | humanizePercentage }}). Every
+            frontend journey routes through the gateway, so this is user-facing.
+          runbook: "docs/runbooks/high-error-rate.md"
+
+      - alert: PartnersHighErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{job="partners",status=~"5.."}[5m]))
+            /
+          sum(rate(http_server_requests_seconds_count{job="partners"}[5m]))
+            > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: partners
+        annotations:
+          summary: "partners 5xx ratio above 5%"
+          description: >-
+            More than 5% of partners responses have been 5xx for 5 minutes
+            (current: {{ $value | humanizePercentage }}). Partner-facing earn
+            submission is degraded.
+          runbook: "docs/runbooks/high-error-rate.md"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Duration: p95 request latency. Two windows per service — a fast "warning"
+  # that catches a slow ramp and a slower "critical" that only fires on a
+  # sustained problem — a lightweight nod to multi-window alerting without a
+  # full burn-rate model.
+  # ─────────────────────────────────────────────────────────────────────────
+  - name: osprey-latency
+    rules:
+      - alert: MembersHighLatencyWarning
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="members"}[5m])) by (le)
+          ) > 0.3
+        for: 10m
+        labels:
+          severity: warning
+          service: members
+        annotations:
+          summary: "members p95 latency above 300ms"
+          description: >-
+            members p95 latency has been over 300ms for 10 minutes
+            (current: {{ $value | humanizeDuration }}). Approaching the latency SLO.
+          runbook: "docs/runbooks/high-latency.md"
+
+      - alert: MembersHighLatencyCritical
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="members"}[5m])) by (le)
+          ) > 0.75
+        for: 5m
+        labels:
+          severity: critical
+          service: members
+        annotations:
+          summary: "members p95 latency above 750ms"
+          description: >-
+            members p95 latency has been over 750ms for 5 minutes
+            (current: {{ $value | humanizeDuration }}). The latency SLO is being burned.
+          runbook: "docs/runbooks/high-latency.md"
+
+      - alert: GatewayHighLatencyWarning
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="gateway"}[5m])) by (le)
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          service: gateway
+        annotations:
+          summary: "gateway p95 latency above 500ms"
+          description: >-
+            gateway p95 latency has been over 500ms for 10 minutes
+            (current: {{ $value | humanizeDuration }}). The gateway fans out to
+            members + partners, so its budget is wider than a single backend.
+          runbook: "docs/runbooks/high-latency.md"
+
+      - alert: GatewayHighLatencyCritical
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="gateway"}[5m])) by (le)
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: critical
+          service: gateway
+        annotations:
+          summary: "gateway p95 latency above 1s"
+          description: >-
+            gateway p95 latency has been over 1s for 5 minutes
+            (current: {{ $value | humanizeDuration }}). User journeys feel broken.
+          runbook: "docs/runbooks/high-latency.md"
+
+      - alert: PartnersHighLatencyWarning
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_requests_seconds_bucket{job="partners"}[5m])) by (le)
+          ) > 0.3
+        for: 10m
+        labels:
+          severity: warning
+          service: partners
+        annotations:
+          summary: "partners p95 latency above 300ms"
+          description: >-
+            partners p95 latency has been over 300ms for 10 minutes
+            (current: {{ $value | humanizeDuration }}). Approaching the latency SLO.
+          runbook: "docs/runbooks/high-latency.md"
+
+      - alert: PartnersHighLatencyCritical
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_requests_seconds_bucket{job="partners"}[5m])) by (le)
+          ) > 0.75
+        for: 5m
+        labels:
+          severity: critical
+          service: partners
+        annotations:
+          summary: "partners p95 latency above 750ms"
+          description: >-
+            partners p95 latency has been over 750ms for 5 minutes
+            (current: {{ $value | humanizeDuration }}). The latency SLO is being burned.
+          runbook: "docs/runbooks/high-latency.md"

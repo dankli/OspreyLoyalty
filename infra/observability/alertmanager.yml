@@ -1,0 +1,42 @@
+# Minimal Alertmanager config for the Osprey demo.
+#
+# There is no real paging integration here — a demo has no on-call rotation —
+# so alerts are routed to a webhook receiver (points at a placeholder URL) and a
+# null receiver for warnings. The point is to demonstrate the wiring and the
+# routing/inhibition semantics, not to actually page anyone. Swap the webhook
+# for Slack/PagerDuty/email in a real deployment.
+
+route:
+  # Group alerts by service + name so one flapping service does not spam.
+  group_by: ["alertname", "service", "job"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  # Default: warnings go nowhere loud (they show on the Alertmanager UI).
+  receiver: "null"
+  routes:
+    # Critical alerts get "notified" via the demo webhook receiver.
+    - matchers:
+        - severity = "critical"
+      receiver: "webhook"
+
+receivers:
+  - name: "null"
+  - name: "webhook"
+    webhook_configs:
+      # Placeholder sink. In the demo nothing listens here; the config is valid
+      # and shows where a real notifier would plug in. `send_resolved` so the
+      # receiver would also see the "all clear".
+      - url: "http://127.0.0.1:5001/alerts"
+        send_resolved: true
+
+# Inhibition: if a service is fully down (TargetDown/critical), suppress the
+# noisier latency/error alerts for that same service — they are downstream
+# symptoms of the outage, not independent problems.
+inhibit_rules:
+  - source_matchers:
+      - alertname = "TargetDown"
+    target_matchers:
+      - severity =~ "warning|critical"
+    # Only inhibit alerts about the same service/job as the down target.
+    equal: ["job"]
