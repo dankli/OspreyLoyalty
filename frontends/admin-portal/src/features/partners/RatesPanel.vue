@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
-import { getPartners, updateRate } from "../api";
+import { getPartners, updateRate } from "./api";
 
 interface Row {
   id: string;

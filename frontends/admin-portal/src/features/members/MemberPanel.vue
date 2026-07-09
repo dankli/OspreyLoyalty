@@ -7,8 +7,8 @@ import {
   setOsprey,
   type MemberProfile,
   type Transaction,
-} from "../api";
-import i18n from "../i18n";
+} from "./api";
+import i18n from "../../i18n";
 
 const email = ref("");
 const profile = ref<MemberProfile | null>(null);

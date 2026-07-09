@@ -1,9 +1,9 @@
 <script setup lang="ts">
 // Deliberately small: two panels stacked on one page, no router.
 // Admin flows here are member lookup/adjustments and partner rates.
-import MemberPanel from "./components/MemberPanel.vue";
-import RatesPanel from "./components/RatesPanel.vue";
-import HelpButton from "./components/HelpButton.vue";
+import MemberPanel from "./features/members/MemberPanel.vue";
+import RatesPanel from "./features/partners/RatesPanel.vue";
+import HelpButton from "./HelpButton.vue";
 import { SUPPORTED_LANGUAGES, changeLanguage } from "./i18n";
 import { isAdmin } from "./auth";
 

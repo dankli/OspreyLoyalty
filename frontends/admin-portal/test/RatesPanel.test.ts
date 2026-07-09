@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
-import RatesPanel from "../src/components/RatesPanel.vue";
-import * as api from "../src/api";
+import RatesPanel from "../src/features/partners/RatesPanel.vue";
+import * as api from "../src/features/partners/api";
 
-vi.mock("../src/api");
+vi.mock("../src/features/partners/api");
 
 const partners: api.Partner[] = [
   { id: "p-1", name: "Talon Cafés", rate: 1.5 },

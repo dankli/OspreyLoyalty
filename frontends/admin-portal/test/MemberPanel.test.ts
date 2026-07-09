@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
-import MemberPanel from "../src/components/MemberPanel.vue";
-import * as api from "../src/api";
+import MemberPanel from "../src/features/members/MemberPanel.vue";
+import * as api from "../src/features/members/api";
 
-vi.mock("../src/api");
+vi.mock("../src/features/members/api");
 
 const profile: api.MemberProfile = {
   id: "m-1",

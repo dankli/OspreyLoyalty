@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { DOMWrapper, mount } from "@vue/test-utils";
-import HelpButton from "../src/components/HelpButton.vue";
+import HelpButton from "../src/HelpButton.vue";
 
 describe("HelpButton", () => {
   // The dialog is teleported to <body>, so assert/interact there (and clean up between tests).
