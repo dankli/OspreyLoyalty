@@ -140,8 +140,9 @@ The stack seeds three members:
 The commands below use the Compose/localhost URLs. They run the same against the Kubernetes ingress
 hosts (swap the host per the [URLs](#urls) table, add `-k`) — but the cluster runs zero-trust auth
 **on** by default, so the earn, redeem and travel-agent calls (which touch members) return `401`
-there unless you start it with `--no-auth` or pass a bearer token. `points-engine` and `/health`
-answer either way.
+there unless you start it with `--no-auth` or pass a bearer token (see
+[Against the Kubernetes ingress](#against-the-kubernetes-ingress-auth-on) below). `points-engine`
+and `/health` answer either way.
 
 ### Earn
 
@@ -209,6 +210,35 @@ docker compose -f infra/docker-compose.yml logs | grep my-trace-1
 
 Grafana ships pre-provisioned with a RED dashboard (request rate, error rate, p95 latency per
 service) alongside cluster/node/pod dashboards, all fed by Prometheus.
+
+### Against the Kubernetes ingress (auth on)
+
+To run the flows above against the ingress while zero-trust auth is on, grab a token from the
+identity service. The `partners-service` client uses the client-credentials grant, so no browser
+login is needed:
+
+```bash
+TOKEN=$(curl -sk -X POST https://id.osprey.localtest.me/oauth2/token \
+  -u partners-service:partners-secret \
+  -d grant_type=client_credentials -d scope=member \
+  | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
+```
+
+Send it as a bearer and the protected flows work against the ingress — the earn call returns `202`,
+and the same token unlocks the members reads and the gateway's GraphQL and travel-agent stream:
+
+```bash
+# earn — publishes the purchase event (HTTP 202); demo-erik climbs a moment later
+curl -k -X POST https://partners.osprey.localtest.me/partners/cardco/purchases \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"memberId":"demo-erik","amount":40000}'
+
+# and his updated profile
+curl -k -H "Authorization: Bearer $TOKEN" https://members.osprey.localtest.me/api/members/demo-erik
+```
+
+`partners-service` / `partners-secret` is the demo service client ([`AuthorizationServerConfig`](services/security/src/main/java/com/ospreyloyalty/security/AuthorizationServerConfig.java));
+if you just want to poke the endpoints without tokens, start the cluster with `--no-auth`.
 
 ## What's inside
 
