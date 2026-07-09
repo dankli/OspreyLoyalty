@@ -42,8 +42,8 @@ test("streams meta, tokens, suggestions and done for an affordable member", asyn
   expect(out).toContain('"spendablePoints":14500');
   expect(out).toContain("event: token");
   expect(out).toContain("event: suggestion");
-  expect(out).toContain("Mallorca"); // the goal trip
-  expect(out).toContain('"affordable":true');
+  expect(out).toContain('"affordable":false'); // a savings-goal card
+  expect(out).toContain('"affordable":true'); // at least one in-budget trip
   expect(out).toMatch(/event: done/);
   expect(res.ended).toBe(true);
 });
