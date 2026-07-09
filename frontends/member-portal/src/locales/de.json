@@ -1,5 +1,5 @@
 {
-  "nav": { "dashboard": "Übersicht", "transactions": "Transaktionen", "rewards": "Prämien", "language": "Sprache" },
+  "nav": { "dashboard": "Übersicht", "transactions": "Transaktionen", "rewards": "Prämien", "travelAgent": "Reiseberater", "language": "Sprache" },
   "dashboard": {
     "loading": "Konto wird geladen…",
     "error": "Mitglied konnte nicht geladen werden.",
@@ -32,6 +32,17 @@
     "redeem": "Einlösen",
     "redeemAria": "{{name}} einlösen",
     "cost": "{{cost}} Pkt."
+  },
+  "travelAgent": {
+    "title": "Reiseberater",
+    "intro": "Sag mir, wohin du möchtest — ich finde Reisen für zwei, die du mit deinen Punkten erreichst.",
+    "prompt": "Plane eine Reise für zwei Reisende, die ich mit meinen aktuellen Treuepunkten bezahlen kann. Schlage einige Optionen vor und eine zum Draufsparen.",
+    "promptLabel": "Deine Reiseanfrage",
+    "generate": "Vorschläge generieren",
+    "generating": "Denke nach…",
+    "error": "Der Reiseberater ist gerade nicht verfügbar. Bitte versuche es erneut.",
+    "canGo": "Du kannst sofort los",
+    "saveMore": "Spare {{points}} weitere Punkte"
   },
   "help": {
     "open": "Hilfe",

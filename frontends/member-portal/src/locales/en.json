@@ -1,5 +1,5 @@
 {
-  "nav": { "dashboard": "Dashboard", "transactions": "Transactions", "rewards": "Rewards", "language": "Language" },
+  "nav": { "dashboard": "Dashboard", "transactions": "Transactions", "rewards": "Rewards", "travelAgent": "Travel Agent", "language": "Language" },
   "dashboard": {
     "loading": "Loading your account…",
     "error": "Could not load member.",
@@ -32,6 +32,17 @@
     "redeem": "Redeem",
     "redeemAria": "Redeem {{name}}",
     "cost": "{{cost}} pts"
+  },
+  "travelAgent": {
+    "title": "Travel Agent",
+    "intro": "Tell me where you'd love to go — I'll find trips for two you can reach with your points.",
+    "prompt": "Plan a getaway for two travellers that I can afford with my current loyalty points. Suggest a few options, and one to save toward.",
+    "promptLabel": "Your travel request",
+    "generate": "Generate suggestions",
+    "generating": "Thinking…",
+    "error": "The travel agent is unavailable right now. Please try again.",
+    "canGo": "You can go now",
+    "saveMore": "Save {{points}} more points"
   },
   "help": {
     "open": "Help",

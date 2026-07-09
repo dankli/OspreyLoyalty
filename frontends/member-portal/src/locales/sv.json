@@ -1,5 +1,5 @@
 {
-  "nav": { "dashboard": "Översikt", "transactions": "Transaktioner", "rewards": "Förmåner", "language": "Språk" },
+  "nav": { "dashboard": "Översikt", "transactions": "Transaktioner", "rewards": "Förmåner", "travelAgent": "Reseagent", "language": "Språk" },
   "dashboard": {
     "loading": "Laddar ditt konto…",
     "error": "Kunde inte ladda medlem.",
@@ -32,6 +32,17 @@
     "redeem": "Lös in",
     "redeemAria": "Lös in {{name}}",
     "cost": "{{cost}} p"
+  },
+  "travelAgent": {
+    "title": "Reseagent",
+    "intro": "Berätta vart du vill resa — jag hittar resor för två som du når med dina poäng.",
+    "prompt": "Planera en resa för två resenärer som jag har råd med givet mina nuvarande lojalitetspoäng. Föreslå några alternativ, och ett att spara mot.",
+    "promptLabel": "Din reseförfrågan",
+    "generate": "Generera förslag",
+    "generating": "Tänker…",
+    "error": "Reseagenten är inte tillgänglig just nu. Försök igen.",
+    "canGo": "Du kan åka nu",
+    "saveMore": "Spara {{points}} poäng till"
   },
   "help": {
     "open": "Hjälp",

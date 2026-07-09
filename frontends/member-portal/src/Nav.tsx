@@ -16,6 +16,9 @@ export function Nav() {
       <NavLink to="/rewards" className={({ isActive }) => (isActive ? "active" : "")}>
         {t("nav.rewards")}
       </NavLink>
+      <NavLink to="/travel-agent" className={({ isActive }) => (isActive ? "active" : "")}>
+        {t("nav.travelAgent")}
+      </NavLink>
       <select
         className="lang-switch"
         aria-label={t("nav.language")}
