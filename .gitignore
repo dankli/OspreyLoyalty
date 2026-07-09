@@ -14,6 +14,7 @@ docs/superpowers/
 # Build output
 bin/
 obj/
+target/
 node_modules/
 dist/
 
@@ -23,3 +24,7 @@ dist/
 *.user
 .DS_Store
 Thumbs.db
+
+skills-lock.json
+.agents/
+.github/copilot-instructions.md

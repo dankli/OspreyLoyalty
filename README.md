@@ -18,6 +18,22 @@ A miniature airline-style loyalty platform, built in public as a demo of full-st
 docker compose -f infra/docker-compose.yml up --build
 ```
 
+Or use the convenience scripts, which build and start the stack, wait until the
+gateway and frontends answer, then print the relevant URLs:
+
+```powershell
+./run-docker-compose.ps1     # Windows          (-NoBuild, -Open)
+```
+
+```bash
+./run-docker-compose.sh      # Linux / macOS / Git Bash   (--no-build, --open)
+```
+
+Stop it again with `./stop-docker-compose.ps1` / `./stop-docker-compose.sh` (add `-Volumes` / `--volumes` to
+also wipe the seeded Mongo data), or `docker compose -f infra/docker-compose.yml down`.
+
+> The `-docker-compose` scripts run the stack in Docker Compose; `run-local-k8s.*` deploys it to Kubernetes instead.
+
 | URL | What |
 |---|---|
 | http://localhost:5170 | Shell — one page hosting both portals via module federation |
@@ -28,6 +44,10 @@ docker compose -f infra/docker-compose.yml up --build
 | http://localhost:8082 | Points engine (REST) |
 | http://localhost:9090 | Prometheus |
 | http://localhost:3000 | Grafana (admin/admin), with the RED dashboard pre-provisioned |
+| http://localhost:16686 | Jaeger — distributed traces across the services |
+| http://localhost:9000/.well-known/openid-configuration | Security — first-party OIDC identity service |
+
+The UI speaks five languages (English, Svenska, Español, Deutsch, Italiano) — switch with the selector in each portal's header — and every page has a "?" help dialog. Distributed traces land in Jaeger, logs in Loki (queryable in Grafana), and every service still exposes Prometheus metrics.
 
 The stack seeds three demo members:
 
@@ -94,21 +114,23 @@ The gateway accepts the id (or generates one), echoes it in the response, and fo
 
 ## What's deliberately missing
 
-There is no authentication anywhere, and CORS is wide open — a spec non-goal for this demo, so every endpoint you see above is exactly as public as it looks. In production the admin surfaces (point adjustments, PANDION invitations, partner rates) would sit behind OIDC with role checks, and the gateway would mask internal error details instead of passing them straight through (`maskedErrors: false` is a demo convenience, not a recommendation).
+Authentication now ships as an **opt-in zero-trust layer** (Phase 6): a first-party OIDC identity service ([`services/security`](services/security)) issues JWTs that every backend validates, with admin surfaces behind an `admin` role. It is gated per service by an `Auth:Enabled` / `AUTH_ENABLED` flag that defaults **off** — so the demo flows and the e2e suite stay open, and flipping it on secures the whole fleet without a code change ([ADR-0007](docs/decisions/0007-zero-trust-auth.md)). Still deliberately public: CORS is wide open, and the gateway passes internal error details straight through (`maskedErrors: false`) — demo conveniences, not recommendations. The remaining zero-trust surface is the async RabbitMQ earn hop, tracked as follow-up.
 
 ## What's inside
 
 | Path | Language | Role |
 |---|---|---|
-| [`services/members`](services/members) | C# / .NET 8 | Core domain: enrollment, profiles, the tier ladder |
+| [`services/members`](services/members) | C# / .NET 10 | Core domain: enrollment, profiles, the tier ladder |
 | [`services/gateway`](services/gateway) | TypeScript / Node 22 | GraphQL BFF for the frontends, plus a little REST |
 | [`services/partners`](services/partners) | Java 21 / Spring Boot | Partner earn simulations and the duplicate-delivery demo |
 | [`services/points-engine`](services/points-engine) | Rust | Pure points calculation with promotions, property-tested; deliberately not wired into the earn path ([docs/decisions/0006](docs/decisions/0006-rust-points-engine.md)) |
+| [`services/security`](services/security) | Java 21 / Spring Boot | First-party OIDC/OAuth2 identity service (Spring Authorization Server) — issues the JWTs the fleet validates ([docs/decisions/0007](docs/decisions/0007-zero-trust-auth.md)) |
 | [`frontends/member-portal`](frontends/member-portal) | React 19 | Member dashboard: balance, tier progress, benefits, rewards |
 | [`frontends/admin-portal`](frontends/admin-portal) | Vue 3 | Admin tools: member lookup, point adjustments, partner rates, PANDION invitations |
 | [`frontends/shell`](frontends/shell) | TypeScript | Micro-frontend host: one page composing both portals via module federation ([docs/decisions/0004](docs/decisions/0004-micro-frontend-tradeoff.md)) |
 
 That is the full fleet. Each service had to justify its existence before it appeared.
+Tier benefits are hardcoded in `services/members` for the demo; in production that content would live in a headless CMS such as Contentful.
 
 ## Kubernetes and IaC
 
@@ -119,11 +141,11 @@ The compose stack has a Kubernetes twin in [`infra/k8s`](infra/k8s) — kubeconf
 These are principles I claim on my CV. Here they are as code you can click:
 
 - **Vertical Slice Architecture.** One folder per feature, everything the feature needs in one place: [`Features/EnrollMember`](services/members/Osprey.Members/Features/EnrollMember) holds contracts, validation, handler and endpoint. The domain core ([`Tiers.Core.cs`](services/members/Osprey.Members/Features/Tiers/Tiers.Core.cs)) is pure and I/O-free, which makes it trivially testable.
-- **TDD, visibly.** The commit history shows tests driving the implementation. 141 tests across seven components (members 75, gateway 14, member portal 15, partners 12, admin portal 6, shell 2, points engine 17), including integration tests against a real Mongo and RabbitMQ via Testcontainers.
+- **TDD, visibly.** The commit history shows tests driving the implementation. 213 tests across eight components (members 106, points engine 25, partners 24, member portal 22, gateway 18, admin portal 13, security 3, shell 2), including integration tests against a real Mongo and RabbitMQ via Testcontainers, JWT auth tests (HS256 and RS256/JWKS, incl. the RabbitMQ hop), and per-language i18n tests.
 - **Exceptions on the edges.** Validation throws with a human message; one middleware in [`Program.cs`](services/members/Osprey.Members/Program.cs) turns expected failures into clean 400s. The happy path reads top to bottom, with no Result types threaded through every method.
 - **Bounded everything.** The Mongo lookup carries a 5-second cap ([`GetMemberProfile.Handler.cs`](services/members/Osprey.Members/Features/GetMemberProfile/GetMemberProfile.Handler.cs)); the gateway calls members with a 2-second timeout ([`membersClient.ts`](services/gateway/src/features/member/membersClient.ts)). Small habit, cheap insurance.
 - **Standards over invention.** GraphQL Yoga, zod, TanStack Query, GraphQL codegen, Testcontainers, minimal APIs. Boring, current, well-documented choices; the creativity budget goes to the domain.
-- **Microservices only when they pay for themselves.** Four deployables because showing four languages is the point of this repo. The Rust points engine ships with an ADR arguing why it deserves to be separate — and why it deliberately stays out of the earn path ([docs/decisions/0006](docs/decisions/0006-rust-points-engine.md)).
+- **Microservices only when they pay for themselves.** Five backend services across four languages, because showing the languages is the point of this repo. The Rust points engine ships with an ADR arguing why it deserves to be separate — and why it deliberately stays out of the earn path ([docs/decisions/0006](docs/decisions/0006-rust-points-engine.md)); the security service earns its keep as the first-party IdP ([docs/decisions/0007](docs/decisions/0007-zero-trust-auth.md)).
 
 ## AI-assisted development
 
@@ -131,15 +153,16 @@ This repo is built with agentic coding tools under disciplined human review. I w
 
 ## Roadmap
 
-All five phases are done:
+Phases 1–5 are done; **Phase 6 (enterprise)** is largely in place:
 
 - **Phase 1:** the walking skeleton — members domain with the tier ladder, GraphQL gateway, React member portal.
 - **Phase 2:** earn and tiers — partner purchases through RabbitMQ, idempotent ledger, rolling 12-month tier engine.
 - **Phase 3:** redemption with concurrency safety, point expiry, admin endpoints, plus a micro-frontend shell hosting a Vue admin portal next to the React member portal.
 - **Phase 4:** production polish — observability, correlation ids, Kubernetes manifests, IaC sample.
 - **Phase 5:** a Rust points engine, extracted from members with an ADR on why — and why it stays out of the earn path.
+- **Phase 6 (enterprise, in progress):** a first-party OIDC identity service with opt-in zero-trust JWT validation across every backend ([ADR-0007](docs/decisions/0007-zero-trust-auth.md)); OpenTelemetry distributed tracing in Jaeger and logs in Loki alongside the existing Prometheus metrics ([ADR-0008](docs/decisions/0008-opentelemetry-observability.md)); a five-language UI (sv/en/es/de/it) with an in-app help dialog on every page; and mobile-responsive frontends. Still to land: the RabbitMQ auth hop, browser OIDC login, and localized backend messages.
 
-A phase 6 would put promotions into the real earn path, add authentication, and run the stack highly available — each of which would first have to pay for itself.
+A future phase would put promotions into the real earn path and run the stack highly available — each of which would first have to pay for itself.
 
 ---
 

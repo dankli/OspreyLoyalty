@@ -12,7 +12,7 @@ There is a second forcing function that is honest to name: each service is meant
 
 Four services, plus three frontend artifacts that are not services.
 
-**`services/members` (C# / .NET 8)** — the core loyalty domain. Enrollment, the tier ladder, the points ledger, redemption, expiry. This is the service with the deepest quality bar; C# and .NET are the right tool for a domain-heavy core with strict TDD, Vertical Slice Architecture, and railway-oriented flow.
+**`services/members` (C# / .NET 10)** — the core loyalty domain. Enrollment, the tier ladder, the points ledger, redemption, expiry. This is the service with the deepest quality bar; C# and .NET are the right tool for a domain-heavy core with strict TDD, Vertical Slice Architecture, and railway-oriented flow.
 
 **`services/gateway` (TypeScript / Node 22)** — the BFF for both frontends. Owns the GraphQL schema the member portal queries, plus the REST proxy used for health checks and thin integrations. The aggregation and contract edge: it translates between the member portal's needs and the REST interfaces of members and partners, and it enforces a 2-second timeout on every upstream call. TypeScript on Node is the right fit for a layer that is mostly receiving, validating and reshaping JSON.
 
