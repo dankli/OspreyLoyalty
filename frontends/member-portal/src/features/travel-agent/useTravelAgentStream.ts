@@ -33,9 +33,12 @@ export function useTravelAgentStream(memberId: string) {
     // accept-language is a forbidden fetch header, so the language travels as a query param.
     const url = `${STREAM_BASE}?memberId=${encodeURIComponent(memberId)}&lang=${encodeURIComponent(i18n.language)}`;
     const token = getAccessToken();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000); // don't hang the UI on a stalled stream
     try {
       const response = await fetch(url, {
         headers: token ? { authorization: `Bearer ${token}` } : {},
+        signal: controller.signal,
       });
       if (!response.ok || !response.body) throw new Error(`stream responded ${response.status}`);
       const reader = response.body.getReader();
@@ -56,6 +59,8 @@ export function useTravelAgentStream(memberId: string) {
       for (const evt of flushed) apply(evt.event, evt.data, setState);
     } catch {
       setState((s) => ({ ...s, status: "error" }));
+    } finally {
+      clearTimeout(timeout);
     }
   }, [memberId]);
 
