@@ -174,23 +174,23 @@ public sealed class MembersApiTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Pandion_toggle_flips_tier_and_back()
+    public async Task Osprey_toggle_flips_tier_and_back()
     {
         HttpClient client = factory.CreateClient();
         HttpResponseMessage created = await client.PostAsJsonAsync("/api/members",
-            new { name = "Pandion Candidate", email = "pandion@example.com" });
+            new { name = "Osprey Candidate", email = "osprey@example.com" });
         string memberId = (await created.Content.ReadFromJsonAsync<EnrollMember.Response>())!.Id;
 
-        HttpResponseMessage granted = await client.PutAsJsonAsync($"/api/members/{memberId}/pandion",
+        HttpResponseMessage granted = await client.PutAsJsonAsync($"/api/members/{memberId}/osprey",
             new { invited = true });
         Assert.Equal(HttpStatusCode.OK, granted.StatusCode);
-        SetPandionInvitation.Response invited = (await granted.Content.ReadFromJsonAsync<SetPandionInvitation.Response>())!;
-        Assert.Equal("PANDION", invited.Tier);
+        SetOspreyInvitation.Response invited = (await granted.Content.ReadFromJsonAsync<SetOspreyInvitation.Response>())!;
+        Assert.Equal("OSPREY", invited.Tier);
         Assert.Null(invited.PointsToNextTier);
 
-        HttpResponseMessage revoked = await client.PutAsJsonAsync($"/api/members/{memberId}/pandion",
+        HttpResponseMessage revoked = await client.PutAsJsonAsync($"/api/members/{memberId}/osprey",
             new { invited = false });
-        SetPandionInvitation.Response member = (await revoked.Content.ReadFromJsonAsync<SetPandionInvitation.Response>())!;
+        SetOspreyInvitation.Response member = (await revoked.Content.ReadFromJsonAsync<SetOspreyInvitation.Response>())!;
         Assert.Equal("MEMBER", member.Tier);
     }
 

@@ -4,7 +4,7 @@
 
 ## Context
 
-Through phase 5 the platform had no authentication — a deliberate spec non-goal that the README called out. Phase 6 introduces enterprise identity: users log in, every service trusts a token rather than the network, and admin surfaces (point adjustments, PANDION invitations, partner rates) require a role. Three questions had to be answered: who issues tokens, how deeply they are validated, and how to add all this without breaking the running stack, the e2e smoke test, or the existing per-service test suites.
+Through phase 5 the platform had no authentication — a deliberate spec non-goal that the README called out. Phase 6 introduces enterprise identity: users log in, every service trusts a token rather than the network, and admin surfaces (point adjustments, OSPREY invitations, partner rates) require a role. Three questions had to be answered: who issues tokens, how deeply they are validated, and how to add all this without breaking the running stack, the e2e smoke test, or the existing per-service test suites.
 
 ## Decision
 

@@ -8,8 +8,8 @@
   },
   "points": { "spendable": "Verfügbare Punkte" },
   "tier": {
-    "pandion": "PANDION, auf Einladung.",
-    "diamond": "DIAMOND ist die höchste erreichbare Stufe. PANDION gibt es nur auf Einladung.",
+    "osprey": "OSPREY, auf Einladung.",
+    "diamond": "DIAMOND ist die höchste erreichbare Stufe. OSPREY gibt es nur auf Einladung.",
     "toNext": "{{points}} Punkte bis zur nächsten Stufe",
     "qualifyingNote": "Deine Stufe basiert auf {{points}} qualifizierenden Punkten der letzten 12 Monate — getrennt vom verfügbaren Guthaben oben."
   },
@@ -40,7 +40,7 @@
     "pointsHeading": "Verfügbare vs. qualifizierende Punkte",
     "pointsBody": "Verfügbare Punkte löst du gegen Prämien ein. Deine Stufe basiert auf qualifizierenden Punkten der letzten 12 Monate — eine separate Zahl, weshalb ein hohes Guthaben trotzdem in einer niedrigeren Stufe liegen kann.",
     "tiersHeading": "Stufen",
-    "tiersBody": "Du steigst von MEMBER über SILVER, GOLD und DIAMOND durch qualifizierende Punkte auf. PANDION ist die höchste Stufe nur auf Einladung und wird nie allein durch Punkte erreicht.",
+    "tiersBody": "Du steigst von MEMBER über SILVER, GOLD und DIAMOND durch qualifizierende Punkte auf. OSPREY ist die höchste Stufe nur auf Einladung und wird nie allein durch Punkte erreicht.",
     "rewardsHeading": "Prämien",
     "rewardsBody": "Das Einlösen einer Prämie bucht von deinem verfügbaren Guthaben ab. Ein erneuter Versuch derselben Einlösung belastet dich nie doppelt."
   }

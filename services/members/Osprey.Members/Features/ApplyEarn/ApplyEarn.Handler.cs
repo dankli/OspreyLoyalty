@@ -36,7 +36,7 @@ public static partial class ApplyEarn
             }
             catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
             {
-                Tiers.Tier current = Tiers.Effective(member.QualifyingPoints, member.IsPandionInvited);
+                Tiers.Tier current = Tiers.Effective(member.QualifyingPoints, member.IsOspreyInvited);
                 return new Result(AlreadyApplied: true, Points: 0, member.QualifyingPoints, current.ToString().ToUpperInvariant());
             }
 
@@ -55,7 +55,7 @@ public static partial class ApplyEarn
                     .Inc(m => m.SpendablePoints, points),
                 options: null, cts.Token);
 
-            Tiers.Tier tier = Tiers.Effective(qualifying, member.IsPandionInvited);
+            Tiers.Tier tier = Tiers.Effective(qualifying, member.IsOspreyInvited);
             return new Result(AlreadyApplied: false, points, qualifying, tier.ToString().ToUpperInvariant());
         }
     }

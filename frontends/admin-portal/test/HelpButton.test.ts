@@ -15,7 +15,7 @@ describe("HelpButton", () => {
     await wrapper.get('button[aria-label="Help"]').trigger("click");
     const dialog = document.body.querySelector('[role="dialog"]');
     expect(dialog).not.toBeNull();
-    expect(dialog!.textContent).toContain("PANDION");
+    expect(dialog!.textContent).toContain("OSPREY");
 
     const close = [...document.body.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Close")!;
     await new DOMWrapper(close).trigger("click");

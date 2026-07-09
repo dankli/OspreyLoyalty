@@ -13,4 +13,4 @@ public sealed record MemberDocument(
     DateTime JoinedAtUtc,
     int QualifyingPoints,
     int SpendablePoints,
-    bool IsPandionInvited = false); // set only by an admin/support flow (phase 3) — never derived from points
+    bool IsOspreyInvited = false); // set only by an admin/support flow (phase 3) — never derived from points

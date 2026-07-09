@@ -1,6 +1,6 @@
 # members
 
-The core domain service: enrollment, member profiles, and the tier ladder (MEMBER → SILVER at 20 000 → GOLD at 45 000 → DIAMOND at 90 000 qualifying points, plus PANDION, which is invitation-only and never computed from points).
+The core domain service: enrollment, member profiles, and the tier ladder (MEMBER → SILVER at 20 000 → GOLD at 45 000 → DIAMOND at 90 000 qualifying points, plus OSPREY, which is invitation-only and never computed from points).
 
 **Why C#:** this is the service with the deepest quality bar, and .NET is where I go for domain depth. Vertical Slice Architecture keeps each feature in one folder (`Features/EnrollMember`, `Features/GetMemberProfile`), and the pure domain core (`Features/Tiers/Tiers.Core.cs`) has no I/O at all, so the business rules test without any setup. Storage is MongoDB, standing in for Cosmos DB's Mongo API.
 

@@ -4,7 +4,7 @@ import {
   adjustPoints,
   findMemberByEmail,
   getTransactions,
-  setPandion,
+  setOsprey,
   type MemberProfile,
   type Transaction,
 } from "../api";
@@ -19,7 +19,7 @@ const adjustmentPoints = ref<number | null>(null);
 const adjustmentReason = ref("");
 const adjustmentError = ref("");
 
-const pandionError = ref("");
+const ospreyError = ref("");
 const busy = ref(false);
 
 // Seeded demo members (see SeedDemoData) — pick one to look it up without typing an email.
@@ -29,7 +29,7 @@ const demoMembers = [
   { name: "Yusra Ali", email: "yusra@example.com" },
 ];
 
-const isPandion = computed(() => profile.value?.tier === "PANDION");
+const isOsprey = computed(() => profile.value?.tier === "OSPREY");
 
 function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : "Something went wrong";
@@ -44,7 +44,7 @@ async function refresh() {
 async function lookUp() {
   lookupError.value = "";
   adjustmentError.value = "";
-  pandionError.value = "";
+  ospreyError.value = "";
   busy.value = true;
   try {
     await refresh();
@@ -81,19 +81,19 @@ async function submitAdjustment() {
   }
 }
 
-async function togglePandion() {
+async function toggleOsprey() {
   if (!profile.value) return;
-  const invited = !isPandion.value;
+  const invited = !isOsprey.value;
   const prompt = invited
     ? i18n.global.t("member.grantPrompt", { name: profile.value.name })
     : i18n.global.t("member.revokePrompt", { name: profile.value.name });
   if (!confirm(prompt)) return;
-  pandionError.value = "";
+  ospreyError.value = "";
   busy.value = true;
   try {
-    profile.value = await setPandion(profile.value.id, invited);
+    profile.value = await setOsprey(profile.value.id, invited);
   } catch (e) {
-    pandionError.value = errorMessage(e);
+    ospreyError.value = errorMessage(e);
   } finally {
     busy.value = false;
   }
@@ -128,7 +128,7 @@ async function togglePandion() {
       <div class="profile-card">
         <div class="profile-head">
           <strong>{{ profile.name }}</strong>
-          <span class="tier-badge" :class="{ pandion: isPandion }">{{ profile.tier }}</span>
+          <span class="tier-badge" :class="{ osprey: isOsprey }">{{ profile.tier }}</span>
         </div>
         <p class="muted">
           {{ profile.email }} · {{ $t("member.joined") }}
@@ -183,11 +183,11 @@ async function togglePandion() {
       </form>
       <p v-if="adjustmentError" class="error-text">{{ adjustmentError }}</p>
 
-      <h3>{{ $t("member.pandion") }}</h3>
-      <button class="pandion-toggle" :disabled="busy" @click="togglePandion">
-        {{ isPandion ? $t("member.revokePandion") : $t("member.grantPandion") }}
+      <h3>{{ $t("member.osprey") }}</h3>
+      <button class="osprey-toggle" :disabled="busy" @click="toggleOsprey">
+        {{ isOsprey ? $t("member.revokeOsprey") : $t("member.grantOsprey") }}
       </button>
-      <p v-if="pandionError" class="error-text">{{ pandionError }}</p>
+      <p v-if="ospreyError" class="error-text">{{ ospreyError }}</p>
     </template>
   </section>
 </template>

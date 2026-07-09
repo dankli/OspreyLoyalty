@@ -23,14 +23,14 @@ public sealed class GetMemberProfileCoreTests
     }
 
     [Fact]
-    public void Invited_member_is_pandion_with_no_next_tier()
+    public void Invited_member_is_osprey_with_no_next_tier()
     {
         var document = new MemberDocument(
             "x", "Top Flyer", "top@example.com", DateTime.UtcNow,
-            QualifyingPoints: 96_000, SpendablePoints: 0, IsPandionInvited: true);
+            QualifyingPoints: 96_000, SpendablePoints: 0, IsOspreyInvited: true);
 
         GetMemberProfile.Response response = GetMemberProfile.ToResponse(document);
-        Assert.Equal("PANDION", response.Tier);
+        Assert.Equal("OSPREY", response.Tier);
         Assert.Null(response.PointsToNextTier);
     }
 

@@ -5,10 +5,10 @@ using Osprey.Members.Storage;
 
 namespace Osprey.Members.Features;
 
-public static partial class SetPandionInvitation
+public static partial class SetOspreyInvitation
 {
     /// <summary>
-    /// This is the ONLY writer of IsPandionInvited in the entire system — PANDION is
+    /// This is the ONLY writer of IsOspreyInvited in the entire system — OSPREY is
     /// granted and revoked here, never computed.
     /// </summary>
     public sealed class Handler(IMongoCollection<MemberDocument> members)
@@ -23,7 +23,7 @@ public static partial class SetPandionInvitation
             cts.CancelAfter(TimeSpan.FromSeconds(MongoTimeoutSeconds)); // a hung Mongo must not hang the request
             MemberDocument? updated = await members.FindOneAndUpdateAsync<MemberDocument>(
                 m => m.Id == memberId,
-                Builders<MemberDocument>.Update.Set(m => m.IsPandionInvited, request.Invited),
+                Builders<MemberDocument>.Update.Set(m => m.IsOspreyInvited, request.Invited),
                 options: new FindOneAndUpdateOptions<MemberDocument> { ReturnDocument = ReturnDocument.After },
                 cts.Token);
 

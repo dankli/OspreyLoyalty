@@ -4,7 +4,7 @@
 # purchase that promotes demo-erik to SILVER, the duplicate-delivery
 # idempotency demo, a GraphQL dashboard query through the gateway, and the
 # phase 3 additions: redeem (with idempotent retry and the insufficient-points
-# guard), admin adjustments, the PANDION invitation toggle, partner rate
+# guard), admin adjustments, the OSPREY invitation toggle, partner rate
 # updates, and the micro-frontend shell + admin portal static hosts.
 set -euo pipefail
 
@@ -212,14 +212,14 @@ echo "$txs" | grep -q '"source":"admin: e2e goodwill"' || fail "adjustment sourc
 echo "✓ adjustment landed in the ledger with source 'admin: e2e goodwill'"
 
 echo ""
-echo "=== 12. PANDION invitation toggle on demo-erik ==="
-profile=$(curl -fsS -X PUT http://localhost:5080/api/members/demo-erik/pandion \
+echo "=== 12. OSPREY invitation toggle on demo-erik ==="
+profile=$(curl -fsS -X PUT http://localhost:5080/api/members/demo-erik/osprey \
   -H "Content-Type: application/json" -d '{"invited":true}')
-echo "$profile" | grep -q '"tier":"PANDION"' || fail "invitation did not make demo-erik PANDION: $profile"
-profile=$(curl -fsS -X PUT http://localhost:5080/api/members/demo-erik/pandion \
+echo "$profile" | grep -q '"tier":"OSPREY"' || fail "invitation did not make demo-erik OSPREY: $profile"
+profile=$(curl -fsS -X PUT http://localhost:5080/api/members/demo-erik/osprey \
   -H "Content-Type: application/json" -d '{"invited":false}')
 echo "$profile" | grep -q '"tier":"SILVER"' || fail "revoking the invitation did not restore SILVER: $profile"
-echo "✓ invitation flag flips demo-erik to PANDION and back to points-based SILVER"
+echo "✓ invitation flag flips demo-erik to OSPREY and back to points-based SILVER"
 
 echo ""
 echo "=== 13. Partner rate update ==="

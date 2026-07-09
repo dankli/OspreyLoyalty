@@ -21,7 +21,7 @@ public static partial class SeedDemoData
                 new DateTime(2025, 11, 2, 0, 0, 0, DateTimeKind.Utc), 4_200, 4_200),
             new("demo-yusra", "Yusra Ali", "yusra@example.com",
                 new DateTime(2023, 6, 30, 0, 0, 0, DateTimeKind.Utc), 96_000, 51_000,
-                IsPandionInvited: true), // the one PANDION demo member — invited, not earned
+                IsOspreyInvited: true), // the one OSPREY demo member — invited, not earned
         ];
 
         foreach (MemberDocument member in demo)

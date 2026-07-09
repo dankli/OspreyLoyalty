@@ -1,6 +1,6 @@
 /* ============================================================================
    Osprey Loyalty — "field-guide" design system (admin)
-   Palette drawn from Pandion haliaetus: espresso back-feathers, cream breast,
+   Palette drawn from Osprey haliaetus: espresso back-feathers, cream breast,
    charcoal eye-stripe and beak, and the sharp amber eye as the single accent.
    Kept in sync with frontends/member-portal/src/index.css and shell/src/style.css.
    ========================================================================== */
@@ -276,8 +276,8 @@ body::before {
   text-transform: uppercase;
   border: 1px solid var(--line-soft);
 }
-/* PANDION — the invitation-only top tier wears the eye */
-.tier-badge.pandion {
+/* OSPREY — the invitation-only top tier wears the eye */
+.tier-badge.osprey {
   background: linear-gradient(180deg, var(--amber-500), var(--amber-600));
   color: var(--accent-ink);
   border-color: transparent;
@@ -303,14 +303,14 @@ body::before {
 .positive { color: var(--ok); font-weight: 600; }
 .negative { color: var(--bad); font-weight: 600; }
 
-/* ── PANDION toggle ─────────────────────────────────────────────────────── */
-.pandion-toggle {
+/* ── OSPREY toggle ─────────────────────────────────────────────────────── */
+.osprey-toggle {
   background: transparent !important;
   color: var(--amber-500) !important;
   border: 1px solid var(--line) !important;
   box-shadow: none !important;
 }
-.pandion-toggle:hover:not(:disabled) { background: rgba(227, 174, 54, 0.1) !important; }
+.osprey-toggle:hover:not(:disabled) { background: rgba(227, 174, 54, 0.1) !important; }
 
 /* ── partner rates ──────────────────────────────────────────────────────── */
 .rate-list { list-style: none; padding: 0; margin: 0.9rem 0 0; display: flex; flex-direction: column; gap: 0.6rem; }

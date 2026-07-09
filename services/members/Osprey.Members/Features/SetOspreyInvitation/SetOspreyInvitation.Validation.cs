@@ -2,7 +2,7 @@
 
 namespace Osprey.Members.Features;
 
-public static partial class SetPandionInvitation
+public static partial class SetOspreyInvitation
 {
     public static class Validation
     {

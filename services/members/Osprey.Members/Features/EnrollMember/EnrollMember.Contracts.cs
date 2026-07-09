@@ -21,7 +21,7 @@ public static partial class EnrollMember
         document.Id,
         document.Name,
         document.Email,
-        Tiers.Effective(document.QualifyingPoints, document.IsPandionInvited).ToString().ToUpperInvariant(),
+        Tiers.Effective(document.QualifyingPoints, document.IsOspreyInvited).ToString().ToUpperInvariant(),
         document.QualifyingPoints,
         document.SpendablePoints,
         document.JoinedAtUtc);

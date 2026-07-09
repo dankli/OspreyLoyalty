@@ -19,7 +19,7 @@ onUnmounted(() => window.removeEventListener("keydown", onKey));
         <h2>{{ $t("help.title") }}</h2>
         <section><h3>{{ $t("help.lookupHeading") }}</h3><p>{{ $t("help.lookupBody") }}</p></section>
         <section><h3>{{ $t("help.adjustHeading") }}</h3><p>{{ $t("help.adjustBody") }}</p></section>
-        <section><h3>{{ $t("help.pandionHeading") }}</h3><p>{{ $t("help.pandionBody") }}</p></section>
+        <section><h3>{{ $t("help.ospreyHeading") }}</h3><p>{{ $t("help.ospreyBody") }}</p></section>
         <section><h3>{{ $t("help.ratesHeading") }}</h3><p>{{ $t("help.ratesBody") }}</p></section>
         <button type="button" class="help-close" @click="open = false">{{ $t("help.close") }}</button>
       </div>

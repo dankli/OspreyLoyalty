@@ -8,8 +8,8 @@
   },
   "points": { "spendable": "Puntos disponibles" },
   "tier": {
-    "pandion": "PANDION, por invitación.",
-    "diamond": "DIAMOND es el nivel ganado más alto. PANDION es solo por invitación.",
+    "osprey": "OSPREY, por invitación.",
+    "diamond": "DIAMOND es el nivel ganado más alto. OSPREY es solo por invitación.",
     "toNext": "{{points}} puntos para el siguiente nivel",
     "qualifyingNote": "Tu nivel refleja {{points}} puntos cualificados obtenidos en los últimos 12 meses, independientes del saldo disponible de arriba."
   },
@@ -40,7 +40,7 @@
     "pointsHeading": "Puntos disponibles frente a cualificados",
     "pointsBody": "Los puntos disponibles son los que canjeas por recompensas. Tu nivel se basa en los puntos cualificados obtenidos en los últimos 12 meses, una cifra distinta, por eso un saldo alto puede seguir en un nivel inferior.",
     "tiersHeading": "Niveles",
-    "tiersBody": "Subes de MEMBER a SILVER, GOLD y DIAMOND ganando puntos cualificados. PANDION es el nivel máximo solo por invitación y nunca se alcanza solo con puntos.",
+    "tiersBody": "Subes de MEMBER a SILVER, GOLD y DIAMOND ganando puntos cualificados. OSPREY es el nivel máximo solo por invitación y nunca se alcanza solo con puntos.",
     "rewardsHeading": "Recompensas",
     "rewardsBody": "Canjear una recompensa gasta de tu saldo disponible. Reintentar el mismo canje nunca te cobra dos veces."
   }

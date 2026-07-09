@@ -23,11 +23,11 @@
     "adjustReasonAria": "Motivo del ajuste",
     "adjustReasonPlaceholder": "Motivo",
     "applyAdjustment": "Aplicar ajuste",
-    "pandion": "PANDION",
-    "grantPandion": "Conceder invitación PANDION",
-    "revokePandion": "Revocar invitación PANDION",
-    "grantPrompt": "¿Conceder una invitación PANDION a {name}?",
-    "revokePrompt": "¿Revocar la invitación PANDION de {name}?"
+    "osprey": "OSPREY",
+    "grantOsprey": "Conceder invitación OSPREY",
+    "revokeOsprey": "Revocar invitación OSPREY",
+    "grantPrompt": "¿Conceder una invitación OSPREY a {name}?",
+    "revokePrompt": "¿Revocar la invitación OSPREY de {name}?"
   },
   "rates": { "title": "Tasas de puntos de socios", "rateFor": "Tasa para {name}", "save": "Guardar", "saved": "Guardado" },
   "help": {
@@ -38,8 +38,8 @@
     "lookupBody": "Busca un miembro por correo o elige uno de la lista de selección rápida. Su perfil, saldos y transacciones recientes se cargan abajo.",
     "adjustHeading": "Ajustar puntos",
     "adjustBody": "Introduce un número positivo para conceder puntos o uno negativo para restar. Se requiere un motivo que aparece en el historial del miembro; un ajuste nunca puede dejar el saldo en negativo.",
-    "pandionHeading": "Invitaciones PANDION",
-    "pandionBody": "Concede o revoca el nivel PANDION, solo por invitación. La invitación anula el nivel basado en puntos de ese miembro.",
+    "ospreyHeading": "Invitaciones OSPREY",
+    "ospreyBody": "Concede o revoca el nivel OSPREY, solo por invitación. La invitación anula el nivel basado en puntos de ese miembro.",
     "ratesHeading": "Tasas de socios",
     "ratesBody": "Edita la tasa de un socio y guarda. Las nuevas compras usan la tasa actualizada de inmediato."
   }

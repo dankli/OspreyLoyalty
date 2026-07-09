@@ -4,7 +4,7 @@ using Osprey.Members.Storage;
 
 namespace Osprey.Members.Features;
 
-public static partial class SetPandionInvitation
+public static partial class SetOspreyInvitation
 {
     public sealed record Request(bool Invited);
 
@@ -22,7 +22,7 @@ public static partial class SetPandionInvitation
 
     internal static Response ToResponse(MemberDocument document)
     {
-        Tiers.Tier tier = Tiers.Effective(document.QualifyingPoints, document.IsPandionInvited);
+        Tiers.Tier tier = Tiers.Effective(document.QualifyingPoints, document.IsOspreyInvited);
         return new Response(
             document.Id,
             document.Name,
@@ -30,7 +30,7 @@ public static partial class SetPandionInvitation
             tier.ToString().ToUpperInvariant(),
             document.QualifyingPoints,
             document.SpendablePoints,
-            tier == Tiers.Tier.Pandion ? null : Tiers.PointsToNext(document.QualifyingPoints),
+            tier == Tiers.Tier.Osprey ? null : Tiers.PointsToNext(document.QualifyingPoints),
             Tiers.BenefitsFor(tier),
             document.JoinedAtUtc);
     }

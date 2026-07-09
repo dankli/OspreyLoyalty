@@ -75,11 +75,11 @@ flowchart TD
 
 **member-portal** — the main user-facing app, built in React 19 with TanStack Query and GraphQL codegen against the gateway schema. The showpiece frontend: dashboard with tier progress, paginated transactions, rewards with optimistic UI, and a tier overview.
 
-**admin-portal** — a Vue 3 app for admin tasks: member lookup, manual point adjustments, partner rate editing, and PANDION invitations. Calls members and partners directly over REST rather than through the gateway, which is acceptable for an internal admin surface in a demo context with no auth.
+**admin-portal** — a Vue 3 app for admin tasks: member lookup, manual point adjustments, partner rate editing, and OSPREY invitations. Calls members and partners directly over REST rather than through the gateway, which is acceptable for an internal admin surface in a demo context with no auth.
 
 **gateway** — a TypeScript/Node 22 BFF using GraphQL Yoga. It owns the schema the member portal queries and enforces a 2-second timeout on every call to members and partners. Input validation with zod; environment validated at startup. The aggregation edge: member portal never calls backend services directly.
 
-**members** — the core loyalty domain, written in C# on .NET 10 with Vertical Slice Architecture. Handles enrollment, member profiles, the tier ladder (rolling 12-month window, MEMBER through DIAMOND thresholds, PANDION by invitation only), the points ledger, redemption, manual adjustments, and point expiry. Stores one document per member in MongoDB. The deepest quality surface in the repo: strict TDD, pure domain core with no I/O, idempotent event processing, and a showcase duplicate-delivery test.
+**members** — the core loyalty domain, written in C# on .NET 10 with Vertical Slice Architecture. Handles enrollment, member profiles, the tier ladder (rolling 12-month window, MEMBER through DIAMOND thresholds, OSPREY by invitation only), the points ledger, redemption, manual adjustments, and point expiry. Stores one document per member in MongoDB. The deepest quality surface in the repo: strict TDD, pure domain core with no I/O, idempotent event processing, and a showcase duplicate-delivery test.
 
 **partners** — a Java 21/Spring Boot service that simulates the three partner earn sources: CardCo, StayInn, and WheelsGo. On a purchase POST it computes points, assigns an idempotency key, and publishes an `EarnEvent` to RabbitMQ. Includes a `/duplicate-demo` endpoint that deliberately publishes the same event twice, proving downstream idempotency. Under zero-trust it also mints a short-lived HS256 service token and stamps it on each `EarnEvent` (the async leg of auth — ADR-0007).
 

@@ -12,8 +12,8 @@ export function TierProgress({ tier, qualifyingPoints, pointsToNextTier }: Props
       <div role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} className="bar">
         <div className="bar-fill" style={{ width: `${percent}%` }} />
       </div>
-      {tier === "PANDION" ? (
-        <p>{t("tier.pandion")}</p>
+      {tier === "OSPREY" ? (
+        <p>{t("tier.osprey")}</p>
       ) : pointsToNextTier === null ? (
         <p>{t("tier.diamond")}</p>
       ) : (

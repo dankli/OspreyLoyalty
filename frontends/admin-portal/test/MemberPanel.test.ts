@@ -83,20 +83,20 @@ describe("MemberPanel", () => {
     expect(wrapper.text()).toContain("Insufficient spendable balance");
   });
 
-  it("grants a PANDION invitation after confirmation", async () => {
-    vi.mocked(api.setPandion).mockResolvedValue({ ...profile, tier: "PANDION" });
+  it("grants an OSPREY invitation after confirmation", async () => {
+    vi.mocked(api.setOsprey).mockResolvedValue({ ...profile, tier: "OSPREY" });
     vi.stubGlobal("confirm", vi.fn().mockReturnValue(true));
     const wrapper = await lookedUpPanel();
 
-    const toggle = wrapper.get("button.pandion-toggle");
-    expect(toggle.text()).toBe("Grant PANDION invitation");
+    const toggle = wrapper.get("button.osprey-toggle");
+    expect(toggle.text()).toBe("Grant OSPREY invitation");
     await toggle.trigger("click");
     await flushPromises();
 
     expect(window.confirm).toHaveBeenCalled();
-    expect(api.setPandion).toHaveBeenCalledWith("m-1", true);
-    expect(wrapper.get(".tier-badge").text()).toBe("PANDION");
-    expect(wrapper.get("button.pandion-toggle").text()).toBe("Revoke PANDION invitation");
+    expect(api.setOsprey).toHaveBeenCalledWith("m-1", true);
+    expect(wrapper.get(".tier-badge").text()).toBe("OSPREY");
+    expect(wrapper.get("button.osprey-toggle").text()).toBe("Revoke OSPREY invitation");
 
     vi.unstubAllGlobals();
   });

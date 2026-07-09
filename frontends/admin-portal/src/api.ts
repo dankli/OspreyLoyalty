@@ -93,8 +93,8 @@ export function adjustPoints(
   });
 }
 
-export function setPandion(memberId: string, invited: boolean): Promise<MemberProfile> {
-  return request<MemberProfile>(`${MEMBERS_URL}/api/members/${memberId}/pandion`, {
+export function setOsprey(memberId: string, invited: boolean): Promise<MemberProfile> {
+  return request<MemberProfile>(`${MEMBERS_URL}/api/members/${memberId}/osprey`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ invited }),

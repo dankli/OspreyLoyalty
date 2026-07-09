@@ -9,8 +9,8 @@ test("shows tier and points remaining to the next one", () => {
   expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "71");
 });
 
-test("pandion says invitation instead of counting", () => {
-  render(<TierProgress tier="PANDION" qualifyingPoints={96000} pointsToNextTier={null} />);
+test("osprey says invitation instead of counting", () => {
+  render(<TierProgress tier="OSPREY" qualifyingPoints={96000} pointsToNextTier={null} />);
   expect(screen.getByText(/by invitation/i)).toBeInTheDocument();
 });
 

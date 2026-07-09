@@ -23,11 +23,11 @@
     "adjustReasonAria": "Adjustment reason",
     "adjustReasonPlaceholder": "Reason",
     "applyAdjustment": "Apply adjustment",
-    "pandion": "PANDION",
-    "grantPandion": "Grant PANDION invitation",
-    "revokePandion": "Revoke PANDION invitation",
-    "grantPrompt": "Grant a PANDION invitation to {name}?",
-    "revokePrompt": "Revoke the PANDION invitation for {name}?"
+    "osprey": "OSPREY",
+    "grantOsprey": "Grant OSPREY invitation",
+    "revokeOsprey": "Revoke OSPREY invitation",
+    "grantPrompt": "Grant an OSPREY invitation to {name}?",
+    "revokePrompt": "Revoke the OSPREY invitation for {name}?"
   },
   "rates": { "title": "Partner earn rates", "rateFor": "Rate for {name}", "save": "Save", "saved": "Saved" },
   "help": {
@@ -38,8 +38,8 @@
     "lookupBody": "Look a member up by email, or pick one from the quick-pick list. Their profile, balances and recent transactions load below.",
     "adjustHeading": "Adjusting points",
     "adjustBody": "Enter a positive number to grant points or a negative one to deduct. A reason is required and appears in the member's ledger; an adjustment can never overdraw a balance.",
-    "pandionHeading": "PANDION invitations",
-    "pandionBody": "Grant or revoke the invitation-only PANDION tier. The invitation overrides the points-based tier for that member.",
+    "ospreyHeading": "OSPREY invitations",
+    "ospreyBody": "Grant or revoke the invitation-only OSPREY tier. The invitation overrides the points-based tier for that member.",
     "ratesHeading": "Partner rates",
     "ratesBody": "Edit a partner's earn rate and save. New purchases use the updated rate immediately."
   }

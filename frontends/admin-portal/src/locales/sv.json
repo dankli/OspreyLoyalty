@@ -23,11 +23,11 @@
     "adjustReasonAria": "Justeringsorsak",
     "adjustReasonPlaceholder": "Orsak",
     "applyAdjustment": "Tillämpa justering",
-    "pandion": "PANDION",
-    "grantPandion": "Ge PANDION-inbjudan",
-    "revokePandion": "Återkalla PANDION-inbjudan",
-    "grantPrompt": "Ge en PANDION-inbjudan till {name}?",
-    "revokePrompt": "Återkalla PANDION-inbjudan för {name}?"
+    "osprey": "OSPREY",
+    "grantOsprey": "Ge OSPREY-inbjudan",
+    "revokeOsprey": "Återkalla OSPREY-inbjudan",
+    "grantPrompt": "Ge en OSPREY-inbjudan till {name}?",
+    "revokePrompt": "Återkalla OSPREY-inbjudan för {name}?"
   },
   "rates": { "title": "Partners intjäningssatser", "rateFor": "Sats för {name}", "save": "Spara", "saved": "Sparat" },
   "help": {
@@ -38,8 +38,8 @@
     "lookupBody": "Sök upp en medlem via e-post, eller välj en från snabbvalslistan. Profil, saldon och senaste transaktioner laddas nedan.",
     "adjustHeading": "Justera poäng",
     "adjustBody": "Ange ett positivt tal för att ge poäng eller ett negativt för att dra av. En orsak krävs och visas i medlemmens liggare; en justering kan aldrig göra saldot negativt.",
-    "pandionHeading": "PANDION-inbjudningar",
-    "pandionBody": "Ge eller återkalla den inbjudan-endast PANDION-nivån. Inbjudan åsidosätter den poängbaserade nivån för medlemmen.",
+    "ospreyHeading": "OSPREY-inbjudningar",
+    "ospreyBody": "Ge eller återkalla den inbjudan-endast OSPREY-nivån. Inbjudan åsidosätter den poängbaserade nivån för medlemmen.",
     "ratesHeading": "Partnersatser",
     "ratesBody": "Redigera en partners intjäningssats och spara. Nya köp använder den uppdaterade satsen direkt."
   }

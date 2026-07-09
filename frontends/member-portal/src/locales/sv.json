@@ -8,8 +8,8 @@
   },
   "points": { "spendable": "Spenderbara poäng" },
   "tier": {
-    "pandion": "PANDION, via inbjudan.",
-    "diamond": "DIAMOND är den högsta intjänade nivån. PANDION är endast via inbjudan.",
+    "osprey": "OSPREY, via inbjudan.",
+    "diamond": "DIAMOND är den högsta intjänade nivån. OSPREY är endast via inbjudan.",
     "toNext": "{{points}} poäng till nästa nivå",
     "qualifyingNote": "Din nivå baseras på {{points}} kvalificerande poäng intjänade de senaste 12 månaderna — separat från det spenderbara saldot ovan."
   },
@@ -40,7 +40,7 @@
     "pointsHeading": "Spenderbara kontra kvalificerande poäng",
     "pointsBody": "Spenderbara poäng är de du löser in mot förmåner. Din nivå baseras på kvalificerande poäng intjänade de senaste 12 månaderna — en separat siffra, vilket är varför ett stort saldo ändå kan ligga på en lägre nivå.",
     "tiersHeading": "Nivåer",
-    "tiersBody": "Du klättrar från MEMBER via SILVER, GOLD och DIAMOND genom att tjäna kvalificerande poäng. PANDION är den inbjudan-endast högsta nivån och nås aldrig av poäng enbart.",
+    "tiersBody": "Du klättrar från MEMBER via SILVER, GOLD och DIAMOND genom att tjäna kvalificerande poäng. OSPREY är den inbjudan-endast högsta nivån och nås aldrig av poäng enbart.",
     "rewardsHeading": "Förmåner",
     "rewardsBody": "Att lösa in en förmån drar från ditt spenderbara saldo. Att göra om samma inlösen debiterar dig aldrig två gånger."
   }

@@ -69,7 +69,7 @@ builder.Services.AddScoped<ListTransactions.Handler>();
 builder.Services.AddScoped<Redeem.Handler>();
 builder.Services.AddScoped<FindMemberByEmail.Handler>();
 builder.Services.AddScoped<AdjustPoints.Handler>();
-builder.Services.AddScoped<SetPandionInvitation.Handler>();
+builder.Services.AddScoped<SetOspreyInvitation.Handler>();
 builder.Services.AddCors();
 
 // Zero-trust JWT validation — opt-in via Auth:Enabled so tests and local dev stay
@@ -171,14 +171,14 @@ Rewards.MapEndpoints(app);
 Redeem.MapEndpoints(app);
 var findByEmail = FindMemberByEmail.MapEndpoints(app);
 var adjust = AdjustPoints.MapEndpoints(app);
-var pandion = SetPandionInvitation.MapEndpoints(app);
+var osprey = SetOspreyInvitation.MapEndpoints(app);
 if (authEnabled)
 {
     // Admin surfaces require the admin role; the member endpoints above just need a
     // valid token (fallback policy). health/metrics stay anonymous for probes/scrapes.
     findByEmail.RequireAuthorization("admin");
     adjust.RequireAuthorization("admin");
-    pandion.RequireAuthorization("admin");
+    osprey.RequireAuthorization("admin");
 }
 app.MapMetrics().AllowAnonymous(); // Prometheus scrape endpoint at /metrics
 

@@ -55,7 +55,7 @@ The stack seeds three demo members:
 |---|---|---|
 | `demo-ada` | SILVER | 32 000 qualifying points, part-way to GOLD at 45 000; 14 500 spendable |
 | `demo-erik` | MEMBER | A recent joiner at the bottom of the ladder |
-| `demo-yusra` | PANDION | The invitation-only top tier. Her 96 000 points would make her DIAMOND; the invitation flag wins, and no code anywhere computes PANDION from points |
+| `demo-yusra` | OSPREY | The invitation-only top tier. Her 96 000 points would make her DIAMOND; the invitation flag wins, and no code anywhere computes OSPREY from points |
 
 ### Try the earn flow
 
@@ -126,7 +126,7 @@ Authentication now ships as an **opt-in zero-trust layer** (Phase 6): a first-pa
 | [`services/points-engine`](services/points-engine) | Rust | Pure points calculation with promotions, property-tested; deliberately not wired into the earn path ([docs/decisions/0006](docs/decisions/0006-rust-points-engine.md)) |
 | [`services/security`](services/security) | Java 21 / Spring Boot | First-party OIDC/OAuth2 identity service (Spring Authorization Server) — issues the JWTs the fleet validates ([docs/decisions/0007](docs/decisions/0007-zero-trust-auth.md)) |
 | [`frontends/member-portal`](frontends/member-portal) | React 19 | Member dashboard: balance, tier progress, benefits, rewards |
-| [`frontends/admin-portal`](frontends/admin-portal) | Vue 3 | Admin tools: member lookup, point adjustments, partner rates, PANDION invitations |
+| [`frontends/admin-portal`](frontends/admin-portal) | Vue 3 | Admin tools: member lookup, point adjustments, partner rates, OSPREY invitations |
 | [`frontends/shell`](frontends/shell) | TypeScript | Micro-frontend host: one page composing both portals via module federation ([docs/decisions/0004](docs/decisions/0004-micro-frontend-tradeoff.md)) |
 
 That is the full fleet. Each service had to justify its existence before it appeared.
@@ -166,4 +166,4 @@ A future phase would put promotions into the real earn path and run the stack hi
 
 ---
 
-*The name comes from* Pandion haliaetus, *the osprey — the bird behind the top tier's name.*
+*The name comes from* Pandion haliaetus, *the osprey — the bird the platform is named for, and whose name its summit shares: the top tier is OSPREY.*

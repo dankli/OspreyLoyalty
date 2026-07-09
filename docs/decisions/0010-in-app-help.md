@@ -8,7 +8,7 @@ The domain has concepts that are not self-evident from the UI — most sharply t
 
 ## Decision
 
-**A reusable "?" trigger + focus-trapped modal per framework** (a React `HelpButton.tsx` in member-portal, a Vue `HelpButton.vue` in admin-portal), with an accessible dialog (`role="dialog"`, ESC/overlay close, focus trap). **Help content lives in the i18n catalogs under `help.*` keys**, so it is translated by the same mechanism as everything else (ADR-0009) and ships in all five languages for free — no separate content pipeline. Content covers the spendable-vs-qualifying distinction, the tier ladder and PANDION, earn/redeem, and the admin actions and partner rates.
+**A reusable "?" trigger + focus-trapped modal per framework** (a React `HelpButton.tsx` in member-portal, a Vue `HelpButton.vue` in admin-portal), with an accessible dialog (`role="dialog"`, ESC/overlay close, focus trap). **Help content lives in the i18n catalogs under `help.*` keys**, so it is translated by the same mechanism as everything else (ADR-0009) and ships in all five languages for free — no separate content pipeline. Content covers the spendable-vs-qualifying distinction, the tier ladder and OSPREY, earn/redeem, and the admin actions and partner rates.
 
 ## Alternatives considered
 

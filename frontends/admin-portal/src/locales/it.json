@@ -23,11 +23,11 @@
     "adjustReasonAria": "Motivo della rettifica",
     "adjustReasonPlaceholder": "Motivo",
     "applyAdjustment": "Applica rettifica",
-    "pandion": "PANDION",
-    "grantPandion": "Concedi invito PANDION",
-    "revokePandion": "Revoca invito PANDION",
-    "grantPrompt": "Concedere un invito PANDION a {name}?",
-    "revokePrompt": "Revocare l'invito PANDION per {name}?"
+    "osprey": "OSPREY",
+    "grantOsprey": "Concedi invito OSPREY",
+    "revokeOsprey": "Revoca invito OSPREY",
+    "grantPrompt": "Concedere un invito OSPREY a {name}?",
+    "revokePrompt": "Revocare l'invito OSPREY per {name}?"
   },
   "rates": { "title": "Tassi di accumulo partner", "rateFor": "Tasso per {name}", "save": "Salva", "saved": "Salvato" },
   "help": {
@@ -38,8 +38,8 @@
     "lookupBody": "Cerca un membro tramite email o scegline uno dalla selezione rapida. Profilo, saldi e transazioni recenti si caricano sotto.",
     "adjustHeading": "Rettifica punti",
     "adjustBody": "Inserisci un numero positivo per accreditare punti o negativo per detrarre. È richiesto un motivo che appare nel registro del membro; una rettifica non può mai portare il saldo sotto zero.",
-    "pandionHeading": "Inviti PANDION",
-    "pandionBody": "Concedi o revoca il livello PANDION, solo su invito. L'invito prevale sul livello basato sui punti per quel membro.",
+    "ospreyHeading": "Inviti OSPREY",
+    "ospreyBody": "Concedi o revoca il livello OSPREY, solo su invito. L'invito prevale sul livello basato sui punti per quel membro.",
     "ratesHeading": "Tassi partner",
     "ratesBody": "Modifica il tasso di accumulo di un partner e salva. I nuovi acquisti usano subito il tasso aggiornato."
   }

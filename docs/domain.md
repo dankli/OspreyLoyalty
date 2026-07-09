@@ -18,9 +18,9 @@ The membership level assigned to a member. Five levels exist:
 | SILVER  | 20 000                                        |
 | GOLD    | 45 000                                        |
 | DIAMOND | 90 000                                        |
-| PANDION | Invitation only — no threshold                |
+| OSPREY | Invitation only — no threshold                |
 
-Tier is recomputed on every earn event. A member drops a tier when the rolling window rolls off enough qualifying points. PANDION is granted exclusively by the `SetPandionInvitation` admin endpoint (`PUT /api/members/{id}/pandion`) via an `IsPandionInvited` flag; no other code path writes this flag. The criteria are secret and the points engine never computes PANDION from points. An invited PANDION member is unaffected by window roll-off.
+Tier is recomputed on every earn event. A member drops a tier when the rolling window rolls off enough qualifying points. OSPREY is granted exclusively by the `SetOspreyInvitation` admin endpoint (`PUT /api/members/{id}/osprey`) via an `IsOspreyInvited` flag; no other code path writes this flag. The criteria are secret and the points engine never computes OSPREY from points. An invited OSPREY member is unaffected by window roll-off.
 
 **PointsTransaction**
 An immutable ledger entry. Every change to a member's points balance is represented as a transaction. Fields: `id`, `memberId`, `type` (earn / burn / expiry / adjustment), `points` (signed integer — positive for earn/adjustment credit, negative for burn/expiry/adjustment debit), `source` (the partner id for earns), `idempotencyKey`, `occurredAtUtc`.
@@ -88,7 +88,7 @@ A tier-linked perk displayed to the member. No points logic — display only. Ex
 
 1. **Earn formula.** Base: `points = floor(amount × rate)`. The rate is the partner's configured rate-per-currency-unit and travels with the `EarnEvent`. When promotions apply (points-engine only): `points = floor(amount × rate × Π multiplier)`, where `Π multiplier` is the product of all active promotion multipliers. The members service always uses the base formula; the promotion form is evaluated exclusively by the points-engine.
 
-2. **Tier qualification.** Qualifying points are the sum of earn transactions in a rolling 12-month window. Tier is recomputed after every earn event using the thresholds in the table above. A member's tier can decrease when old earn transactions fall out of the window. An invited PANDION member's tier is unaffected by any window computation.
+2. **Tier qualification.** Qualifying points are the sum of earn transactions in a rolling 12-month window. Tier is recomputed after every earn event using the thresholds in the table above. A member's tier can decrease when old earn transactions fall out of the window. An invited OSPREY member's tier is unaffected by any window computation.
 
 3. **Idempotency.** The same `EarnEvent` (same `idempotencyKey`) processed twice must produce exactly one `PointsTransaction`. This is enforced by a unique MongoDB index on `PointsTransaction.idempotencyKey`; a duplicate-key error is treated as "already applied" (ADR-0002). The duplicate-delivery test is a first-class showcase in the test suite.
 
