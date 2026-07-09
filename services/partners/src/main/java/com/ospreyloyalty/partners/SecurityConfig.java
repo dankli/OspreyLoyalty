@@ -11,8 +11,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * Zero-trust JWT validation, opt-in via {@code osprey.auth.enabled} so the existing
@@ -27,7 +31,11 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http,
 			@Value("${osprey.auth.enabled:false}") boolean authEnabled) throws Exception {
-		http.csrf((csrf) -> csrf.disable());
+		// CORS must live in the security chain: its CorsFilter runs before authentication and answers
+		// the (credential-less) OPTIONS preflight, which anyRequest().authenticated() would otherwise
+		// reject with a 401 that carries no CORS headers (the admin portal calls this API cross-origin).
+		http.csrf((csrf) -> csrf.disable())
+				.cors(Customizer.withDefaults());
 		if (authEnabled) {
 			http.authorizeHttpRequests((authorize) -> authorize
 							.requestMatchers("/health", "/actuator/**").permitAll()
@@ -39,6 +47,18 @@ public class SecurityConfig {
 			http.authorizeHttpRequests((authorize) -> authorize.anyRequest().permitAll());
 		}
 		return http.build();
+	}
+
+	/** Wide-open CORS for the demo (the admin portal calls this API directly from the browser). */
+	@Bean
+	CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration config = new CorsConfiguration();
+		config.setAllowedOriginPatterns(List.of("*"));
+		config.setAllowedMethods(List.of("*"));
+		config.setAllowedHeaders(List.of("*"));
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", config);
+		return source;
 	}
 
 	private static JwtAuthenticationConverter rolesConverter() {
