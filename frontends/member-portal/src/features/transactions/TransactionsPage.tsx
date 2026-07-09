@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { graphql } from "../../gql";
 import { gatewayClient } from "../../gatewayClient";
 import { filterTransactions, type TransactionFilter } from "./filterTransactions";
@@ -23,6 +24,7 @@ const transactionsQuery = graphql(`
 const filters: TransactionFilter[] = ["all", "earn", "burn", "expiry", "adjustment"];
 
 export function TransactionsPage({ memberId }: { memberId: string }) {
+  const { t } = useTranslation();
   const [page, setPage] = useState(0);
   const [filter, setFilter] = useState<TransactionFilter>("all");
   const { data, isPending, isError } = useQuery({
@@ -30,17 +32,17 @@ export function TransactionsPage({ memberId }: { memberId: string }) {
     queryFn: () => gatewayClient.request(transactionsQuery, { memberId, page }),
   });
 
-  if (isPending) return <p className="muted">Loading transactions…</p>;
-  if (isError || !data.transactions) return <p role="alert">Could not load transactions.</p>;
+  if (isPending) return <p className="muted">{t("tx.loading")}</p>;
+  if (isError || !data.transactions) return <p role="alert">{t("tx.error")}</p>;
 
   const { items, hasMore } = data.transactions;
   const visible = filterTransactions(items, filter);
 
   return (
     <main className="dashboard">
-      <h1>Transactions</h1>
+      <h1>{t("tx.title")}</h1>
       <label htmlFor="tx-filter">
-        Type{" "}
+        {t("tx.type")}{" "}
         <select
           id="tx-filter"
           value={filter}
@@ -48,7 +50,7 @@ export function TransactionsPage({ memberId }: { memberId: string }) {
         >
           {filters.map((f) => (
             <option key={f} value={f}>
-              {f}
+              {t(`tx.filter.${f}`)}
             </option>
           ))}
         </select>
@@ -56,22 +58,22 @@ export function TransactionsPage({ memberId }: { memberId: string }) {
       <table className="transactions">
         <thead>
           <tr>
-            <th>When</th>
-            <th>Type</th>
-            <th>Source</th>
-            <th>Points</th>
+            <th>{t("tx.col.when")}</th>
+            <th>{t("tx.col.type")}</th>
+            <th>{t("tx.col.source")}</th>
+            <th>{t("tx.col.points")}</th>
           </tr>
         </thead>
         <tbody>
-          {visible.map((t) => (
-            <tr key={t.id}>
-              <td>{new Date(t.occurredAtUtc).toLocaleDateString("sv-SE")}</td>
+          {visible.map((tx) => (
+            <tr key={tx.id}>
+              <td>{new Date(tx.occurredAtUtc).toLocaleDateString("sv-SE")}</td>
               <td>
-                <span className={`type-badge type-${t.type}`}>{t.type}</span>
+                <span className={`type-badge type-${tx.type}`}>{tx.type}</span>
               </td>
-              <td>{t.source}</td>
-              <td className={t.points < 0 ? "negative" : "positive"}>
-                {t.points.toLocaleString("sv-SE")}
+              <td>{tx.source}</td>
+              <td className={tx.points < 0 ? "negative" : "positive"}>
+                {tx.points.toLocaleString("sv-SE")}
               </td>
             </tr>
           ))}
@@ -79,11 +81,11 @@ export function TransactionsPage({ memberId }: { memberId: string }) {
       </table>
       <div className="pager">
         <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
-          Previous
+          {t("tx.previous")}
         </button>
-        <span className="muted">Page {page + 1}</span>
+        <span className="muted">{t("tx.page", { page: page + 1 })}</span>
         <button disabled={!hasMore} onClick={() => setPage((p) => p + 1)}>
-          Next
+          {t("tx.next")}
         </button>
       </div>
     </main>

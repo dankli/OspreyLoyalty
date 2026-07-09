@@ -1,0 +1,47 @@
+{
+  "nav": { "dashboard": "Übersicht", "transactions": "Transaktionen", "rewards": "Prämien", "language": "Sprache" },
+  "dashboard": {
+    "loading": "Konto wird geladen…",
+    "error": "Mitglied konnte nicht geladen werden.",
+    "welcome": "Willkommen zurück, {{name}}",
+    "benefits": "Deine Vorteile"
+  },
+  "points": { "spendable": "Verfügbare Punkte" },
+  "tier": {
+    "pandion": "PANDION, auf Einladung.",
+    "diamond": "DIAMOND ist die höchste erreichbare Stufe. PANDION gibt es nur auf Einladung.",
+    "toNext": "{{points}} Punkte bis zur nächsten Stufe",
+    "qualifyingNote": "Deine Stufe basiert auf {{points}} qualifizierenden Punkten der letzten 12 Monate — getrennt vom verfügbaren Guthaben oben."
+  },
+  "tx": {
+    "loading": "Transaktionen werden geladen…",
+    "error": "Transaktionen konnten nicht geladen werden.",
+    "title": "Transaktionen",
+    "type": "Typ",
+    "filter": { "all": "Alle", "earn": "Sammeln", "burn": "Einlösen", "expiry": "Verfall", "adjustment": "Anpassung" },
+    "col": { "when": "Wann", "type": "Typ", "source": "Quelle", "points": "Punkte" },
+    "previous": "Zurück",
+    "next": "Weiter",
+    "page": "Seite {{page}}"
+  },
+  "rewards": {
+    "loading": "Prämien werden geladen…",
+    "error": "Prämien konnten nicht geladen werden.",
+    "title": "Prämien",
+    "dismiss": "Schließen",
+    "redeem": "Einlösen",
+    "redeemAria": "{{name}} einlösen",
+    "cost": "{{cost}} Pkt."
+  },
+  "help": {
+    "open": "Hilfe",
+    "title": "So funktioniert es",
+    "close": "Schließen",
+    "pointsHeading": "Verfügbare vs. qualifizierende Punkte",
+    "pointsBody": "Verfügbare Punkte löst du gegen Prämien ein. Deine Stufe basiert auf qualifizierenden Punkten der letzten 12 Monate — eine separate Zahl, weshalb ein hohes Guthaben trotzdem in einer niedrigeren Stufe liegen kann.",
+    "tiersHeading": "Stufen",
+    "tiersBody": "Du steigst von MEMBER über SILVER, GOLD und DIAMOND durch qualifizierende Punkte auf. PANDION ist die höchste Stufe nur auf Einladung und wird nie allein durch Punkte erreicht.",
+    "rewardsHeading": "Prämien",
+    "rewardsBody": "Das Einlösen einer Prämie bucht von deinem verfügbaren Guthaben ab. Ein erneuter Versuch derselben Einlösung belastet dich nie doppelt."
+  }
+}

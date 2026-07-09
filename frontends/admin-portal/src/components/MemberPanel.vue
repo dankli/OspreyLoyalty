@@ -8,6 +8,7 @@ import {
   type MemberProfile,
   type Transaction,
 } from "../api";
+import i18n from "../i18n";
 
 const email = ref("");
 const profile = ref<MemberProfile | null>(null);
@@ -20,6 +21,13 @@ const adjustmentError = ref("");
 
 const pandionError = ref("");
 const busy = ref(false);
+
+// Seeded demo members (see SeedDemoData) — pick one to look it up without typing an email.
+const demoMembers = [
+  { name: "Ada Lindqvist", email: "ada@example.com" },
+  { name: "Erik Boman", email: "erik@example.com" },
+  { name: "Yusra Ali", email: "yusra@example.com" },
+];
 
 const isPandion = computed(() => profile.value?.tier === "PANDION");
 
@@ -49,6 +57,14 @@ async function lookUp() {
   }
 }
 
+// Quick-pick: selecting a demo member fills the email and runs the same lookup.
+async function pickMember(event: Event) {
+  const picked = (event.target as HTMLSelectElement).value;
+  if (!picked) return;
+  email.value = picked;
+  await lookUp();
+}
+
 async function submitAdjustment() {
   if (!profile.value || adjustmentPoints.value == null || !adjustmentReason.value.trim()) return;
   adjustmentError.value = "";
@@ -69,8 +85,8 @@ async function togglePandion() {
   if (!profile.value) return;
   const invited = !isPandion.value;
   const prompt = invited
-    ? `Grant a PANDION invitation to ${profile.value.name}?`
-    : `Revoke the PANDION invitation for ${profile.value.name}?`;
+    ? i18n.global.t("member.grantPrompt", { name: profile.value.name })
+    : i18n.global.t("member.revokePrompt", { name: profile.value.name });
   if (!confirm(prompt)) return;
   pandionError.value = "";
   busy.value = true;
@@ -86,17 +102,25 @@ async function togglePandion() {
 
 <template>
   <section class="panel">
-    <h2>Member lookup</h2>
+    <h2>{{ $t("member.heading") }}</h2>
+
+    <label class="quick-pick">
+      {{ $t("member.quickPick") }}
+      <select :aria-label="$t('member.quickPickAria')" :disabled="busy" @change="pickMember">
+        <option value="">{{ $t("member.selectMember") }}</option>
+        <option v-for="m in demoMembers" :key="m.email" :value="m.email">{{ m.name }}</option>
+      </select>
+    </label>
 
     <form class="lookup-form" @submit.prevent="lookUp">
       <input
         v-model="email"
         type="email"
-        aria-label="Member email"
-        placeholder="member@example.com"
+        :aria-label="$t('member.emailAria')"
+        :placeholder="$t('member.emailPlaceholder')"
         required
       />
-      <button type="submit" aria-label="Look up" :disabled="busy">Look up</button>
+      <button type="submit" :aria-label="$t('member.lookUp')" :disabled="busy">{{ $t("member.lookUp") }}</button>
     </form>
     <p v-if="lookupError" class="error-text">{{ lookupError }}</p>
 
@@ -106,20 +130,28 @@ async function togglePandion() {
           <strong>{{ profile.name }}</strong>
           <span class="tier-badge" :class="{ pandion: isPandion }">{{ profile.tier }}</span>
         </div>
-        <p class="muted">{{ profile.email }} · joined {{ new Date(profile.joinedAtUtc).toLocaleDateString() }}</p>
+        <p class="muted">
+          {{ profile.email }} · {{ $t("member.joined") }}
+          {{ new Date(profile.joinedAtUtc).toLocaleDateString() }}
+        </p>
         <dl class="balances">
-          <div><dt>Spendable</dt><dd>{{ profile.spendablePoints }}</dd></div>
-          <div><dt>Qualifying</dt><dd>{{ profile.qualifyingPoints }}</dd></div>
+          <div><dt>{{ $t("member.spendable") }}</dt><dd>{{ profile.spendablePoints }}</dd></div>
+          <div><dt>{{ $t("member.qualifying") }}</dt><dd>{{ profile.qualifyingPoints }}</dd></div>
           <div v-if="profile.pointsToNextTier != null">
-            <dt>To next tier</dt><dd>{{ profile.pointsToNextTier }}</dd>
+            <dt>{{ $t("member.toNextTier") }}</dt><dd>{{ profile.pointsToNextTier }}</dd>
           </div>
         </dl>
       </div>
 
-      <h3>Transactions</h3>
+      <h3>{{ $t("member.transactions") }}</h3>
       <table class="transactions">
         <thead>
-          <tr><th>When</th><th>Type</th><th>Points</th><th>Source</th></tr>
+          <tr>
+            <th>{{ $t("member.colWhen") }}</th>
+            <th>{{ $t("member.colType") }}</th>
+            <th>{{ $t("member.colPoints") }}</th>
+            <th>{{ $t("member.colSource") }}</th>
+          </tr>
         </thead>
         <tbody>
           <tr v-for="tx in transactions" :key="tx.id">
@@ -131,29 +163,29 @@ async function togglePandion() {
         </tbody>
       </table>
 
-      <h3>Adjust points</h3>
+      <h3>{{ $t("member.adjustPoints") }}</h3>
       <form class="adjustment-form" @submit.prevent="submitAdjustment">
         <input
           v-model.number="adjustmentPoints"
           type="number"
-          aria-label="Adjustment points"
-          placeholder="Points (negative to deduct)"
+          :aria-label="$t('member.adjustPointsAria')"
+          :placeholder="$t('member.adjustPointsPlaceholder')"
           required
         />
         <input
           v-model="adjustmentReason"
           type="text"
-          aria-label="Adjustment reason"
-          placeholder="Reason"
+          :aria-label="$t('member.adjustReasonAria')"
+          :placeholder="$t('member.adjustReasonPlaceholder')"
           required
         />
-        <button type="submit" :disabled="busy">Apply adjustment</button>
+        <button type="submit" :disabled="busy">{{ $t("member.applyAdjustment") }}</button>
       </form>
       <p v-if="adjustmentError" class="error-text">{{ adjustmentError }}</p>
 
-      <h3>PANDION</h3>
+      <h3>{{ $t("member.pandion") }}</h3>
       <button class="pandion-toggle" :disabled="busy" @click="togglePandion">
-        {{ isPandion ? "Revoke PANDION invitation" : "Grant PANDION invitation" }}
+        {{ isPandion ? $t("member.revokePandion") : $t("member.grantPandion") }}
       </button>
       <p v-if="pandionError" class="error-text">{{ pandionError }}</p>
     </template>

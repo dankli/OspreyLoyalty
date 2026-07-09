@@ -1,0 +1,47 @@
+{
+  "nav": { "dashboard": "Dashboard", "transactions": "Transactions", "rewards": "Rewards", "language": "Language" },
+  "dashboard": {
+    "loading": "Loading your account…",
+    "error": "Could not load member.",
+    "welcome": "Welcome back, {{name}}",
+    "benefits": "Your benefits"
+  },
+  "points": { "spendable": "Spendable points" },
+  "tier": {
+    "pandion": "PANDION, by invitation.",
+    "diamond": "DIAMOND is the highest earned tier. PANDION is by invitation only.",
+    "toNext": "{{points}} points to the next tier",
+    "qualifyingNote": "Your tier reflects {{points}} qualifying points earned in the last 12 months — separate from the spendable balance above."
+  },
+  "tx": {
+    "loading": "Loading transactions…",
+    "error": "Could not load transactions.",
+    "title": "Transactions",
+    "type": "Type",
+    "filter": { "all": "All", "earn": "Earn", "burn": "Burn", "expiry": "Expiry", "adjustment": "Adjustment" },
+    "col": { "when": "When", "type": "Type", "source": "Source", "points": "Points" },
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{page}}"
+  },
+  "rewards": {
+    "loading": "Loading rewards…",
+    "error": "Could not load rewards.",
+    "title": "Rewards",
+    "dismiss": "Dismiss",
+    "redeem": "Redeem",
+    "redeemAria": "Redeem {{name}}",
+    "cost": "{{cost}} pts"
+  },
+  "help": {
+    "open": "Help",
+    "title": "How this works",
+    "close": "Close",
+    "pointsHeading": "Spendable vs qualifying points",
+    "pointsBody": "Spendable points are what you redeem for rewards. Your tier is based on qualifying points earned over the last 12 months — a separate figure, which is why a big balance can still sit at a lower tier.",
+    "tiersHeading": "Tiers",
+    "tiersBody": "You climb from MEMBER through SILVER, GOLD and DIAMOND by earning qualifying points. PANDION is the invitation-only top tier and is never reached by points alone.",
+    "rewardsHeading": "Rewards",
+    "rewardsBody": "Redeeming a reward spends from your spendable balance. Retrying the same redemption never charges you twice."
+  }
+}

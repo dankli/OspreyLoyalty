@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { ClientError } from "graphql-request";
 import { graphql } from "../../gql";
 import type { MemberBalanceQuery } from "../../gql/graphql";
@@ -36,6 +37,7 @@ const redeemRewardMutation = graphql(`
 `);
 
 export function RewardsPage({ memberId }: { memberId: string }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const balanceKey = ["memberBalance", memberId] as const;
@@ -93,25 +95,25 @@ export function RewardsPage({ memberId }: { memberId: string }) {
     },
   });
 
-  if (catalog.isPending || balance.isPending) return <p className="muted">Loading rewards…</p>;
+  if (catalog.isPending || balance.isPending) return <p className="muted">{t("rewards.loading")}</p>;
   if (catalog.isError || balance.isError || !balance.data.member) {
-    return <p role="alert">Could not load rewards.</p>;
+    return <p role="alert">{t("rewards.error")}</p>;
   }
 
   const spendable = balance.data.member.spendablePoints;
 
   return (
     <main className="dashboard">
-      <h1>Rewards</h1>
+      <h1>{t("rewards.title")}</h1>
       <section className="balance-card">
-        <span className="label">Spendable points</span>
+        <span className="label">{t("points.spendable")}</span>
         <span className="balance">{spendable.toLocaleString("sv-SE")}</span>
       </section>
       {error && (
         <p role="alert" className="redeem-error">
           {error}{" "}
           <button className="dismiss" onClick={() => setError(null)}>
-            Dismiss
+            {t("rewards.dismiss")}
           </button>
         </p>
       )}
@@ -119,13 +121,15 @@ export function RewardsPage({ memberId }: { memberId: string }) {
         {catalog.data.rewards.map((reward) => (
           <li key={reward.id} className="reward-card">
             <span className="reward-name">{reward.name}</span>
-            <span className="reward-cost">{reward.cost.toLocaleString("sv-SE")} pts</span>
+            <span className="reward-cost">
+              {t("rewards.cost", { cost: reward.cost.toLocaleString("sv-SE") })}
+            </span>
             <button
-              aria-label={`Redeem ${reward.name}`}
+              aria-label={t("rewards.redeemAria", { name: reward.name })}
               disabled={reward.cost > spendable || redeem.isPending}
               onClick={() => redeem.mutate({ rewardId: reward.id, cost: reward.cost })}
             >
-              Redeem
+              {t("rewards.redeem")}
             </button>
           </li>
         ))}

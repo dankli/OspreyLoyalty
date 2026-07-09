@@ -49,7 +49,7 @@ async function save(row: Row) {
 
 <template>
   <section class="panel">
-    <h2>Partner earn rates</h2>
+    <h2>{{ $t("rates.title") }}</h2>
     <p v-if="loadError" class="error-text">{{ loadError }}</p>
     <ul class="rate-list">
       <li v-for="row in rows" :key="row.id" class="rate-row">
@@ -59,10 +59,10 @@ async function save(row: Row) {
           type="number"
           step="0.1"
           min="0"
-          :aria-label="`Rate for ${row.name}`"
+          :aria-label="$t('rates.rateFor', { name: row.name })"
         />
-        <button @click="save(row)">Save</button>
-        <span v-if="row.saved" class="flash">Saved</span>
+        <button @click="save(row)">{{ $t("rates.save") }}</button>
+        <span v-if="row.saved" class="flash">{{ $t("rates.saved") }}</span>
         <span v-if="row.error" class="error-text">{{ row.error }}</span>
       </li>
     </ul>

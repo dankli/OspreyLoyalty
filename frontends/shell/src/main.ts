@@ -1,5 +1,6 @@
 import "./style.css";
 import { createShell, type MountFn } from "./shell";
+import { ensureAuthenticated } from "./auth";
 
 type MountModule = { mount: MountFn };
 
@@ -14,9 +15,12 @@ function normalize(imported: unknown): MountModule {
   throw new Error("Remote module does not expose the mount(el) contract (ADR-0004)");
 }
 
-// The federation plugin rewrites these dynamic imports to runtime lookups
-// against the remotes configured in vite.config.ts.
-createShell(document.getElementById("app")!, {
-  memberPortal: () => import("memberPortal/mount").then(normalize),
-  adminPortal: () => import("adminPortal/mount").then(normalize),
+// Establish the shared session first (no-op when auth is disabled), then mount the shell — so the
+// remotes it loads already find a token in sessionStorage. The federation plugin rewrites these
+// dynamic imports to runtime lookups against the remotes configured in vite.config.ts.
+void ensureAuthenticated().then(() => {
+  createShell(document.getElementById("app")!, {
+    memberPortal: () => import("memberPortal/mount").then(normalize),
+    adminPortal: () => import("adminPortal/mount").then(normalize),
+  });
 });

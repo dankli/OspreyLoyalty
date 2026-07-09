@@ -100,4 +100,26 @@ describe("MemberPanel", () => {
 
     vi.unstubAllGlobals();
   });
+
+  it("lists the seeded demo members in the quick-pick dropdown", () => {
+    const wrapper = mount(MemberPanel);
+    const labels = wrapper
+      .get('select[aria-label="Quick pick member"]')
+      .findAll("option")
+      .map((o) => o.text());
+
+    expect(labels).toContain("Ada Lindqvist");
+    expect(labels).toContain("Erik Boman");
+    expect(labels).toContain("Yusra Ali");
+  });
+
+  it("looks up a member chosen from the quick-pick dropdown", async () => {
+    const wrapper = mount(MemberPanel);
+    await wrapper.get('select[aria-label="Quick pick member"]').setValue("erik@example.com");
+    await flushPromises();
+
+    expect(api.findMemberByEmail).toHaveBeenCalledWith("erik@example.com");
+    expect(api.getTransactions).toHaveBeenCalledWith("m-1");
+    expect(wrapper.text()).toContain("Freja Falk"); // mocked lookup result
+  });
 });

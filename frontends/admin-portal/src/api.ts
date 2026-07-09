@@ -1,3 +1,6 @@
+import { getAccessToken } from "./auth";
+import i18n from "./i18n";
+
 const MEMBERS_URL = import.meta.env.VITE_MEMBERS_URL ?? "http://localhost:5080";
 const PARTNERS_URL = import.meta.env.VITE_PARTNERS_URL ?? "http://localhost:8081";
 
@@ -40,8 +43,17 @@ export interface Partner {
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  // Send the active UI language so members/partners localize their error messages to the
+  // switcher's choice, and attach the admin's bearer (undefined when auth is off → no header) so
+  // those services enforce zero-trust directly — the admin portal calls them, not the gateway.
+  const token = getAccessToken();
   const response = await fetch(url, {
     ...init,
+    headers: {
+      ...init?.headers,
+      "Accept-Language": i18n.global.locale.value,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     signal: AbortSignal.timeout(2000),
   });
   if (!response.ok) {

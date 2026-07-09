@@ -1,0 +1,47 @@
+{
+  "nav": { "dashboard": "Pannello", "transactions": "Transazioni", "rewards": "Premi", "language": "Lingua" },
+  "dashboard": {
+    "loading": "Caricamento del tuo account…",
+    "error": "Impossibile caricare il membro.",
+    "welcome": "Bentornato, {{name}}",
+    "benefits": "I tuoi vantaggi"
+  },
+  "points": { "spendable": "Punti spendibili" },
+  "tier": {
+    "pandion": "PANDION, su invito.",
+    "diamond": "DIAMOND è il livello guadagnato più alto. PANDION è solo su invito.",
+    "toNext": "{{points}} punti al livello successivo",
+    "qualifyingNote": "Il tuo livello riflette {{points}} punti qualificanti guadagnati negli ultimi 12 mesi, separati dal saldo spendibile sopra."
+  },
+  "tx": {
+    "loading": "Caricamento transazioni…",
+    "error": "Impossibile caricare le transazioni.",
+    "title": "Transazioni",
+    "type": "Tipo",
+    "filter": { "all": "Tutte", "earn": "Accumulo", "burn": "Riscatto", "expiry": "Scadenza", "adjustment": "Rettifica" },
+    "col": { "when": "Quando", "type": "Tipo", "source": "Origine", "points": "Punti" },
+    "previous": "Precedente",
+    "next": "Successivo",
+    "page": "Pagina {{page}}"
+  },
+  "rewards": {
+    "loading": "Caricamento premi…",
+    "error": "Impossibile caricare i premi.",
+    "title": "Premi",
+    "dismiss": "Chiudi",
+    "redeem": "Riscatta",
+    "redeemAria": "Riscatta {{name}}",
+    "cost": "{{cost}} pt"
+  },
+  "help": {
+    "open": "Aiuto",
+    "title": "Come funziona",
+    "close": "Chiudi",
+    "pointsHeading": "Punti spendibili e qualificanti",
+    "pointsBody": "I punti spendibili sono quelli che riscatti per i premi. Il tuo livello si basa sui punti qualificanti guadagnati negli ultimi 12 mesi — una cifra distinta, perciò un saldo elevato può restare a un livello inferiore.",
+    "tiersHeading": "Livelli",
+    "tiersBody": "Sali da MEMBER attraverso SILVER, GOLD e DIAMOND accumulando punti qualificanti. PANDION è il livello massimo solo su invito e non si raggiunge mai con i soli punti.",
+    "rewardsHeading": "Premi",
+    "rewardsBody": "Riscattare un premio attinge dal saldo spendibile. Ripetere lo stesso riscatto non ti addebita mai due volte."
+  }
+}
