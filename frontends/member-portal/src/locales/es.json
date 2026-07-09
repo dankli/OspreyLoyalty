@@ -1,5 +1,5 @@
 {
-  "nav": { "dashboard": "Panel", "transactions": "Transacciones", "rewards": "Recompensas", "language": "Idioma" },
+  "nav": { "dashboard": "Panel", "transactions": "Transacciones", "rewards": "Recompensas", "travelAgent": "Agente de viajes", "language": "Idioma" },
   "dashboard": {
     "loading": "Cargando tu cuenta…",
     "error": "No se pudo cargar el miembro.",
@@ -32,6 +32,17 @@
     "redeem": "Canjear",
     "redeemAria": "Canjear {{name}}",
     "cost": "{{cost}} pts"
+  },
+  "travelAgent": {
+    "title": "Agente de viajes",
+    "intro": "Dime a dónde te gustaría ir — encontraré viajes para dos a tu alcance con tus puntos.",
+    "prompt": "Planea una escapada para dos viajeros que pueda pagar con mis puntos de fidelidad actuales. Sugiere algunas opciones, y una para ahorrar.",
+    "promptLabel": "Tu solicitud de viaje",
+    "generate": "Generar sugerencias",
+    "generating": "Pensando…",
+    "error": "El agente de viajes no está disponible ahora. Inténtalo de nuevo.",
+    "canGo": "Puedes ir ya",
+    "saveMore": "Ahorra {{points}} puntos más"
   },
   "help": {
     "open": "Ayuda",

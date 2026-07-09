@@ -1,5 +1,5 @@
 {
-  "nav": { "dashboard": "Pannello", "transactions": "Transazioni", "rewards": "Premi", "language": "Lingua" },
+  "nav": { "dashboard": "Pannello", "transactions": "Transazioni", "rewards": "Premi", "travelAgent": "Agente di viaggio", "language": "Lingua" },
   "dashboard": {
     "loading": "Caricamento del tuo account…",
     "error": "Impossibile caricare il membro.",
@@ -32,6 +32,17 @@
     "redeem": "Riscatta",
     "redeemAria": "Riscatta {{name}}",
     "cost": "{{cost}} pt"
+  },
+  "travelAgent": {
+    "title": "Agente di viaggio",
+    "intro": "Dimmi dove vorresti andare — troverò viaggi per due alla tua portata con i tuoi punti.",
+    "prompt": "Pianifica una vacanza per due viaggiatori che posso permettermi con i miei punti fedeltà attuali. Suggerisci alcune opzioni e una per cui risparmiare.",
+    "promptLabel": "La tua richiesta di viaggio",
+    "generate": "Genera suggerimenti",
+    "generating": "Sto pensando…",
+    "error": "L'agente di viaggio non è disponibile al momento. Riprova.",
+    "canGo": "Puoi partire ora",
+    "saveMore": "Risparmia altri {{points}} punti"
   },
   "help": {
     "open": "Aiuto",
