@@ -211,6 +211,18 @@ docker compose -f infra/docker-compose.yml logs | grep my-trace-1
 Grafana ships pre-provisioned with a RED dashboard (request rate, error rate, p95 latency per
 service) alongside cluster/node/pod dashboards, all fed by Prometheus.
 
+### Right to be forgotten (GDPR)
+
+Erase a member's PII on request. It pseudonymizes name and email and stamps an `ErasedAtUtc` marker while
+keeping the numeric ledger intact — so accounting and the idempotency trail survive — and records the
+erasure in the audit log ([ADR-0018](docs/decisions/0018-gdpr-erasure.md)). It is idempotent, so a retry is a
+no-op:
+
+```bash
+curl -X DELETE http://localhost:5080/api/members/demo-erik/pii
+# demo-erik's name -> "[erased]", email -> null; his points and transactions remain
+```
+
 ### Against the Kubernetes ingress (auth on)
 
 To run the flows above against the ingress while zero-trust auth is on, grab a token from the
@@ -244,9 +256,9 @@ if you just want to poke the endpoints without tokens, start the cluster with `-
 
 | Path | Language | Role |
 |---|---|---|
-| [`services/members`](services/members) | C# / .NET 10 | Core domain: enrollment, profiles, the tier ladder |
+| [`services/members`](services/members) | C# / .NET 10 | Core domain: enrollment, profiles, the tier ladder, the points ledger, an audit log and GDPR erasure |
 | [`services/gateway`](services/gateway) | TypeScript / Node 22 | GraphQL BFF for the frontends, plus a little REST |
-| [`services/partners`](services/partners) | Java 21 / Spring Boot | Partner earn simulations and the duplicate-delivery demo |
+| [`services/partners`](services/partners) | Java 21 / Spring Boot | Partner earn simulations and the duplicate-delivery demo; a transactional outbox durably publishes earns ([ADR-0016](docs/decisions/0016-transactional-outbox.md)) |
 | [`services/points-engine`](services/points-engine) | Rust | Pure points calculation with promotions, property-tested; deliberately not wired into the earn path ([ADR-0006](docs/decisions/0006-rust-points-engine.md)) |
 | [`services/security`](services/security) | Java 21 / Spring Boot | First-party OIDC/OAuth2 identity service — issues the JWTs the fleet validates ([ADR-0007](docs/decisions/0007-zero-trust-auth.md)) |
 | [`frontends/member-portal`](frontends/member-portal) | React 19 | Member dashboard: balance, tier progress, benefits, rewards, and a simulated Travel Agent streamed over SSE |
@@ -273,6 +285,27 @@ details straight through (`maskedErrors: false`).
 [`infra/k8s`](infra/k8s) — probes, resource limits, a Traefik HTTPS ingress ([ADR-0011](docs/decisions/0011-traefik-ingress.md)),
 and the observability stack. [`infra/terraform`](infra/terraform) is a deliberately tiny IaC sample —
 a namespace and its resource quota.
+
+**Resilience and data.** A partner purchase is durable end to end: partners writes it to a transactional
+**outbox** and a relay drains it to RabbitMQ, so an earn survives broker downtime instead of vanishing on
+a fire-and-forget publish ([ADR-0016](docs/decisions/0016-transactional-outbox.md)). Privileged actions are
+recorded in an append-only **audit log** with the actor from the JWT `sub` ([ADR-0017](docs/decisions/0017-audit-log.md)),
+and **GDPR** right-to-erasure pseudonymizes a member's PII while keeping the numeric ledger
+([ADR-0018](docs/decisions/0018-gdpr-erasure.md)).
+
+**Operate it.** SLOs with symptom-based (RED) Prometheus alerting through Alertmanager, each alert backed
+by a [runbook](docs/runbooks) ([ADR-0013](docs/decisions/0013-slo-and-alerting.md)); k6 load and soak tests
+with FinOps cost reasoning ([ADR-0015](docs/decisions/0015-load-testing-and-finops.md)); and an ADR on why
+the fleet runs on Kubernetes rather than scaling its stateless edges to serverless
+([ADR-0012](docs/decisions/0012-compute-model-k8s-over-serverless.md)).
+
+**Ship it safely.** GitOps with **ArgoCD** syncs [`infra/k8s`](infra/k8s) from git
+([ADR-0019](docs/decisions/0019-gitops-argocd.md)), and **Argo Rollouts** runs canary deploys with Prometheus
+analysis that auto-rolls-back on an SLO breach ([ADR-0020](docs/decisions/0020-progressive-delivery-argo-rollouts.md))
+— both under [`infra/gitops`](infra/gitops) and [`infra/delivery`](infra/delivery). Contract tests guard the
+GraphQL schema and the `EarnEvent` wire shape ([ADR-0014](docs/decisions/0014-contract-testing.md)), and a
+DevSecOps pipeline scans every push (gitleaks, Trivy, SBOM, Dependabot) with the trust boundaries mapped in a
+[threat model](docs/threat-model.md) and a [security policy](SECURITY.md).
 
 ## How I build
 
@@ -316,6 +349,12 @@ All five original phases are done, and Phase 6 (enterprise) is largely in place:
   ([ADR-0008](docs/decisions/0008-opentelemetry-observability.md)); a five-language UI with in-app help;
   a Traefik HTTPS ingress ([ADR-0011](docs/decisions/0011-traefik-ingress.md)); and cluster-metrics
   dashboards. Still to land: the RabbitMQ auth hop and localized backend messages.
+
+- **Phase 7 (production hardening)** — resilience and data integrity (a transactional outbox for the earn
+  publish, an append-only audit log, GDPR right-to-erasure); operability (SLOs with RED alerting and runbooks,
+  k6 load/soak tests, FinOps cost reasoning); safe delivery (GitOps with ArgoCD, canary deploys with Argo
+  Rollouts and automatic rollback on an SLO breach); and supply-chain security (a DevSecOps scanning pipeline,
+  a STRIDE threat model, and every dependency modernized to its latest stable). See [ADR-0012 through 0020](docs/decisions).
 
 A future phase would put promotions into the real earn path and run the stack highly available — each of
 which would first have to pay for itself.

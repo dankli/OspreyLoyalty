@@ -79,9 +79,9 @@ flowchart TD
 
 **gateway** — a TypeScript/Node 22 BFF using GraphQL Yoga. It owns the schema the member portal queries and enforces a 2-second timeout on every call to members and partners. Input validation with zod; environment validated at startup. The aggregation edge: member portal never calls backend services directly. Alongside GraphQL it hosts one Server-Sent-Events endpoint, `GET /travel-agent/stream`, a self-contained feature slice (`src/features/travel-agent`) that streams the simulated Travel Agent's reply — a pure planning core over a fake, award-priced trip catalogue behind a single thin SSE edge (A-Frame, with failures surfaced as an `error` event; see the README).
 
-**members** — the core loyalty domain, written in C# on .NET 10 with Vertical Slice Architecture. Handles enrollment, member profiles, the tier ladder (rolling 12-month window, MEMBER through DIAMOND thresholds, OSPREY by invitation only), the points ledger, redemption, manual adjustments, and point expiry. Stores one document per member in MongoDB. The deepest quality surface in the repo: strict TDD, pure domain core with no I/O, idempotent event processing, and a showcase duplicate-delivery test.
+**members** — the core loyalty domain, written in C# on .NET 10 with Vertical Slice Architecture. Handles enrollment, member profiles, the tier ladder (rolling 12-month window, MEMBER through DIAMOND thresholds, OSPREY by invitation only), the points ledger, redemption, manual adjustments, and point expiry. Stores one document per member in MongoDB. The deepest quality surface in the repo: strict TDD, pure domain core with no I/O, idempotent event processing, and a showcase duplicate-delivery test. Privileged actions (adjustments, OSPREY grants, erasures) are recorded in an append-only audit log with the actor taken from the JWT `sub` (ADR-0017), and GDPR right-to-erasure pseudonymizes a member's PII while keeping the numeric ledger intact (ADR-0018).
 
-**partners** — a Java 21/Spring Boot service that simulates the three partner earn sources: CardCo, StayInn, and WheelsGo. On a purchase POST it computes points, assigns an idempotency key, and publishes an `EarnEvent` to RabbitMQ. Includes a `/duplicate-demo` endpoint that deliberately publishes the same event twice, proving downstream idempotency. Under zero-trust it also mints a short-lived HS256 service token and stamps it on each `EarnEvent` (the async leg of auth — ADR-0007).
+**partners** — a Java 21/Spring Boot service that simulates the three partner earn sources: CardCo, StayInn, and WheelsGo. On a purchase POST it computes points, assigns an idempotency key, and writes an `EarnEvent` to a transactional outbox on MongoDB; a scheduled relay drains the outbox to RabbitMQ, so a purchase survives broker downtime instead of being lost on a fire-and-forget publish (ADR-0016). Includes a `/duplicate-demo` endpoint that deliberately publishes the same event twice, proving downstream idempotency. Under zero-trust it also mints a short-lived HS256 service token and stamps it on each `EarnEvent` (the async leg of auth — ADR-0007).
 
 **security** — a Java 21 / Spring Authorization Server acting as the first-party OIDC identity service (`:9000`). Exposes `/.well-known/openid-configuration`, `/oauth2/authorize`, `/oauth2/token`, and `/oauth2/jwks`. In-memory demo users and registered clients (member-portal and admin-portal as public PKCE clients; partners-service as a confidential client-credentials client), a persistent RSA signing key, and access tokens carrying `roles` plus a fleet-wide `aud`. See ADR-0007.
 
@@ -130,11 +130,14 @@ flowchart TD
 
 ---
 
-## No longer missing (Phase 6)
+## No longer missing
 
 - **Authentication.** A first-party OIDC identity service (security) plus zero-trust JWT validation on every service — including the RabbitMQ earn hop. Admin surfaces require the `admin` role; the member portal resolves identity from the token `sub`. The whole thing sits behind a per-service kill-switch (off by default) so the demo, e2e, and tests run open. See ADR-0007.
 - **Distributed tracing.** OpenTelemetry spans from every backend flow through the collector to Jaeger, and `trace_id`/`span_id` are stamped into every log line so Loki logs line up with Jaeger spans. See ADR-0008.
 - **Internationalization.** Five languages (sv/en/es/de/it) across the frontends and backend validation/error messages.
+- **Resilience & data integrity.** A transactional outbox makes the earn publish durable (ADR-0016); an append-only audit log records privileged actions (ADR-0017); GDPR right-to-erasure pseudonymizes PII while keeping the ledger (ADR-0018).
+- **Operability.** SLOs with symptom-based (RED) Prometheus alerting through Alertmanager, each alert backed by a [runbook](runbooks) (ADR-0013); k6 load/soak tests and FinOps cost reasoning (ADR-0015); a compute-model decision on Kubernetes vs serverless (ADR-0012).
+- **Safe delivery & supply chain.** GitOps with ArgoCD (ADR-0019) and canary progressive delivery with Argo Rollouts + automatic rollback on an SLO breach (ADR-0020); contract tests for the GraphQL schema and the `EarnEvent` message (ADR-0014); and a DevSecOps pipeline (gitleaks, Trivy, SBOM, Dependabot) with a [STRIDE threat model](threat-model.md).
 
 ## Still deliberately missing
 
