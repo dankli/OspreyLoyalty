@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 axum = "0.8"
 jsonwebtoken = "9"
-prometheus = "0.13"
+prometheus = "0.14"
 # Only needed to fetch the identity service's JWKS for RS256 validation (off the request path,
 # behind the auth kill-switch). rustls to avoid an OpenSSL build dependency.
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
