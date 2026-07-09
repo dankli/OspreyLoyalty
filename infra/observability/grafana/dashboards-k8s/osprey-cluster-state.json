@@ -1,0 +1,144 @@
+{
+  "uid": "osprey-cluster-state",
+  "title": "Osprey Cluster - Kubernetes State",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Nodes Ready",
+      "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"})",
+          "legendFormat": "ready"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Pods Running (osprey)",
+      "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "expr": "sum(kube_pod_status_phase{namespace=\"osprey\",phase=\"Running\"})",
+          "legendFormat": "running"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Pods Not Running (osprey)",
+      "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "expr": "sum(kube_pod_status_phase{namespace=\"osprey\",phase!=\"Running\"})",
+          "legendFormat": "not running"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Total Container Restarts (osprey)",
+      "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 5 }] }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"osprey\"})",
+          "legendFormat": "restarts"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Deployment Replicas: desired vs available (osprey)",
+      "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 4 },
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "expr": "kube_deployment_spec_replicas{namespace=\"osprey\"}",
+          "legendFormat": "{{deployment}} desired"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "expr": "kube_deployment_status_replicas_available{namespace=\"osprey\"}",
+          "legendFormat": "{{deployment}} available"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Pods by Phase (osprey)",
+      "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 4 },
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "expr": "sum by (phase) (kube_pod_status_phase{namespace=\"osprey\"})",
+          "legendFormat": "{{phase}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Container Restarts by Pod (osprey)",
+      "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 13 },
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "expr": "sum by (pod) (kube_pod_container_status_restarts_total{namespace=\"osprey\"})",
+          "legendFormat": "{{pod}}",
+          "format": "table",
+          "instant": true
+        }
+      ]
+    }
+  ]
+}

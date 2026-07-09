@@ -395,6 +395,435 @@ data:
         }
       ]
     }
+  osprey-cluster-nodes.json: |
+    {
+      "uid": "osprey-cluster-nodes",
+      "title": "Osprey Cluster - Nodes",
+      "schemaVersion": 39,
+      "version": 1,
+      "editable": true,
+      "refresh": "10s",
+      "time": { "from": "now-30m", "to": "now" },
+      "timezone": "browser",
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Nodes Up",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "count(up{job=\"node-exporter\"} == 1)",
+              "legendFormat": "nodes"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Logical CPUs",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "count(count by (cpu) (node_cpu_seconds_total))",
+              "legendFormat": "cores"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "Total Memory",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(node_memory_MemTotal_bytes)",
+              "legendFormat": "total"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "Load (1m)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "fieldConfig": { "defaults": { "unit": "none", "decimals": 2 }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(node_load1)",
+              "legendFormat": "load1"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "CPU Usage % (per node)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+          "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+              "legendFormat": "{{instance}}"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Memory Used % (per node)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+          "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+              "legendFormat": "{{instance}}"
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "Root Filesystem Used %",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 12 },
+          "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "100 - (node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"\"} * 100)",
+              "legendFormat": "{{instance}} /"
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "type": "timeseries",
+          "title": "Load Average",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 12 },
+          "fieldConfig": { "defaults": { "unit": "none", "decimals": 2 }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "avg(node_load1)",
+              "legendFormat": "1m"
+            },
+            {
+              "refId": "B",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "avg(node_load5)",
+              "legendFormat": "5m"
+            },
+            {
+              "refId": "C",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "avg(node_load15)",
+              "legendFormat": "15m"
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "type": "timeseries",
+          "title": "Network Throughput",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 12 },
+          "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(rate(node_network_receive_bytes_total{device!~\"lo|veth.*|cali.*|cni.*|flannel.*\"}[5m]))",
+              "legendFormat": "receive"
+            },
+            {
+              "refId": "B",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(rate(node_network_transmit_bytes_total{device!~\"lo|veth.*|cali.*|cni.*|flannel.*\"}[5m]))",
+              "legendFormat": "transmit"
+            }
+          ]
+        }
+      ]
+    }
+  osprey-cluster-pods.json: |
+    {
+      "uid": "osprey-cluster-pods",
+      "title": "Osprey Cluster - Pods & Containers",
+      "schemaVersion": 39,
+      "version": 1,
+      "editable": true,
+      "refresh": "10s",
+      "time": { "from": "now-30m", "to": "now" },
+      "timezone": "browser",
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "CPU by Namespace (cores)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "fieldConfig": { "defaults": { "unit": "none", "decimals": 3 }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{container!=\"\",pod!=\"\"}[5m]))",
+              "legendFormat": "{{namespace}}"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "Memory (working set) by Namespace",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum by (namespace) (container_memory_working_set_bytes{container!=\"\",pod!=\"\"})",
+              "legendFormat": "{{namespace}}"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "CPU by Pod (osprey, cores)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "fieldConfig": { "defaults": { "unit": "none", "decimals": 3 }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"osprey\",container!=\"\"}[5m]))",
+              "legendFormat": "{{pod}}"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Memory by Pod (osprey)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"osprey\",container!=\"\"})",
+              "legendFormat": "{{pod}}"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Network Receive by Pod (osprey)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+          "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum by (pod) (rate(container_network_receive_bytes_total{namespace=\"osprey\"}[5m]))",
+              "legendFormat": "{{pod}}"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Network Transmit by Pod (osprey)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+          "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum by (pod) (rate(container_network_transmit_bytes_total{namespace=\"osprey\"}[5m]))",
+              "legendFormat": "{{pod}}"
+            }
+          ]
+        }
+      ]
+    }
+  osprey-cluster-state.json: |
+    {
+      "uid": "osprey-cluster-state",
+      "title": "Osprey Cluster - Kubernetes State",
+      "schemaVersion": 39,
+      "version": 1,
+      "editable": true,
+      "refresh": "10s",
+      "time": { "from": "now-30m", "to": "now" },
+      "timezone": "browser",
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Nodes Ready",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"})",
+              "legendFormat": "ready"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "Pods Running (osprey)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(kube_pod_status_phase{namespace=\"osprey\",phase=\"Running\"})",
+              "legendFormat": "running"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "Pods Not Running (osprey)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] }
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(kube_pod_status_phase{namespace=\"osprey\",phase!=\"Running\"})",
+              "legendFormat": "not running"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "Total Container Restarts (osprey)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 5 }] }
+            },
+            "overrides": []
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"osprey\"})",
+              "legendFormat": "restarts"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "Deployment Replicas: desired vs available (osprey)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 9, "w": 12, "x": 0, "y": 4 },
+          "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "kube_deployment_spec_replicas{namespace=\"osprey\"}",
+              "legendFormat": "{{deployment}} desired"
+            },
+            {
+              "refId": "B",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "kube_deployment_status_replicas_available{namespace=\"osprey\"}",
+              "legendFormat": "{{deployment}} available"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "Pods by Phase (osprey)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 9, "w": 12, "x": 12, "y": 4 },
+          "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum by (phase) (kube_pod_status_phase{namespace=\"osprey\"})",
+              "legendFormat": "{{phase}}"
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "type": "table",
+          "title": "Container Restarts by Pod (osprey)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 9, "w": 24, "x": 0, "y": 13 },
+          "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum by (pod) (kube_pod_container_status_restarts_total{namespace=\"osprey\"})",
+              "legendFormat": "{{pod}}",
+              "format": "table",
+              "instant": true
+            }
+          ]
+        }
+      ]
+    }
 kind: ConfigMap
 metadata:
   name: grafana-dashboards
