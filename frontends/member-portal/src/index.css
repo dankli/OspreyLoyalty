@@ -210,3 +210,24 @@ label select:focus-visible { outline: none; border-color: var(--amber-500); box-
 }
 
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+
+/* ── travel agent ───────────────────────────────────────────────────────── */
+.prompt-box {
+  display: block; width: 100%; margin-top: 1.25rem; padding: 0.9rem 1rem;
+  background: var(--surface-2); color: var(--cream-50); border: 1px solid var(--line-soft);
+  border-radius: 12px; font: inherit; line-height: 1.5; resize: none;
+}
+.travel-agent .generate {
+  margin-top: 0.9rem; padding: 0.7rem 1.4rem; border: none; border-radius: 999px;
+  background: linear-gradient(180deg, var(--amber-500), var(--amber-600)); color: var(--talon-950);
+  font-weight: 700; letter-spacing: 0.04em; cursor: pointer;
+}
+.travel-agent .generate:disabled { opacity: 0.6; cursor: progress; }
+.agent-reply { margin-top: 1.5rem; font-size: 1.05rem; line-height: 1.6; color: var(--cream-50); }
+.suggestion-card { display: flex; flex-direction: column; gap: 0.5rem; }
+.suggestion-card .go-badge {
+  align-self: flex-start; padding: 0.15rem 0.6rem; border-radius: 999px;
+  background: rgba(120, 200, 120, 0.16); color: #86e08a; font-size: 0.7rem;
+  text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;
+}
+.goal-card { border-style: dashed; }
