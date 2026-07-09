@@ -1,16 +1,16 @@
-name: partners
+name: security
 on:
   push:
     branches: [main]
-    paths: ["services/partners/**", ".github/workflows/partners.yml"]
+    paths: ["services/security/**", ".github/workflows/security.yml"]
   pull_request:
-    paths: ["services/partners/**", ".github/workflows/partners.yml"]
+    paths: ["services/security/**", ".github/workflows/security.yml"]
 
 jobs:
   build-test:
     runs-on: ubuntu-latest
     defaults:
-      run: { working-directory: services/partners }
+      run: { working-directory: services/security }
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
