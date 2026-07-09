@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 # .npmrc (legacy-peer-deps) MUST be present before npm ci — react-i18next's peerOptional
 # typescript@^5 clashes with this repo's TS 6 and would otherwise ERESOLVE-fail the build.
