@@ -1,0 +1,102 @@
+# Argo Rollouts canary Rollout for the gateway — the progressive-delivery ALTERNATIVE to
+# the base gateway Deployment in infra/k8s/gateway.yaml.
+#
+# LAYERING (important): a Rollout and a Deployment for the same app both create/own
+# ReplicaSets selecting `app: gateway`, so you must run ONE of them, not both. To demo the
+# canary you scale the base Deployment to 0 (or delete it) and apply this Rollout instead
+# — the README spells out the exact commands. We do NOT edit infra/k8s/gateway.yaml; it
+# stays the always-on plain path and keeps kubeconform -strict green.
+#
+# The pod template below is a faithful copy of infra/k8s/gateway.yaml's container spec
+# (image, env, ports, probes, resources) so behaviour is identical — only the deployment
+# strategy differs.
+#
+# Traffic routing: strategy.canary.trafficRouting.traefik points at the weighted
+# TraefikService (gateway) from gateway-services.yaml; stable/canary traffic lands on the
+# gateway-stable / gateway-canary Services. Analysis: gateway-canary-analysis
+# (gateway-analysistemplate.yaml) runs in the background and aborts the rollout on breach.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: gateway
+  namespace: osprey
+  labels:
+    app: gateway
+spec:
+  replicas: 3
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: osprey-loyalty-gateway:latest
+          imagePullPolicy: Never # kind: image is side-loaded
+          ports:
+            - containerPort: 4000
+          env:
+            - name: MEMBERS_URL
+              value: http://members:8080
+            - name: PARTNERS_URL
+              value: http://partners:8080
+            - name: PORT
+              value: "4000"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector:4318 # Node OTel exports OTLP/HTTP
+            - name: OTEL_SERVICE_NAME
+              value: gateway
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+  strategy:
+    canary:
+      stableService: gateway-stable
+      canaryService: gateway-canary
+      trafficRouting:
+        traefik:
+          # The weighted TraefikService whose two service weights the controller rewrites.
+          weightedTraefikServiceName: gateway
+      # Run the Prometheus analysis in the BACKGROUND for the whole rollout (starting at
+      # step index 1, i.e. after the first 20% weight is live). A failing AnalysisRun
+      # aborts the rollout and shifts 100% back to stable — automatic rollback.
+      analysis:
+        startingStep: 1
+        templates:
+          - templateName: gateway-canary-analysis
+      steps:
+        # 20% canary, then hold for a manual look (pause with no duration = wait for a
+        # human `kubectl argo rollouts promote`). Good for the first "is it alive" gate.
+        - setWeight: 20
+        - pause: { duration: 60s }
+        # 40% — background analysis is now running and gating further progress.
+        - setWeight: 40
+        - pause: { duration: 60s }
+        # 60%
+        - setWeight: 60
+        - pause: { duration: 60s }
+        # 80%
+        - setWeight: 80
+        - pause: { duration: 60s }
+        # Final step to 100% happens automatically when the last pause elapses and
+        # analysis is still healthy; the canary ReplicaSet is promoted to stable.

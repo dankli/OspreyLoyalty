@@ -1,0 +1,61 @@
+# ArgoCD Application that syncs the plain Kubernetes manifests in infra/k8s/ into the
+# `osprey` namespace. This is the GitOps control loop: ArgoCD continuously compares the
+# live cluster against this git path and reconciles drift.
+#
+# Scope note: this Application deliberately points at `infra/k8s` — the base, CRD-free
+# manifests that `kubeconform -strict` validates in CI. It does NOT include this
+# directory (infra/gitops) or infra/delivery, because those carry ArgoCD / Argo Rollouts
+# CRDs that are bootstrapped out-of-band (see bootstrap.sh) and are an alternative to the
+# base gateway Deployment, not part of the always-on base.
+#
+# `directory.recurse: true` walks subdirectories, which pulls in infra/k8s/ingress/ too.
+# On a plain run-local-k8s the ingress is applied only in ingress mode; when ArgoCD owns
+# the tree it will apply everything under infra/k8s, so treat that as the ingress-on
+# topology. If you want to exclude the ingress, narrow `directory.include` instead.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: osprey
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: osprey
+  # Keep the Application resource itself from being pruned if it ever ends up managed.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    # Point this at your fork/clone URL. The bootstrap script rewrites it to the repo's
+    # own `origin` remote so the demo tracks whatever you pushed.
+    repoURL: https://github.com/your-org/OspreyLoyalty.git
+    targetRevision: main
+    path: infra/k8s
+    directory:
+      recurse: true
+      # README.md files under infra/k8s are documentation, not manifests — exclude them
+      # so ArgoCD does not try to parse them as Kubernetes objects.
+      exclude: "README.md"
+  destination:
+    # In-cluster API server. The namespace is created by infra/k8s/namespace.yaml, but we
+    # also set CreateNamespace=true so a clean cluster reconciles from empty.
+    server: https://kubernetes.default.svc
+    namespace: osprey
+  syncPolicy:
+    automated:
+      # prune: delete resources that were removed from git (drift-down).
+      prune: true
+      # selfHeal: revert manual `kubectl edit`/`scale` back to the git state (drift-up).
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # Keep pruning conservative: prune last, after applies succeed.
+      - PruneLast=true
+      # Server-side apply plays nicer with large/annotated manifests (e.g. the Grafana
+      # dashboards ConfigMap) that can blow the client-side apply annotation size limit.
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

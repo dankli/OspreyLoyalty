@@ -2,9 +2,9 @@ name: infra
 on:
   push:
     branches: [main]
-    paths: ["infra/k8s/**", "infra/terraform/**", ".github/workflows/infra.yml"]
+    paths: ["infra/k8s/**", "infra/gitops/**", "infra/delivery/**", "infra/terraform/**", ".github/workflows/infra.yml"]
   pull_request:
-    paths: ["infra/k8s/**", "infra/terraform/**", ".github/workflows/infra.yml"]
+    paths: ["infra/k8s/**", "infra/gitops/**", "infra/delivery/**", "infra/terraform/**", ".github/workflows/infra.yml"]
 
 jobs:
   kubeconform:
@@ -12,6 +12,18 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: docker run --rm -v "$PWD/infra/k8s:/k8s" ghcr.io/yannh/kubeconform:v0.6.7 -summary -strict -ignore-filename-pattern "README.*" /k8s
+
+  # GitOps (ArgoCD) + progressive-delivery (Argo Rollouts) manifests live in
+  # infra/gitops and infra/delivery and use CRDs (Rollout, AnalysisTemplate, ArgoCD
+  # Application/ApplicationSet, Traefik TraefikService/IngressRoute) that kubeconform
+  # -strict does not know and would reject. Validate them LENIENTLY: no -strict, and
+  # -ignore-missing-schemas so unknown CRDs are SKIPPED (not errored) while any core-kind
+  # resources (Services, etc.) are still checked. See ADR-0019/0020.
+  kubeconform-crds:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker run --rm -v "$PWD:/repo" ghcr.io/yannh/kubeconform:v0.6.7 -summary -ignore-missing-schemas -ignore-filename-pattern "README.*" /repo/infra/gitops /repo/infra/delivery
 
   terraform:
     runs-on: ubuntu-latest

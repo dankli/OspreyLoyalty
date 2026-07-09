@@ -1,0 +1,68 @@
+# Prometheus AnalysisTemplate for the gateway canary. Argo Rollouts runs this as
+# background analysis during the canary steps (see gateway-rollout.yaml); if either metric
+# breaches its failure condition for enough measurements, the AnalysisRun fails, which
+# makes the Rollout ABORT and roll back to the stable ReplicaSet automatically.
+#
+# It deliberately reuses the SAME RED metrics the Fas 2 SLOs/alerts are built on
+# (ADR-0013): the gateway exposes http_request_duration_seconds_* with the status label,
+# and Prometheus already scrapes it. So the canary is judged by the exact
+# success-rate + p95 symptoms an operator would be paged on — symptom-driven canary
+# analysis, not synthetic probes.
+#
+# In-cluster Prometheus address: http://prometheus.osprey:9090 (Service `prometheus` in ns
+# `osprey`). If you run Rollouts analysis from another namespace, use the FQDN
+# http://prometheus.osprey.svc.cluster.local:9090.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: gateway-canary-analysis
+  namespace: osprey
+  labels:
+    app: gateway
+spec:
+  metrics:
+    # ── Success rate ────────────────────────────────────────────────────────
+    # Fraction of NON-5xx gateway responses over a 2m window. successCondition
+    # requires >= 0.95 (i.e. < 5% 5xx — mirrors the GatewayHighErrorRate alert's
+    # 5% budget). `count / total` where count excludes 5xx.
+    #
+    # NOTE: this query measures the gateway job as a whole, not only the canary
+    # pods, because the gateway metrics aren't labelled per rollout hash. For a
+    # short-lived canary that receives a slice of traffic that is an acceptable
+    # demo signal (a bad canary drags the aggregate down); a production setup
+    # would add a pod/version label and filter to the canary. See the README.
+    - name: gateway-success-rate
+      # Wait 60s before the first measurement so the new pods have warmed up and
+      # produced enough samples to be meaningful.
+      initialDelay: 60s
+      interval: 30s
+      count: 4
+      # Allow up to 2 individual measurements to breach before failing the run —
+      # tolerates a single scrape blip, fails on a sustained problem.
+      failureLimit: 2
+      successCondition: result[0] >= 0.95
+      provider:
+        prometheus:
+          address: http://prometheus.osprey:9090
+          query: |
+            sum(rate(http_request_duration_seconds_count{job="gateway",status!~"5.."}[2m]))
+              /
+            sum(rate(http_request_duration_seconds_count{job="gateway"}[2m]))
+    # ── p95 latency ─────────────────────────────────────────────────────────
+    # p95 request duration in SECONDS. failureCondition fires above 1.0s, which
+    # matches the GatewayHighLatencyCritical threshold in ADR-0013. Using
+    # failureCondition (not successCondition) so that NO data (empty result →
+    # NaN) does not spuriously fail the run during a quiet period.
+    - name: gateway-p95-latency
+      initialDelay: 60s
+      interval: 30s
+      count: 4
+      failureLimit: 2
+      failureCondition: result[0] > 1.0
+      provider:
+        prometheus:
+          address: http://prometheus.osprey:9090
+          query: |
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket{job="gateway"}[2m])) by (le)
+            )

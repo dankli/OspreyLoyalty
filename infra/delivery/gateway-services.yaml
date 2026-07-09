@@ -1,0 +1,63 @@
+# Stable + canary Services for the gateway Rollout, plus the weighted Traefik
+# TraefikService that Argo Rollouts adjusts to shift live traffic between them.
+#
+# Argo Rollouts' Traefik integration works like this:
+#   - You define TWO backing Services (stable + canary) that both select the Rollout's
+#     pods, distinguished by the rollouts-pod-template-hash label the controller adds.
+#   - You define a TraefikService (Traefik CRD) with a `weighted` list of those two
+#     Services. The controller patches the two weights at each canary step (e.g. 20/80).
+#   - Your Ingress/route sends gateway traffic at the TraefikService instead of a plain
+#     Service, so the split is applied to real requests.
+#
+# The Rollout (gateway-rollout.yaml) references these three by name under
+# strategy.canary.trafficRouting.traefik + .stableService/.canaryService.
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-stable
+  namespace: osprey
+  labels:
+    app: gateway
+spec:
+  type: ClusterIP
+  selector:
+    app: gateway
+  ports:
+    - port: 4000
+      targetPort: 4000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-canary
+  namespace: osprey
+  labels:
+    app: gateway
+spec:
+  type: ClusterIP
+  selector:
+    app: gateway
+  ports:
+    - port: 4000
+      targetPort: 4000
+---
+# Weighted TraefikService. Argo Rollouts owns the two `weight` fields and rewrites them at
+# each step; the values below are just the initial (100% stable) resting state. This is a
+# Traefik CRD (traefik.io/v1alpha1), so kubeconform -strict would reject it — which is why
+# infra/delivery is validated leniently (-ignore-missing-schemas). See infra.yml.
+apiVersion: traefik.io/v1alpha1
+kind: TraefikService
+metadata:
+  name: gateway
+  namespace: osprey
+  labels:
+    app: gateway
+spec:
+  weighted:
+    services:
+      - name: gateway-stable
+        port: 4000
+        weight: 100
+      - name: gateway-canary
+        port: 4000
+        weight: 0

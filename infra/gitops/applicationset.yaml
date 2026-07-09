@@ -1,0 +1,69 @@
+# OPTIONAL app-of-apps style ApplicationSet — an alternative to the single Application in
+# application.yaml. It generates one ArgoCD Application per logical slice of infra/k8s so
+# the ArgoCD UI shows the stack broken out (app plane vs data plane vs observability)
+# rather than one monolithic Application with ~20 resources.
+#
+# Apply EITHER application.yaml OR this file, not both — they would both claim
+# ownership of the same manifests and fight. bootstrap.sh applies application.yaml by
+# default; pass --appset to use this instead.
+#
+# This uses the `list` generator with an explicit path per group. The paths below are
+# illustrative groupings by directory/file; because infra/k8s is a flat directory of
+# YAMLs (not per-app folders), the `git` files generator points at the individual
+# manifests. Adjust the globs if you reorganise infra/k8s into subfolders.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: osprey
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: osprey
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          # Data plane: mongo + rabbitmq.
+          - group: data
+            include: "{mongo,rabbitmq}.yaml"
+          # Application services.
+          - group: services
+            include: "{gateway,members,partners,security,points-engine}.yaml"
+          # Frontends.
+          - group: frontends
+            include: "{shell,member-portal,admin-portal}.yaml"
+          # Observability stack.
+          - group: observability
+            include: "{prometheus,grafana,grafana-dashboards,jaeger,loki,promtail,otel-collector,alertmanager,kube-state-metrics,node-exporter}.yaml"
+          # Namespace + ingress.
+          - group: platform
+            include: "namespace.yaml"
+  template:
+    metadata:
+      name: "osprey-{{.group}}"
+      labels:
+        app.kubernetes.io/part-of: osprey
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/your-org/OspreyLoyalty.git
+        targetRevision: main
+        path: infra/k8s
+        directory:
+          recurse: false
+          include: "{{.include}}"
+          exclude: "README.md"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: osprey
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true
+          - ServerSideApply=true

@@ -1,0 +1,38 @@
+# Canary ingress override for api.osprey.localtest.me.
+#
+# The base ingress (infra/k8s/ingress/ingress.yaml) routes api. straight at the plain
+# `gateway` Service. For the canary demo, traffic must instead hit the weighted
+# TraefikService (infra/delivery/gateway-services.yaml) so Argo Rollouts' weight changes
+# actually split live requests. Traefik exposes a weighted TraefikService to an Ingress
+# via the traefik.io `services` annotation on a normal Ingress backend — but the clean,
+# Traefik-native way is an IngressRoute pointing at the TraefikService, which is what this
+# file uses.
+#
+# Apply this ALONGSIDE the base ingress: this IngressRoute for host api. takes precedence
+# for that host on the websecure entrypoint. Remove it (and scale the base gateway
+# Deployment back up) to return to the non-canary topology. This is a Traefik CRD, hence
+# infra/delivery is validated leniently in CI (see infra.yml).
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: gateway-canary
+  namespace: osprey
+  labels:
+    app: gateway
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`api.osprey.localtest.me`)
+      services:
+        # Reference the weighted TraefikService (kind: TraefikService), NOT a plain
+        # Service — this is what carries the stable/canary split.
+        - name: gateway
+          namespace: osprey
+          kind: TraefikService
+  # TLS is terminated on websecure using the same wildcard cert secret the base ingress
+  # uses (osprey-tls), served via SNI. If that secret is absent Traefik falls back to its
+  # default self-signed cert (browser warning) — same behaviour as the base ingress.
+  tls:
+    secretName: osprey-tls
