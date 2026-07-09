@@ -1,0 +1,35 @@
+# gitleaks configuration for Osprey Loyalty.
+#
+# This is a public demo repo. The only "secrets" it contains are throwaway,
+# in-memory demo credentials that are intentionally visible — the login page
+# literally lists them so a reviewer can click to sign in. They are allowlisted
+# below so the scan surfaces only *genuine* leaks.
+#
+# Rollout is visibility-first: the CI job reports findings to the Security tab
+# but does not yet fail the build (see SECURITY.md). Flipping it to blocking is
+# the documented next step once the baseline is clean.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented demo credentials and their homes — intentional, non-sensitive."
+regexes = [
+  # The partners-service client secret (default value; over/ridden by env in real runs).
+  '''partners-secret''',
+  # Spring's {noop} in-memory demo passwords.
+  '''\{noop\}(password|admin)''',
+  # The demo users themselves.
+  '''demo-(ada|erik|yusra)''',
+  # admin:admin basic-auth used by the demo Grafana / admin user.
+  '''admin:admin''',
+]
+paths = [
+  '''services/security/src/main/java/com/ospreyloyalty/security/LoginController\.java''',
+  '''services/security/src/main/java/com/ospreyloyalty/security/DefaultSecurityConfig\.java''',
+  '''services/security/src/main/java/com/ospreyloyalty/security/AuthorizationServerConfig\.java''',
+  '''services/security/src/main/resources/application\.ya?ml''',
+  '''infra/e2e-smoke\.sh''',
+  '''infra/k8s/.*\.ya?ml''',
+  '''.*README\.md''',
+]

@@ -1,0 +1,62 @@
+name: devsecops
+# Repo-wide security scanning: leaked secrets, dependency/config CVEs, and an SBOM.
+# Rollout is visibility-first — scanners report to the Security tab and the job
+# summary but do NOT gate the build yet (see SECURITY.md for why, and for the
+# planned move to enforcement). The weekly schedule catches CVEs newly disclosed
+# against dependencies that haven't changed.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "27 6 * * 1" # Mondays 06:27 UTC
+
+permissions:
+  contents: read
+  security-events: write # upload SARIF to the Security tab
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # full history — a secret is a leak even once removed from HEAD
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        continue-on-error: true # visibility-first; demo creds are allowlisted in .gitleaks.toml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  vuln-and-config-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Trivy — dependencies, IaC misconfig, secrets (SARIF)
+        # Run via docker to match the repo's tooling style (see infra.yml/kubeconform).
+        run: |
+          docker run --rm -v "$PWD:/repo" aquasec/trivy:latest fs /repo \
+            --scanners vuln,misconfig,secret \
+            --severity HIGH,CRITICAL \
+            --format sarif --output /repo/trivy.sarif \
+            --exit-code 0 # report-only for now
+      - name: Upload Trivy SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+          category: trivy
+
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Generate CycloneDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          format: cyclonedx-json
+          output-file: sbom.cyclonedx.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.cyclonedx.json
