@@ -5,18 +5,18 @@ import MemberPanel from "./components/MemberPanel.vue";
 import RatesPanel from "./components/RatesPanel.vue";
 import HelpButton from "./components/HelpButton.vue";
 import { SUPPORTED_LANGUAGES, changeLanguage } from "./i18n";
-import { authEnabled, isAdmin, signOut } from "./auth";
+import { isAdmin } from "./auth";
 
 // Read once at load — auth state changes only across a login/logout redirect (a full reload).
-const showAuth = authEnabled();
 const canAdminister = isAdmin();
 </script>
 
 <template>
   <header class="site-header">
     <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-      <path d="M4.5 15.5c0-6 4.8-10.5 11-10.5 3.8 0 6.8 1.7 8.8 3.9l4.4 1.3-3.3 2.2c-.1 7-5 11.9-11 11.9-6 0-9.9-4.5-9.9-8.8Z"
-            fill="#2e2213" stroke="#43331d" stroke-width="1" />
+      <path
+        d="M4.5 15.5c0-6 4.8-10.5 11-10.5 3.8 0 6.8 1.7 8.8 3.9l4.4 1.3-3.3 2.2c-.1 7-5 11.9-11 11.9-6 0-9.9-4.5-9.9-8.8Z"
+        fill="#2e2213" stroke="#43331d" stroke-width="1" />
       <path d="M6.5 12.4h12.5" stroke="#140d06" stroke-width="2.6" stroke-linecap="round" opacity=".85" />
       <circle cx="12.6" cy="14.8" r="3.3" fill="#e3ae36" />
       <circle cx="12.6" cy="14.8" r="1.35" fill="#140d06" />
@@ -26,16 +26,11 @@ const canAdminister = isAdmin();
       <span class="eyebrow">{{ $t("app.brand") }}</span>
       <h1>{{ $t("app.admin") }} <em>{{ $t("app.console") }}</em></h1>
     </div>
-    <select
-      class="lang-switch"
-      :aria-label="$t('app.language')"
-      :value="$i18n.locale"
-      @change="(e) => changeLanguage((e.target as HTMLSelectElement).value)"
-    >
+    <select class="lang-switch" :aria-label="$t('app.language')" :value="$i18n.locale"
+      @change="(e) => changeLanguage((e.target as HTMLSelectElement).value)">
       <option v-for="l in SUPPORTED_LANGUAGES" :key="l.code" :value="l.code">{{ l.label }}</option>
     </select>
     <HelpButton />
-    <button v-if="showAuth" type="button" class="sign-out" @click="signOut()">{{ $t("app.signOut") }}</button>
   </header>
   <main class="admin-main">
     <template v-if="canAdminister">
