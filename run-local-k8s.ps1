@@ -161,8 +161,8 @@ Write-Host "✓ Docker running, kubectl on context '$context', cluster reachable
 if ($Delete) {
     Write-Host "=== Deleting namespace '$namespace' ===" -ForegroundColor Cyan
     kubectl delete namespace $namespace --ignore-not-found
-    kubectl delete clusterrole promtail traefik-ingress --ignore-not-found | Out-Null
-    kubectl delete clusterrolebinding promtail traefik-ingress --ignore-not-found | Out-Null
+    kubectl delete clusterrole promtail traefik-ingress prometheus kube-state-metrics --ignore-not-found | Out-Null
+    kubectl delete clusterrolebinding promtail traefik-ingress prometheus kube-state-metrics --ignore-not-found | Out-Null
     kubectl delete ingressclass traefik --ignore-not-found | Out-Null
     Write-Host '✓ Torn down.' -ForegroundColor Green
     return

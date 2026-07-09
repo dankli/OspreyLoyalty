@@ -141,8 +141,8 @@ echo "✓ Docker running, kubectl on context '$CONTEXT', cluster reachable"
 if [ "$DELETE" -eq 1 ]; then
   echo "=== Deleting namespace '$NAMESPACE' ==="
   kubectl delete namespace "$NAMESPACE" --ignore-not-found
-  kubectl delete clusterrole promtail traefik-ingress --ignore-not-found >/dev/null
-  kubectl delete clusterrolebinding promtail traefik-ingress --ignore-not-found >/dev/null
+  kubectl delete clusterrole promtail traefik-ingress prometheus kube-state-metrics --ignore-not-found >/dev/null
+  kubectl delete clusterrolebinding promtail traefik-ingress prometheus kube-state-metrics --ignore-not-found >/dev/null
   kubectl delete ingressclass traefik --ignore-not-found >/dev/null
   echo "✓ Torn down."
   exit 0
