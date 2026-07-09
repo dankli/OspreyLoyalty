@@ -122,6 +122,9 @@ flowchart TD
 | [ADR-0013](decisions/0013-slo-and-alerting.md) | SLOs plus symptom-based (RED) Prometheus alerting through Alertmanager, each alert backed by a runbook |
 | [ADR-0014](decisions/0014-contract-testing.md) | Contract testing via a GraphQL schema breaking-change guard and a shared `EarnEvent` message contract — no Pact broker at demo scale |
 | [ADR-0015](decisions/0015-load-testing-and-finops.md) | k6 load/soak tests run on a schedule (not per-push) plus FinOps cost reasoning tied to ADR-0012 |
+| [ADR-0016](decisions/0016-transactional-outbox.md) | A transactional outbox in partners (durable on Mongo, drained by a relay) so a purchase survives RabbitMQ downtime instead of being lost on a fire-and-forget publish |
+| [ADR-0017](decisions/0017-audit-log.md) | An append-only audit log of privileged actions, actor taken from the JWT `sub` (anonymous under the auth kill-switch) |
+| [ADR-0018](decisions/0018-gdpr-erasure.md) | GDPR right-to-erasure by pseudonymizing member PII while retaining the numeric ledger, with a resurrection guard |
 
 ---
 
