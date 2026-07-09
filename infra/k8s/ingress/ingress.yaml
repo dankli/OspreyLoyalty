@@ -7,6 +7,7 @@
 #   member   -> member-portal remote      admin -> admin-portal remote
 #   id       -> security (OIDC issuer)     api   -> gateway (GraphQL BFF)
 #   members / partners -> resource servers the admin portal calls directly
+#   points-engine -> the standalone Rust calculator (REST /calculate), exposed for direct calls
 #   grafana / jaeger / traefik -> ops dashboards
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -30,6 +31,7 @@ spec:
         - api.osprey.localtest.me
         - members.osprey.localtest.me
         - partners.osprey.localtest.me
+        - points-engine.osprey.localtest.me
         - grafana.osprey.localtest.me
         - jaeger.osprey.localtest.me
         - traefik.osprey.localtest.me
@@ -76,6 +78,12 @@ spec:
           - path: /
             pathType: Prefix
             backend: { service: { name: partners, port: { number: 8080 } } }
+    - host: points-engine.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: points-engine, port: { number: 8082 } } }
     - host: grafana.osprey.localtest.me
       http:
         paths:

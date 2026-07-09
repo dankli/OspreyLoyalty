@@ -56,12 +56,14 @@ if [ "$INGRESS" -eq 1 ]; then
   ISSUER="https://id.$DOMAIN"
   MEMBER_REDIRECT="https://member.$DOMAIN/callback"; ADMIN_REDIRECT="https://admin.$DOMAIN/callback"; SHELL_REDIRECT="https://app.$DOMAIN/callback"
   GATEWAY_URL="https://api.$DOMAIN/graphql"; MEMBERS_URL="https://members.$DOMAIN"; PARTNERS_URL="https://partners.$DOMAIN"
+  POINTS_URL="https://points-engine.$DOMAIN"
   MEMBER_REMOTE="https://member.$DOMAIN/assets/remoteEntry.js"; ADMIN_REMOTE="https://admin.$DOMAIN/assets/remoteEntry.js"
   ENTRY="https://app.$DOMAIN"
 else
   ISSUER="http://localhost:9000"
   MEMBER_REDIRECT="http://localhost:5173/callback"; ADMIN_REDIRECT="http://localhost:5174/callback"; SHELL_REDIRECT="http://localhost:5170/callback"
   GATEWAY_URL="http://localhost:4000/graphql"; MEMBERS_URL="http://localhost:5080"; PARTNERS_URL="http://localhost:8081"
+  POINTS_URL="http://localhost:8082"
   MEMBER_REMOTE="http://localhost:5173/assets/remoteEntry.js"; ADMIN_REMOTE="http://localhost:5174/assets/remoteEntry.js"
   ENTRY="http://localhost:5170"
 fi
@@ -104,6 +106,7 @@ print_ingress_access() {
   print_url "Gateway GraphQL" "$GATEWAY_URL"
   print_url "Members API" "$MEMBERS_URL"
   print_url "Partners API" "$PARTNERS_URL"
+  print_url "Points engine" "$POINTS_URL"
   print_url "Grafana" "https://grafana.$DOMAIN"
   print_url "Jaeger" "https://jaeger.$DOMAIN"
   print_url "Traefik" "https://traefik.$DOMAIN"
@@ -118,6 +121,7 @@ print_port_forward_access() {
   print_url "Gateway GraphQL" "$GATEWAY_URL"
   print_url "Members API" "$MEMBERS_URL"
   print_url "Partners API" "$PARTNERS_URL"
+  print_url "Points engine" "$POINTS_URL"
   print_url "Grafana" "http://localhost:3000"
 }
 

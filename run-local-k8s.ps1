@@ -71,6 +71,7 @@ if ($ingress) {
     $issuer = "https://id.$domain"
     $memberRedirect = "https://member.$domain/callback"; $adminRedirect = "https://admin.$domain/callback"; $shellRedirect = "https://app.$domain/callback"
     $gatewayUrl = "https://api.$domain/graphql"; $membersUrl = "https://members.$domain"; $partnersUrl = "https://partners.$domain"
+    $pointsUrl = "https://points-engine.$domain"
     $memberRemote = "https://member.$domain/assets/remoteEntry.js"; $adminRemote = "https://admin.$domain/assets/remoteEntry.js"
     $entry = "https://app.$domain"
 }
@@ -78,6 +79,7 @@ else {
     $issuer = 'http://localhost:9000'
     $memberRedirect = 'http://localhost:5173/callback'; $adminRedirect = 'http://localhost:5174/callback'; $shellRedirect = 'http://localhost:5170/callback'
     $gatewayUrl = 'http://localhost:4000/graphql'; $membersUrl = 'http://localhost:5080'; $partnersUrl = 'http://localhost:8081'
+    $pointsUrl = 'http://localhost:8082'
     $memberRemote = 'http://localhost:5173/assets/remoteEntry.js'; $adminRemote = 'http://localhost:5174/assets/remoteEntry.js'
     $entry = 'http://localhost:5170'
 }
@@ -122,6 +124,7 @@ function Show-IngressAccess {
     Write-Link 'Gateway GraphQL' $gatewayUrl
     Write-Link 'Members API' $membersUrl
     Write-Link 'Partners API' $partnersUrl
+    Write-Link 'Points engine' $pointsUrl
     Write-Link 'Grafana' "https://grafana.$domain"
     Write-Link 'Jaeger' "https://jaeger.$domain"
     Write-Link 'Traefik' "https://traefik.$domain"
@@ -136,6 +139,7 @@ function Show-PortForwardAccess {
     Write-Link 'Gateway GraphQL' $gatewayUrl
     Write-Link 'Members API' $membersUrl
     Write-Link 'Partners API' $partnersUrl
+    Write-Link 'Points engine' $pointsUrl
     Write-Link 'Grafana' 'http://localhost:3000'
 }
 
