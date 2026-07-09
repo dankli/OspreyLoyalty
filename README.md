@@ -189,10 +189,11 @@ curl -X POST http://localhost:8082/calculate -H "Content-Type: application/json"
 ### Travel agent
 
 The member portal's **Travel Agent** page (http://localhost:5173/travel-agent) fakes an AI trip
-planner over the member's own points: a reply types out token by token, then destination cards
-appear — the trips affordable now, plus the cheapest one just out of reach to save toward. There is
-no LLM: it is a gateway feature slice streamed over Server-Sent Events, with a pure planning core
-(points-first) and a five-language phrasebook. Watch the raw stream:
+planner over a member's points balance: a reply types out token by token, then destination cards
+appear — some flagged as within reach, plus a cheapest one to save toward. There is no LLM: it is a
+gateway feature slice streamed over Server-Sent Events, with a pure planning core and a five-language
+phrasebook. The trip prices and the affordable / save-toward split are illustrative demo content, not
+a verified view of the account balance. Watch the raw stream:
 
 ```bash
 curl -N "http://localhost:4000/travel-agent/stream?memberId=demo-ada&lang=en"
