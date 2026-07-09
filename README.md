@@ -32,7 +32,7 @@ gateway and frontends answer, then print the relevant URLs:
 Stop it again with `./stop-docker-compose.ps1` / `./stop-docker-compose.sh` (add `-Volumes` / `--volumes` to
 also wipe the seeded Mongo data), or `docker compose -f infra/docker-compose.yml down`.
 
-> The `-docker-compose` scripts run the stack in Docker Compose; `run-local-k8s.*` deploys it to Kubernetes instead.
+> **Docker Compose is the quick start; Kubernetes is the full experience.** Compose is the fastest way to poke at the domain. But the closest thing to how this actually runs — every service and frontend behind a Traefik ingress, with liveness/readiness probes and resource limits — is the Kubernetes twin: `./run-local-k8s.ps1` / `./run-local-k8s.sh` (see [Kubernetes and IaC](#kubernetes-and-iac)). Reach for it when you want the whole cloud-native picture — ingress, zero-trust and the observability stack wired the way ADR-0011 and ADR-0012 describe — not just the app.
 
 | URL | What |
 |---|---|
