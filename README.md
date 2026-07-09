@@ -101,6 +101,18 @@ curl -X POST http://localhost:8082/calculate \
 
 The calculation itself takes ~36 ns without promotions and ~202 ns with five (criterion), which is why members deliberately does not call it — the network hop would cost far more than the three-line formula it already has — while the e2e suite asserts the two implementations agree ([docs/decisions/0006](docs/decisions/0006-rust-points-engine.md)).
 
+### Try the travel agent
+
+The member portal has a **Travel Agent** page (in the nav, or straight to http://localhost:5173/travel-agent) that fakes an AI trip planner over the member's own points. Press **Generate** and a reply types itself out token by token, then a row of destination cards appears: the trips the member can afford right now, plus the cheapest one just out of reach to save toward.
+
+There is no LLM behind it — it is a gateway feature slice ([`services/gateway/src/features/travel-agent`](services/gateway/src/features/travel-agent)) streamed to the browser over **Server-Sent Events**. A pure planning core picks trips against the balance (points-first: what can this member actually book?), a five-language phrasebook narrates the pick, and one thin SSE edge writes `meta` / `token` / `suggestion` / `done` events down the wire — or a single `error` event if the member can't be resolved. The typewriter cadence is a deliberate per-token delay, not latency. Watch the raw stream:
+
+```bash
+curl -N "http://localhost:4000/travel-agent/stream?memberId=demo-ada&lang=en"
+```
+
+The catalogue is entirely made up, but the prices are not arbitrary: each cost is modelled on SAS EuroBonus economy Saver award levels for a round trip for two — roughly 11 000 points for a domestic hop, 25 000 within Europe, 90 000 to North America, 140 000 to Asia. So `demo-ada`'s 14 500 spendable points surface a believable handful of reachable trips and one to aim for, rather than a flat list. Same shape as the rest of the domain: pure total functions in the middle, an impure edge at the boundary, and exceptions handled only there.
+
 ### Watch it run
 
 Every service logs one JSON line per request, tagged with a correlation id. Send your own and follow it across the stack:
@@ -125,7 +137,7 @@ Authentication now ships as an **opt-in zero-trust layer** (Phase 6): a first-pa
 | [`services/partners`](services/partners) | Java 21 / Spring Boot | Partner earn simulations and the duplicate-delivery demo |
 | [`services/points-engine`](services/points-engine) | Rust | Pure points calculation with promotions, property-tested; deliberately not wired into the earn path ([docs/decisions/0006](docs/decisions/0006-rust-points-engine.md)) |
 | [`services/security`](services/security) | Java 21 / Spring Boot | First-party OIDC/OAuth2 identity service (Spring Authorization Server) — issues the JWTs the fleet validates ([docs/decisions/0007](docs/decisions/0007-zero-trust-auth.md)) |
-| [`frontends/member-portal`](frontends/member-portal) | React 19 | Member dashboard: balance, tier progress, benefits, rewards |
+| [`frontends/member-portal`](frontends/member-portal) | React 19 | Member dashboard: balance, tier progress, benefits, rewards, and a simulated Travel Agent streamed over SSE |
 | [`frontends/admin-portal`](frontends/admin-portal) | Vue 3 | Admin tools: member lookup, point adjustments, partner rates, OSPREY invitations |
 | [`frontends/shell`](frontends/shell) | TypeScript | Micro-frontend host: one page composing both portals via module federation ([docs/decisions/0004](docs/decisions/0004-micro-frontend-tradeoff.md)) |
 

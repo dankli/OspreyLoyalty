@@ -73,11 +73,11 @@ flowchart TD
 
 **shell** — a thin TypeScript host served by Nginx that composes the two portals via Vite module federation. It owns navigation only; it has no knowledge of either app's internals. See ADR-0004 for the trade-off analysis and an honest account of when not to use this pattern.
 
-**member-portal** — the main user-facing app, built in React 19 with TanStack Query and GraphQL codegen against the gateway schema. The showpiece frontend: dashboard with tier progress, paginated transactions, rewards with optimistic UI, and a tier overview.
+**member-portal** — the main user-facing app, built in React 19 with TanStack Query and GraphQL codegen against the gateway schema. The showpiece frontend: dashboard with tier progress, paginated transactions, rewards with optimistic UI, a tier overview, and a Travel Agent page that streams a simulated, points-first trip planner over SSE (its own feature slice under `src/features/travel-agent`).
 
 **admin-portal** — a Vue 3 app for admin tasks: member lookup, manual point adjustments, partner rate editing, and OSPREY invitations. Calls members and partners directly over REST rather than through the gateway, which is acceptable for an internal admin surface in a demo context with no auth.
 
-**gateway** — a TypeScript/Node 22 BFF using GraphQL Yoga. It owns the schema the member portal queries and enforces a 2-second timeout on every call to members and partners. Input validation with zod; environment validated at startup. The aggregation edge: member portal never calls backend services directly.
+**gateway** — a TypeScript/Node 22 BFF using GraphQL Yoga. It owns the schema the member portal queries and enforces a 2-second timeout on every call to members and partners. Input validation with zod; environment validated at startup. The aggregation edge: member portal never calls backend services directly. Alongside GraphQL it hosts one Server-Sent-Events endpoint, `GET /travel-agent/stream`, a self-contained feature slice (`src/features/travel-agent`) that streams the simulated Travel Agent's reply — a pure planning core over a fake, award-priced trip catalogue behind a single thin SSE edge (A-Frame, with failures surfaced as an `error` event; see the README).
 
 **members** — the core loyalty domain, written in C# on .NET 10 with Vertical Slice Architecture. Handles enrollment, member profiles, the tier ladder (rolling 12-month window, MEMBER through DIAMOND thresholds, OSPREY by invitation only), the points ledger, redemption, manual adjustments, and point expiry. Stores one document per member in MongoDB. The deepest quality surface in the repo: strict TDD, pure domain core with no I/O, idempotent event processing, and a showcase duplicate-delivery test.
 
@@ -117,6 +117,8 @@ flowchart TD
 | [ADR-0008](decisions/0008-opentelemetry-observability.md) | OpenTelemetry → Jaeger (traces) + Loki (logs) + Prometheus/Grafana (metrics), correlated by `trace_id` |
 | [ADR-0009](decisions/0009-i18n-strategy.md) | Five-language i18n on the frontends (react-i18next / vue-i18n) and backend messages (per-service catalogs keyed off `Accept-Language`) |
 | [ADR-0010](decisions/0010-in-app-help.md) | An in-app, localized "?" help dialog per page, sourced from the i18n catalogs so help ships in all five languages for free |
+| [ADR-0011](decisions/0011-traefik-ingress.md) | Traefik as the ingress controller — a single entry point routing to every service and frontend in the local cluster |
+| [ADR-0012](decisions/0012-compute-model-k8s-over-serverless.md) | Kubernetes over serverless for the whole fleet — a conscious showcase choice; the stateless edges (points-engine, expiry sweep, earn consumer) are the first to move to functions if cost, not demonstration, were the goal |
 
 ---
 
