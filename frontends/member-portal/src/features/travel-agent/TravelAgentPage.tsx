@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { progressPercent } from "../dashboard/progress";
+import { savingsPercent } from "./savingsPercent";
 import { useTravelAgentStream } from "./useTravelAgentStream";
 
 export function TravelAgentPage({ memberId }: { memberId: string }) {
@@ -37,7 +37,7 @@ export function TravelAgentPage({ memberId }: { memberId: string }) {
         <ul className="reward-grid">
           {state.suggestions.map((s) => {
             // Only the goal card has a gap and a progress bar; affordable cards show the go-badge.
-            const percent = s.affordable ? 0 : progressPercent(state.spendablePoints ?? 0, s.gap ?? 0);
+            const percent = s.affordable ? 0 : savingsPercent(state.spendablePoints ?? 0, s.cost);
             const goalLabel = t("travelAgent.saveMore", { points: (s.gap ?? 0).toLocaleString("sv-SE") });
             return (
               <li key={s.destination} className={s.affordable ? "reward-card suggestion-card" : "reward-card suggestion-card goal-card"}>
