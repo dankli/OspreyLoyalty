@@ -20,11 +20,11 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }} # skip on Dependabot PRs — keeps the CI queue clear
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0 # full history — a secret is a leak even once removed from HEAD
       - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         continue-on-error: true # visibility-first; demo creds are allowlisted in .gitleaks.toml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -33,7 +33,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }} # skip on Dependabot PRs — keeps the CI queue clear
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Trivy — dependencies, IaC misconfig, secrets (SARIF)
         # Run via docker to match the repo's tooling style (see infra.yml/kubeconform).
         # --offline-scan keeps Trivy off Maven Central etc. for dependency-version
@@ -50,7 +50,7 @@ jobs:
             --exit-code 0
       - name: Upload Trivy SARIF
         if: hashFiles('trivy.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy.sarif
           category: trivy
@@ -59,13 +59,13 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }} # skip on Dependabot PRs — keeps the CI queue clear
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Generate CycloneDX SBOM
         uses: anchore/sbom-action@v0
         with:
           format: cyclonedx-json
           output-file: sbom.cyclonedx.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sbom
           path: sbom.cyclonedx.json
