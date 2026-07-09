@@ -9,7 +9,7 @@ public static partial class GetMemberProfile
     public sealed record Response(
         string Id,
         string Name,
-        string Email,
+        string? Email, // null once the member has been GDPR-erased (ADR-0018)
         string Tier,
         int QualifyingPoints,
         int SpendablePoints,

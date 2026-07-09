@@ -27,4 +27,14 @@ public static class MongoIndexes
                 new CreateIndexOptions { Name = "ix_email" }),
             cancellationToken: ct);
     }
+
+    /// <summary>Audit trail lookups are always "what happened to member X, newest first" (ADR-0017).</summary>
+    public static async Task EnsureAsync(IMongoCollection<AuditLogDocument> audit, CancellationToken ct = default)
+    {
+        await audit.Indexes.CreateOneAsync(
+            new CreateIndexModel<AuditLogDocument>(
+                Builders<AuditLogDocument>.IndexKeys.Ascending(a => a.TargetMemberId).Descending(a => a.OccurredAtUtc),
+                new CreateIndexOptions { Name = "ix_target_occurred" }),
+            cancellationToken: ct);
+    }
 }

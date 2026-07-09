@@ -20,7 +20,8 @@ public static partial class EnrollMember
     internal static Response ToResponse(MemberDocument document) => new(
         document.Id,
         document.Name,
-        document.Email,
+        document.Email!, // enrollment just wrote a real email — never the erased-null case
+
         Tiers.Effective(document.QualifyingPoints, document.IsOspreyInvited).ToString().ToUpperInvariant(),
         document.QualifyingPoints,
         document.SpendablePoints,

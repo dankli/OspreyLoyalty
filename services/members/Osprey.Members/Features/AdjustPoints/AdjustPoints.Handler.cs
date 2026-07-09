@@ -9,11 +9,13 @@ public static partial class AdjustPoints
 {
     public sealed class Handler(
         IMongoCollection<MemberDocument> members,
-        IMongoCollection<PointsTransactionDocument> transactions)
+        IMongoCollection<PointsTransactionDocument> transactions,
+        Audit.Writer audit)
     {
         private const int MongoTimeoutSeconds = 5;
 
-        public async Task<Response?> Handle(string memberId, Request request, CancellationToken ct = default)
+        /// <param name="caller">Who is making the change — actor + correlation from the edge (ADR-0017).</param>
+        public async Task<Response?> Handle(string memberId, Request request, Audit.Caller.Context caller, CancellationToken ct = default)
         {
             Validation.Require(memberId, request);
             string reason = request.Reason.Trim();
@@ -77,6 +79,14 @@ public static partial class AdjustPoints
                     Builders<MemberDocument>.Update.Inc(m => m.SpendablePoints, request.Points),
                     options: null, cts.Token);
             }
+
+            // Edge concern: record WHO adjusted WHAT, off the happy path above. Only a genuinely
+            // new adjustment is audited — a retried key returns via AlreadyAppliedResponse and
+            // changed nothing, so it needs no second record (the audit trail stays idempotent too).
+            await audit.WriteAsync(new Audit.Entry(
+                caller.Actor, AuditActions.AdjustPoints, memberId,
+                new Dictionary<string, string> { ["points"] = request.Points.ToString(), ["reason"] = reason },
+                caller.CorrelationId), cts.Token);
 
             MemberDocument member = await members.Find(m => m.Id == memberId).FirstAsync(cts.Token);
             return new Response(request.Points, member.SpendablePoints, AlreadyApplied: false);

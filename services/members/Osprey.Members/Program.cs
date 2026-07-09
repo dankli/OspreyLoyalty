@@ -44,12 +44,14 @@ builder.Services.AddSingleton<IMongoClient>(_ =>
 {
     MongoClientSettings settings = MongoClientSettings.FromConnectionString(
         builder.Configuration.GetConnectionString("Mongo") ?? "mongodb://localhost:27017");
-    // Subscribe the diagnostics activity emitter so every MongoDB command becomes a span. Capturing
-    // the command text is handy for a demo; drop it if command payloads could ever carry PII.
+    // Subscribe the diagnostics activity emitter so every MongoDB command becomes a span. Command
+    // TEXT can carry member name/email (a filter or an insert), so capture is OFF by default and
+    // must be turned on deliberately per-environment via Mongo:CaptureCommandText — the log-PII
+    // mitigation of ADR-0018. Never enable it where traces reach a shared/retained backend.
     settings.ClusterConfigurator = cb => cb.Subscribe(
         new DiagnosticsActivityEventSubscriber(new InstrumentationOptions
         {
-            CaptureCommandText = true,
+            CaptureCommandText = builder.Configuration.GetValue("Mongo:CaptureCommandText", false),
             // Skip the driver's periodic admin/heartbeat commands — they run outside any request and
             // would otherwise surface as orphaned single-span traces (the DB equivalent of /health noise).
             ShouldStartActivity = evt => evt.CommandName is not (
@@ -62,6 +64,8 @@ builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<IMongoClient>().GetDatabase("osprey").GetCollection<MemberDocument>("members"));
 builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<IMongoClient>().GetDatabase("osprey").GetCollection<PointsTransactionDocument>("transactions"));
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IMongoClient>().GetDatabase("osprey").GetCollection<AuditLogDocument>("audit"));
 builder.Services.AddScoped<EnrollMember.Handler>();
 builder.Services.AddScoped<GetMemberProfile.Handler>();
 builder.Services.AddScoped<ApplyEarn.Handler>();
@@ -70,6 +74,8 @@ builder.Services.AddScoped<Redeem.Handler>();
 builder.Services.AddScoped<FindMemberByEmail.Handler>();
 builder.Services.AddScoped<AdjustPoints.Handler>();
 builder.Services.AddScoped<SetOspreyInvitation.Handler>();
+builder.Services.AddScoped<EraseMember.Handler>();
+builder.Services.AddScoped<Audit.Writer>();
 builder.Services.AddCors();
 
 // Zero-trust JWT validation — opt-in via Auth:Enabled so tests and local dev stay
@@ -172,6 +178,7 @@ Redeem.MapEndpoints(app);
 var findByEmail = FindMemberByEmail.MapEndpoints(app);
 var adjust = AdjustPoints.MapEndpoints(app);
 var osprey = SetOspreyInvitation.MapEndpoints(app);
+var erasure = EraseMember.MapEndpoints(app);
 if (authEnabled)
 {
     // Admin surfaces require the admin role; the member endpoints above just need a
@@ -179,11 +186,13 @@ if (authEnabled)
     findByEmail.RequireAuthorization("admin");
     adjust.RequireAuthorization("admin");
     osprey.RequireAuthorization("admin");
+    erasure.RequireAuthorization("admin");
 }
 app.MapMetrics().AllowAnonymous(); // Prometheus scrape endpoint at /metrics
 
 await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<PointsTransactionDocument>>());
 await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<MemberDocument>>());
+await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<AuditLogDocument>>());
 
 if (app.Configuration.GetValue<bool>("SeedDemoData", false))
     await SeedDemoData.SeedAsync(app.Services.GetRequiredService<IMongoCollection<MemberDocument>>());
