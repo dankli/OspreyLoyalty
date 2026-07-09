@@ -4,6 +4,7 @@ import pino from "pino";
 import { buildYoga } from "./server.js";
 import { env } from "./env.js";
 import { fetchMember } from "./features/member/membersClient.js";
+import { handleTravelAgentStream } from "./features/travel-agent/stream.js";
 import { CORRELATION_HEADER, resolveCorrelationId } from "./correlation.js";
 import { httpRequestDuration, metricsRegistry } from "./metrics.js";
 
@@ -14,6 +15,7 @@ const yoga = buildYoga();
 function routeLabel(url: string | undefined): string {
   const pathname = (url ?? "").split("?")[0] ?? "";
   if (pathname === "/graphql" || pathname === "/health" || pathname === "/metrics") return pathname;
+  if (pathname === "/travel-agent/stream") return pathname;
   if (/^\/api\/member\/[^/]+$/.test(pathname)) return "/api/member/:id";
   return "other";
 }
@@ -95,6 +97,24 @@ const server = createServer((req, res) => {
       return;
     }
     res.writeHead(405).end();
+    return;
+  }
+
+  if (req.url?.startsWith("/travel-agent/stream")) {
+    // Mirror the /client-logs CORS handling: browsers preflight a GET that carries Authorization.
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "authorization, x-correlation-id");
+    if (req.method === "OPTIONS") {
+      res.writeHead(204).end();
+      return;
+    }
+    if (req.method !== "GET") {
+      // GET-only SSE endpoint — reject other verbs like the /client-logs handler rejects non-POST.
+      res.writeHead(405).end();
+      return;
+    }
+    void handleTravelAgentStream(req, res, { fetchMember, membersUrl: env.MEMBERS_URL });
     return;
   }
 
