@@ -7,11 +7,13 @@ import { createAuthorizer } from "./auth.js";
 import { createDriver } from "./neo4j.js";
 import { createAllAirports, getAirport, getDestinations, searchAirports } from "./features/airports/queries.js";
 import { searchRoute } from "./features/route-search/searchRoute.js";
+import { createPointsEstimator } from "./features/points/pointsClient.js";
 import { loadDataset, seedRoutes } from "./features/seed/seedRoutes.js";
 import { warmRouteGraph } from "./features/route-search/warmup.js";
 
 const logger = pino();
 const driver = createDriver(env.NEO4J_URL);
+const estimatePoints = createPointsEstimator(env.POINTS_ENGINE_URL, env.ROUTE_POINTS_PER_KM, logger);
 
 let ready = false;
 
@@ -20,7 +22,12 @@ const app = createApp({
   getAirport: (iata) => getAirport(driver, iata),
   getDestinations: (iata) => getDestinations(driver, iata),
   allAirports: createAllAirports(driver),
-  searchRoute: (from, to, optimize) => searchRoute(driver, from, to, optimize),
+  searchRoute: async (from, to, optimize) => {
+    const path = await searchRoute(driver, from, to, optimize);
+    if (!path) return null;
+    // Decoration, not dependency: a dead points-engine yields estimatedPoints: null, never a failed search.
+    return { ...path, estimatedPoints: await estimatePoints(path.totalKm) };
+  },
   isReady: () => ready,
   authorize: createAuthorizer({
     enabled: env.AUTH_ENABLED,

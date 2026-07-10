@@ -58,7 +58,7 @@
     result
       ? strings.totalSummary
           .replace("{hops}", String(result.hops))
-          .replace("{km}", result.totalKm.toLocaleString())
+          .replace("{km}", result.totalKm.toLocaleString("en-US"))
           .replace("{duration}", formatDuration(result.totalMin))
       : "",
   );
@@ -92,7 +92,12 @@
     <p class="loading">{strings.loading}</p>
   {:else if result}
     <h2>{strings.legsHeading}</h2>
-    <p class="summary">{summary}</p>
+    <p class="summary">
+      {summary}
+      {#if result.estimatedPoints !== null}
+        <span class="points-badge">{strings.pointsBadge.replace("{points}", result.estimatedPoints.toLocaleString("en-US"))}</span>
+      {/if}
+    </p>
     <table>
       <thead>
         <tr>
@@ -108,7 +113,7 @@
           <tr>
             <td><strong>{leg.from.iata}</strong> {leg.from.city}</td>
             <td><strong>{leg.to.iata}</strong> {leg.to.city}</td>
-            <td>{leg.km.toLocaleString()} km</td>
+            <td>{leg.km.toLocaleString("en-US")} km</td>
             <td>{formatDuration(leg.min)}</td>
             <td>{leg.carriers.length > 0 ? leg.carriers.map((c) => c.name).join(", ") : strings.noCarriers}</td>
           </tr>
@@ -177,6 +182,16 @@
   .summary {
     color: #5b6770;
     margin: 0;
+  }
+
+  .points-badge {
+    display: inline-block;
+    margin-left: 0.6rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    background: #eef6ee;
+    color: #1d6b2f;
+    font-weight: 600;
   }
 
   .error {

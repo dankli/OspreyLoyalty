@@ -1,7 +1,10 @@
 import { z } from "zod";
 import type pino from "pino";
 
-const REQUEST_TIMEOUT_MS = 2000; // the route answer must not wait on a points estimate
+// Much tighter than the 2 s request budget: the estimate decorates an answer that has
+// already been computed, and the decorated response still has to beat the BFF's 2 s
+// abort. A dead engine (hanging connect, slow DNS) must cost at most this.
+const REQUEST_TIMEOUT_MS = 600;
 
 const CalculateResponseSchema = z.object({ points: z.number() });
 

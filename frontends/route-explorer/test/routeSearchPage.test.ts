@@ -12,6 +12,7 @@ const path: RoutePathResult = {
   hops: 2,
   totalKm: 15800,
   totalMin: 1350,
+  estimatedPoints: 79000,
   legs: [
     { from: arlanda, to: { iata: "DOH", name: "Hamad", city: "Doha", country: "Qatar" }, km: 4800, min: 370, carriers: [{ name: "Qatar Airways" }] },
     { from: { iata: "DOH", name: "Hamad", city: "Doha", country: "Qatar" }, to: sydney, km: 11000, min: 980, carriers: [{ name: "Qatar Airways" }] },
@@ -44,9 +45,22 @@ test("picking both airports enables search; the result renders legs and totals",
   await screen.findByText(/Itinerary/);
   expect(routeSearch).toHaveBeenCalledWith("ARN", "SYD", "KM");
   expect(screen.getByText(/2 hop\(s\)/)).toBeInTheDocument();
+  expect(screen.getByText(/79,000 Osprey points/)).toBeInTheDocument();
   const table = screen.getByRole("table");
   expect(table).toHaveTextContent("DOH");
   expect(table).toHaveTextContent("Qatar Airways");
+});
+
+test("a degraded points estimate hides the badge but keeps the itinerary", async () => {
+  const search = vi.fn();
+  const routeSearch = vi.fn(async () => ({ ...path, estimatedPoints: null }));
+  render(RouteSearchPage, { props: { search, routeSearch } });
+
+  await pickAirports(search);
+  await userEvent.click(screen.getByRole("button", { name: /find route/i }));
+
+  await screen.findByText(/Itinerary/);
+  expect(screen.queryByText(/Osprey points/)).not.toBeInTheDocument();
 });
 
 test("the optimize toggle changes what is sent to the gateway", async () => {

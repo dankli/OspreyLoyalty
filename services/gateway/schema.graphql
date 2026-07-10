@@ -109,6 +109,7 @@ type RoutePath {
   totalKm: Int!
   totalMin: Int!
   hops: Int!
+  estimatedPoints: Int
 }
 
 enum RouteOptimize {

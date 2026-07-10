@@ -43,6 +43,7 @@ export const RoutePathSchema = z.object({
   totalKm: z.number(),
   totalMin: z.number(),
   hops: z.number(),
+  estimatedPoints: z.number().nullable(), // null whenever the points-engine is degraded
 });
 
 export type Airport = z.infer<typeof AirportSchema>;

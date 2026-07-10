@@ -17,6 +17,7 @@ const path = {
   totalKm: 15500,
   totalMin: 1290,
   hops: 1,
+  estimatedPoints: 77500,
 };
 
 test("routeSearch resolves a path and lowercases the optimize enum for the service", async () => {
@@ -32,7 +33,7 @@ test("routeSearch resolves a path and lowercases the optimize enum for the servi
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      query: '{ routeSearch(from: "ARN", to: "SYD", optimize: MIN) { hops totalKm totalMin legs { to { iata } carriers { name } } } }',
+      query: '{ routeSearch(from: "ARN", to: "SYD", optimize: MIN) { hops totalKm totalMin estimatedPoints legs { to { iata } carriers { name } } } }',
     }),
   });
   const body = await response.json();
@@ -41,6 +42,7 @@ test("routeSearch resolves a path and lowercases the optimize enum for the servi
     hops: 1,
     totalKm: 15500,
     totalMin: 1290,
+    estimatedPoints: 77500,
     legs: [{ to: { iata: "SYD" }, carriers: [{ name: "Qantas" }] }],
   });
   expect(seen).toEqual({ from: "ARN", to: "SYD", optimize: "min" });
@@ -60,6 +62,20 @@ test("routeSearch defaults to KM", async () => {
     body: JSON.stringify({ query: '{ routeSearch(from: "ARN", to: "SYD") { hops } }' }),
   });
   expect(seenOptimize).toBe("km");
+});
+
+test("a degraded points-engine flows through as estimatedPoints null", async () => {
+  const yoga = buildYoga(fakeDeps({
+    searchRoute: async () => ({ ...path, estimatedPoints: null }),
+  }));
+  const response = await yoga.fetch("http://gateway/graphql", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ query: '{ routeSearch(from: "ARN", to: "SYD") { hops estimatedPoints } }' }),
+  });
+  const body = await response.json();
+  expect(body.errors).toBeUndefined();
+  expect(body.data.routeSearch).toEqual({ hops: 1, estimatedPoints: null });
 });
 
 test("an unreachable pair resolves to null, not an error", async () => {

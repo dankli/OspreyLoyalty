@@ -69,7 +69,7 @@
           <tr>
             <td><strong>{row.airport.iata}</strong> {row.airport.name}</td>
             <td>{row.airport.country}</td>
-            <td>{row.km.toLocaleString()} km</td>
+            <td>{row.km.toLocaleString("en-US")} km</td>
             <td>{formatDuration(row.min)}</td>
             <td>{row.carriers.length > 0 ? row.carriers.map((c) => c.name).join(", ") : strings.noCarriers}</td>
           </tr>

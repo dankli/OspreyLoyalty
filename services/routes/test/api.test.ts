@@ -30,19 +30,19 @@ function fakeDeps(overrides: Partial<AppDeps> = {}): AppDeps {
   };
 }
 
-let server: Server | undefined;
+const servers: Server[] = [];
 
 async function listen(deps: AppDeps): Promise<string> {
-  server = createServer(createApp(deps));
-  await new Promise<void>((resolve) => server!.listen(0, resolve));
+  const server = createServer(createApp(deps));
+  servers.push(server);
+  await new Promise<void>((resolve) => server.listen(0, resolve));
   const address = server.address();
   if (address === null || typeof address === "string") throw new Error("no port");
   return `http://127.0.0.1:${address.port}`;
 }
 
 afterEach(() => {
-  server?.close();
-  server = undefined;
+  for (const server of servers.splice(0)) server.close();
 });
 
 test("/health is 200 from process start", async () => {
@@ -114,17 +114,21 @@ test("route search normalizes iatas, defaults to km, and 404s when unreachable",
   expect(deps.searchRoute).toHaveBeenCalledWith("ARN", "SYD", "km");
 });
 
-test("route search returns the assembled path", async () => {
+test("route search returns the assembled path with the points estimate (null when degraded)", async () => {
   const path = {
     legs: [{ from: arlanda, to: arlanda, km: 522, min: 75, carriers: [{ iata: "SK", name: "SAS" }] }],
     totalKm: 522,
     totalMin: 75,
     hops: 1,
+    estimatedPoints: 2610,
   };
   const base = await listen(fakeDeps({ searchRoute: vi.fn(async () => path) }));
   const res = await fetch(`${base}/routes/search?from=ARN&to=CPH&optimize=min`);
   expect(res.status).toBe(200);
   expect(await res.json()).toEqual(path);
+
+  const degraded = await listen(fakeDeps({ searchRoute: vi.fn(async () => ({ ...path, estimatedPoints: null })) }));
+  expect((await (await fetch(`${degraded}/routes/search?from=ARN&to=CPH`)).json()).estimatedPoints).toBeNull();
 });
 
 test("unknown paths are 404", async () => {

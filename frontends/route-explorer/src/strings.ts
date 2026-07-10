@@ -15,6 +15,7 @@ export const strings = {
   noRouteFound: "No route found within six hops.",
   legsHeading: "Itinerary",
   totalSummary: "{hops} hop(s) · {km} km · {duration}",
+  pointsBadge: "≈ {points} Osprey points",
   searchEmpty: "No airports match.",
   destinationsHeading: "Direct destinations from",
   colDestination: "Destination",

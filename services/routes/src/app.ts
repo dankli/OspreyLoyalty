@@ -7,6 +7,9 @@ import type { RoutePath } from "./features/route-search/cypher.js";
 import type { Optimize } from "./features/route-search/searchRoute.js";
 import type { Authorizer } from "./auth.js";
 
+/** A route answer decorated with the loyalty estimate — null whenever the points-engine can't answer. */
+export type PricedRoutePath = RoutePath & { estimatedPoints: number | null };
+
 const logger = pino();
 
 // The data-access seam: the pure middle of each feature is tested directly; the app is
@@ -16,7 +19,7 @@ export type AppDeps = {
   getAirport(iata: string): Promise<Airport | null>;
   getDestinations(iata: string): Promise<Destination[]>;
   allAirports(): Promise<MapAirport[]>;
-  searchRoute(from: string, to: string, optimize: Optimize): Promise<RoutePath | null>;
+  searchRoute(from: string, to: string, optimize: Optimize): Promise<PricedRoutePath | null>;
   isReady(): boolean;
   authorize: Authorizer;
 };

@@ -9,6 +9,7 @@ const RouteSearchDocument = graphql(`
       hops
       totalKm
       totalMin
+      estimatedPoints
       legs {
         from {
           iata
@@ -46,6 +47,7 @@ export type RoutePathResult = {
   hops: number;
   totalKm: number;
   totalMin: number;
+  estimatedPoints: number | null;
   legs: RouteLegRow[];
 };
 
