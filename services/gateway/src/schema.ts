@@ -8,6 +8,7 @@ import type { TransactionsPage } from "./features/member/transactionsClient.js";
 import type { Partner } from "./features/partner/partnersClient.js";
 import type { Reward } from "./features/reward/rewardsClient.js";
 import type { RedemptionOutcome } from "./features/reward/redeemClient.js";
+import type { Airport, Destination, MapAirport } from "./features/routes/routesClient.js";
 
 export type Deps = {
   fetchMember: (baseUrl: string, id: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Member | null>;
@@ -15,6 +16,10 @@ export type Deps = {
   fetchPartners: (baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Partner[]>;
   fetchRewards: (baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Reward[]>;
   postRedemption: (baseUrl: string, memberId: string, rewardId: string, idempotencyKey: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<RedemptionOutcome>;
+  searchAirports: (baseUrl: string, query: string, limit: number, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Airport[]>;
+  fetchAirport: (baseUrl: string, iata: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Airport | null>;
+  fetchDestinations: (baseUrl: string, iata: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Destination[]>;
+  fetchAllAirports: (baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<MapAirport[]>;
 };
 
 const typeDefs = readFileSync(new URL("../schema.graphql", import.meta.url), "utf8");
@@ -56,6 +61,14 @@ export function schema(deps: Deps): GraphQLSchemaWithContext<YogaInitialContext>
         },
         rewards: (_parent: unknown, _args: unknown, context: RequestContext) =>
           deps.fetchRewards(env.MEMBERS_URL, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
+        airports: (_parent: unknown, args: { query: string; limit: number }, context: RequestContext) =>
+          deps.searchAirports(env.ROUTES_URL, args.query, args.limit, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
+        airport: (_parent: unknown, args: { iata: string }, context: RequestContext) =>
+          deps.fetchAirport(env.ROUTES_URL, args.iata, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
+        airportDestinations: (_parent: unknown, args: { iata: string }, context: RequestContext) =>
+          deps.fetchDestinations(env.ROUTES_URL, args.iata, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
+        mapAirports: (_parent: unknown, _args: unknown, context: RequestContext) =>
+          deps.fetchAllAirports(env.ROUTES_URL, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
       },
       Mutation: {
         redeem: async (

@@ -1,20 +1,15 @@
 import { expect, test } from "vitest";
 import { buildYoga } from "../src/server.js";
-
-const stubMember = async () => null;
+import { fakeDeps } from "./fakeDeps.js";
 
 test("transactions query resolves a page", async () => {
-  const yoga = buildYoga({
-    fetchMember: stubMember,
-    fetchPartners: async () => [],
+  const yoga = buildYoga(fakeDeps({
     fetchTransactions: async () => ({
       items: [{ id: "t1", type: "earn", points: 2000, source: "stayinn", occurredAtUtc: "2026-07-06T12:00:00Z" }],
       page: 0,
       hasMore: false,
     }),
-    fetchRewards: async () => [],
-    postRedemption: async (): Promise<never> => { throw new Error("not used"); },
-  });
+  }));
 
   const response = await yoga.fetch("http://gateway/graphql", {
     method: "POST",

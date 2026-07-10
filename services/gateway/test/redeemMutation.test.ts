@@ -1,18 +1,11 @@
 import { expect, test } from "vitest";
 import { buildYoga } from "../src/server.js";
-
-const baseDeps = {
-  fetchMember: async () => null,
-  fetchTransactions: async () => ({ items: [], page: 0, hasMore: false }),
-  fetchPartners: async () => [],
-};
+import { fakeDeps } from "./fakeDeps.js";
 
 test("rewards query resolves the catalog", async () => {
-  const yoga = buildYoga({
-    ...baseDeps,
+  const yoga = buildYoga(fakeDeps({
     fetchRewards: async () => [{ id: "lounge-pass", name: "Lounge day pass", cost: 15000 }],
-    postRedemption: async () => { throw new Error("not used"); },
-  });
+  }));
 
   const response = await yoga.fetch("http://gateway/graphql", {
     method: "POST",
@@ -25,13 +18,11 @@ test("rewards query resolves the catalog", async () => {
 });
 
 test("redeem mutation returns the redemption result", async () => {
-  const yoga = buildYoga({
-    ...baseDeps,
-    fetchRewards: async () => [],
+  const yoga = buildYoga(fakeDeps({
     postRedemption: async () => ({
       ok: true, result: { rewardId: "lounge-pass", pointsSpent: 15000, spendablePoints: 36000, alreadyApplied: false },
     }),
-  });
+  }));
 
   const response = await yoga.fetch("http://gateway/graphql", {
     method: "POST",
@@ -46,11 +37,9 @@ test("redeem mutation returns the redemption result", async () => {
 });
 
 test("insufficient balance surfaces the members error message", async () => {
-  const yoga = buildYoga({
-    ...baseDeps,
-    fetchRewards: async () => [],
+  const yoga = buildYoga(fakeDeps({
     postRedemption: async () => ({ ok: false, reason: "rejected", message: "Insufficient spendable points." }),
-  });
+  }));
 
   const response = await yoga.fetch("http://gateway/graphql", {
     method: "POST",

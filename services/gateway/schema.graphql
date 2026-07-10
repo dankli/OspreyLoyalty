@@ -64,3 +64,41 @@ extend type Query {
 type Mutation {
   redeem(memberId: ID!, rewardId: String!, idempotencyKey: String!): RedemptionResult!
 }
+
+type Airport {
+  iata: ID!
+  icao: String
+  name: String!
+  city: String!
+  country: String!
+  countryCode: String!
+  continent: String!
+  latitude: Float!
+  longitude: Float!
+  timezone: String
+}
+
+type Carrier {
+  iata: String!
+  name: String!
+}
+
+type Destination {
+  airport: Airport!
+  km: Int!
+  min: Int!
+  carriers: [Carrier!]!
+}
+
+type MapAirport {
+  iata: ID!
+  latitude: Float!
+  longitude: Float!
+}
+
+extend type Query {
+  airports(query: String!, limit: Int! = 10): [Airport!]!
+  airport(iata: ID!): Airport
+  airportDestinations(iata: ID!): [Destination!]!
+  mapAirports: [MapAirport!]!
+}

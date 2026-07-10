@@ -73,11 +73,12 @@ services:
     environment:
       MEMBERS_URL: http://members:8080
       PARTNERS_URL: http://partners:8080
+      ROUTES_URL: http://routes:8083
       PORT: "4000"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_SERVICE_NAME: gateway
     ports: ["4000:4000"]
-    depends_on: [members, partners]
+    depends_on: [members, partners, routes]
 
   # First-party OIDC/OAuth2 identity service (Spring Authorization Server).
   # Issuer is the browser-facing URL; resource servers fetch JWKS internally.
