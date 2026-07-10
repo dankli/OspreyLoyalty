@@ -12,9 +12,9 @@ import { authEnabled, isAdmin, signOut } from "./auth";
 
 export type MountFn = (el: HTMLElement) => () => void;
 export type RemoteLoader = () => Promise<{ mount: MountFn }>;
-export type RemoteName = "memberPortal" | "adminPortal";
+export type RemoteName = "memberPortal" | "adminPortal" | "routeExplorer";
 
-const REMOTE_NAMES: RemoteName[] = ["memberPortal", "adminPortal"];
+const REMOTE_NAMES: RemoteName[] = ["memberPortal", "adminPortal", "routeExplorer"];
 
 export interface Shell {
   /** Load and mount the named remote, unmounting the previous one. */
@@ -75,7 +75,8 @@ export function createShell(root: HTMLElement, remotes: Record<RemoteName, Remot
   }
 
   // With auth on, each role gets only its own portal: admins the Admin console, members the Member
-  // portal. The auth-off default build (and the shell tests) still see both.
+  // portal. The route explorer is informational, so both roles keep it. The auth-off default
+  // build (and the shell tests) see all remotes.
   let visibleRemotes: RemoteName[] = REMOTE_NAMES;
   if (authEnabled()) {
     visibleRemotes = isAdmin()

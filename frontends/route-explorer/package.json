@@ -1,0 +1,32 @@
+{
+  "name": "route-explorer",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "codegen": "graphql-codegen",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "graphql": "^16.14.2",
+    "graphql-request": "^7.4.0",
+    "svelte": "^5.56.4"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^7.2.0",
+    "@graphql-codegen/client-preset": "^6.1.0",
+    "@originjs/vite-plugin-federation": "^1.4.1",
+    "@sveltejs/vite-plugin-svelte": "^7.2.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/svelte": "^5.4.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^26.1.1",
+    "jsdom": "^29.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.4",
+    "vitest": "^4.1.10"
+  }
+}

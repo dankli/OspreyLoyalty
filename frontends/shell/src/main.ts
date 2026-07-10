@@ -22,5 +22,6 @@ void ensureAuthenticated().then(() => {
   createShell(document.getElementById("app")!, {
     memberPortal: () => import("memberPortal/mount").then(normalize),
     adminPortal: () => import("adminPortal/mount").then(normalize),
+    routeExplorer: () => import("routeExplorer/mount").then(normalize),
   });
 });
