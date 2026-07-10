@@ -1,7 +1,7 @@
 //! Canvas 2D rendering — the thin web-sys edge around the pure geometry.
 
 use crate::geometry::{great_circle_arc, split_on_wrap, Projection, View};
-use web_sys::CanvasRenderingContext2d;
+use web_sys::{CanvasRenderingContext2d, CanvasWindingRule};
 
 const DOT_RADIUS: f64 = 1.4;
 const HIGHLIGHT_RADIUS: f64 = 4.0;
@@ -13,6 +13,9 @@ pub struct Palette;
 /// talon-dark water, tan airport dots, the amber eye as the accent, cream itinerary.
 impl Palette {
     pub const BACKGROUND: &'static str = "#140d06";
+    pub const LAND: &'static str = "#241a10";
+    pub const COAST: &'static str = "#43331d";
+    pub const LABEL: &'static str = "rgba(193, 162, 116, 0.85)";
     pub const DOT: &'static str = "#7a6340";
     pub const HIGHLIGHT: &'static str = "#e3ae36";
     pub const ARC: &'static str = "rgba(227, 174, 54, 0.45)";
@@ -37,6 +40,51 @@ pub fn apply_view(ctx: &CanvasRenderingContext2d, view: View) {
         -view.offset_x as f64,
         -view.offset_y as f64,
     );
+}
+
+/// Fill the landmasses — each polygon's outer ring plus its holes as subpaths
+/// under the even-odd rule — with a hairline coast stroke that keeps its
+/// on-screen width across zoom levels.
+pub fn draw_land(ctx: &CanvasRenderingContext2d, polygons: &[Vec<Vec<(f32, f32)>>], zoom: f32) {
+    ctx.set_fill_style_str(Palette::LAND);
+    ctx.set_stroke_style_str(Palette::COAST);
+    ctx.set_line_width(0.75 / zoom as f64);
+    for rings in polygons {
+        ctx.begin_path();
+        for ring in rings {
+            let Some(&(x0, y0)) = ring.first() else { continue };
+            ctx.move_to(x0 as f64, y0 as f64);
+            for &(x, y) in &ring[1..] {
+                ctx.line_to(x as f64, y as f64);
+            }
+            ctx.close_path();
+        }
+        ctx.fill_with_canvas_winding_rule(CanvasWindingRule::Evenodd);
+        ctx.stroke();
+    }
+}
+
+/// One city label: a tiny anchor dot plus haloed text, both sized to stay
+/// constant on screen across zoom levels.
+pub fn draw_label(ctx: &CanvasRenderingContext2d, x: f32, y: f32, name: &str, zoom: f32) {
+    let z = zoom as f64;
+    ctx.set_fill_style_str(Palette::LABEL);
+    ctx.begin_path();
+    let _ = ctx.arc(x as f64, y as f64, 1.1 / z, 0.0, std::f64::consts::TAU);
+    ctx.fill();
+
+    ctx.set_font(&format!(
+        "{}px 'Hanken Grotesk', system-ui, sans-serif",
+        11.0 / z
+    ));
+    ctx.set_text_align("center");
+    ctx.set_text_baseline("bottom");
+    let baseline_y = (y - 3.5 / zoom) as f64;
+    ctx.set_stroke_style_str(Palette::BACKGROUND);
+    ctx.set_line_width(3.0 / z);
+    let _ = ctx.stroke_text(name, x as f64, baseline_y);
+    ctx.set_fill_style_str(Palette::LABEL);
+    let _ = ctx.fill_text(name, x as f64, baseline_y);
 }
 
 pub fn draw_dots(ctx: &CanvasRenderingContext2d, points: &[(f32, f32)], zoom: f32) {

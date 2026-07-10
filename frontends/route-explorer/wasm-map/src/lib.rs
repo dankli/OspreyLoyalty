@@ -7,6 +7,7 @@
 //! never sees Leptos. Zoom lives here: wheel zooms at the cursor, dragging pans, and
 //! `zoom_in`/`zoom_out`/`reset_view` back the host's toolbar buttons.
 
+pub mod basemap;
 mod draw;
 pub mod geometry;
 
@@ -19,7 +20,7 @@ use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlElement, MouseEvent, WheelEvent};
 
 use draw::Palette;
-use geometry::{pick, Projection, View};
+use geometry::{pick, place_labels, rank_ceiling, Projection, View};
 
 const CANVAS_WIDTH: f32 = 960.0;
 const CANVAS_HEIGHT: f32 = 480.0; // 2:1 — undistorted equirectangular
@@ -42,9 +43,19 @@ struct Drag {
     last_y: f32,
 }
 
+/// A populated place projected into base canvas coordinates, ready to label.
+struct CityLabel {
+    x: f32,
+    y: f32,
+    rank: u8,
+    name: String,
+}
+
 struct State {
     projected: Vec<(f32, f32)>,
     coords: Vec<(f32, f32)>, // (lat, lon) per airport index
+    land: Vec<Vec<Vec<(f32, f32)>>>, // basemap polygons, projected
+    cities: Vec<CityLabel>,  // rank-sorted, most important first
     ctx: Option<CanvasRenderingContext2d>,
     view: View,
     scene: Scene,
@@ -66,12 +77,46 @@ fn canvas_point(canvas: &HtmlCanvasElement, client_x: i32, client_y: i32) -> Opt
     ))
 }
 
+/// City labels visible in the current view: rank-filtered by zoom, then greedily
+/// decluttered in screen space so important names win the fight for pixels.
+fn visible_labels(s: &State) -> Vec<usize> {
+    let view = s.view;
+    let ceiling = rank_ceiling(view.zoom);
+    const LABEL_HEIGHT: f32 = 13.0;
+    const CHAR_WIDTH: f32 = 6.4; // ≈11px Hanken Grotesk average advance
+    const MARGIN: f32 = 60.0;
+
+    let mut indexes = Vec::new();
+    let mut boxes = Vec::new();
+    for (index, city) in s.cities.iter().enumerate() {
+        if city.rank > ceiling {
+            break; // cities are rank-sorted; nothing smaller can qualify
+        }
+        let sx = city.x * view.zoom - view.offset_x;
+        let sy = city.y * view.zoom - view.offset_y;
+        if !(-MARGIN..CANVAS_WIDTH + MARGIN).contains(&sx)
+            || !(-MARGIN..CANVAS_HEIGHT + MARGIN).contains(&sy)
+        {
+            continue;
+        }
+        let half = city.name.chars().count() as f32 * CHAR_WIDTH / 2.0;
+        indexes.push(index);
+        boxes.push((sx - half, sy - LABEL_HEIGHT - 3.0, sx + half, sy));
+    }
+    place_labels(&boxes)
+        .into_iter()
+        .zip(indexes)
+        .filter_map(|(keep, index)| keep.then_some(index))
+        .collect()
+}
+
 fn paint(state: &Rc<RefCell<State>>, projection: Projection) {
     let s = state.borrow();
     let Some(ctx) = s.ctx.as_ref() else { return };
     draw::clear(ctx, projection);
     draw::apply_view(ctx, s.view);
     let zoom = s.view.zoom;
+    draw::draw_land(ctx, &s.land, zoom);
     draw::draw_dots(ctx, &s.projected, zoom);
     match &s.scene {
         Scene::Base => {}
@@ -108,6 +153,10 @@ fn paint(state: &Rc<RefCell<State>>, projection: Projection) {
             }
         }
     }
+    for index in visible_labels(&s) {
+        let city = &s.cities[index];
+        draw::draw_label(ctx, city.x, city.y, &city.name, zoom);
+    }
 }
 
 #[wasm_bindgen]
@@ -130,9 +179,38 @@ impl RouteMap {
             .map(|&(lat, lon)| projection.project(lat, lon))
             .collect();
 
+        // The embedded Natural Earth basemap, projected once up front.
+        let land = basemap::land_polygons()
+            .into_iter()
+            .map(|rings| {
+                rings
+                    .into_iter()
+                    .map(|ring| {
+                        ring.into_iter()
+                            .map(|(lat, lon)| projection.project(lat, lon))
+                            .collect()
+                    })
+                    .collect()
+            })
+            .collect();
+        let cities = basemap::places()
+            .into_iter()
+            .map(|place| {
+                let (x, y) = projection.project(place.lat, place.lon);
+                CityLabel {
+                    x,
+                    y,
+                    rank: place.rank,
+                    name: place.name,
+                }
+            })
+            .collect();
+
         let state = Rc::new(RefCell::new(State {
             projected,
             coords,
+            land,
+            cities,
             ctx: None,
             view: View::identity(),
             scene: Scene::Base,

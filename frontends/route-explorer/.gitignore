@@ -3,3 +3,6 @@ src/wasm/pkg/
 
 # cargo build artifacts for the island crate
 wasm-map/target/
+
+# Natural Earth source data fetched by wasm-map/tools/build-basemap.mjs
+wasm-map/tools/*.geojson

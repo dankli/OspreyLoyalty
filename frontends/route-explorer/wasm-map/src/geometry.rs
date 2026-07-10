@@ -141,6 +141,38 @@ impl View {
     }
 }
 
+/// Which Natural Earth scaleranks are labelled at a zoom level: the whole-world
+/// view names only the biggest cities; each zoom step admits smaller ones.
+pub fn rank_ceiling(zoom: f32) -> u8 {
+    match zoom {
+        z if z < 1.5 => 1,
+        z if z < 2.5 => 2,
+        z if z < 3.5 => 3,
+        z if z < 5.0 => 4,
+        z if z < 7.0 => 6,
+        z if z < 9.0 => 7,
+        _ => 10,
+    }
+}
+
+/// Greedy label decluttering: walk candidates most-important-first and keep a
+/// label only when its box `(x0, y0, x1, y1)` overlaps no already-kept box.
+pub fn place_labels(boxes: &[(f32, f32, f32, f32)]) -> Vec<bool> {
+    let mut kept: Vec<(f32, f32, f32, f32)> = Vec::new();
+    boxes
+        .iter()
+        .map(|&(x0, y0, x1, y1)| {
+            let free = kept
+                .iter()
+                .all(|&(kx0, ky0, kx1, ky1)| x1 < kx0 || kx1 < x0 || y1 < ky0 || ky1 < y0);
+            if free {
+                kept.push((x0, y0, x1, y1));
+            }
+            free
+        })
+        .collect()
+}
+
 /// Split a projected polyline where it wraps the antimeridian, so the canvas
 /// never draws a horizontal stroke across the whole map. A jump wider than half
 /// the canvas width can only be a wrap, not a real segment.
@@ -206,6 +238,23 @@ mod tests {
         assert_eq!(pick(&points, 101.0, 101.0, 6.0), Some(0));
         assert_eq!(pick(&points, 104.0, 100.0, 6.0), Some(1));
         assert_eq!(pick(&points, 200.0, 200.0, 6.0), None);
+    }
+
+    #[test]
+    fn label_visibility_grows_with_zoom() {
+        assert!(rank_ceiling(1.0) < rank_ceiling(3.0));
+        assert!(rank_ceiling(3.0) < rank_ceiling(16.0));
+        assert_eq!(rank_ceiling(16.0), 10); // everything labels when zoomed all the way in
+    }
+
+    #[test]
+    fn overlapping_labels_yield_to_more_important_ones() {
+        let boxes = [
+            (0.0, 0.0, 40.0, 10.0),   // most important — always kept
+            (30.0, 5.0, 70.0, 15.0),  // overlaps the first — dropped
+            (50.0, 30.0, 90.0, 40.0), // clear of both — kept
+        ];
+        assert_eq!(place_labels(&boxes), vec![true, false, true]);
     }
 
     #[test]

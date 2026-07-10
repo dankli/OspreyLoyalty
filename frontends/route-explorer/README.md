@@ -33,5 +33,7 @@ npm run codegen      # regenerate src/gql/ from the gateway schema
 npm run build        # type-check + build, exposes ./mount via module federation
 ```
 
-The island's pure geometry (projection, great-circle sampling, pick hit-testing) is tested natively —
-`cargo test` in `wasm-map/`.
+The island's pure geometry (projection, great-circle sampling, pick hit-testing, label
+decluttering) and basemap decoding are tested natively — `cargo test` in `wasm-map/`. The
+basemap (coastlines + zoom-ranked city labels) is Natural Earth public-domain data embedded
+in the crate; regenerate the binaries with `node wasm-map/tools/build-basemap.mjs`.

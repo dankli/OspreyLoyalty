@@ -23,6 +23,7 @@ features = [
   "DomRect",
   "MouseEvent",
   "WheelEvent",
+  "CanvasWindingRule",
 ]
 
 [profile.release]
