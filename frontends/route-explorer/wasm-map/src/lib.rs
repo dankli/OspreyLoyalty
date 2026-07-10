@@ -2,8 +2,10 @@
 //!
 //! The exported surface is one `RouteMap` handle behind a typed-array boundary:
 //! Svelte passes coordinates as `Float32Array`s and airport *indices* are the shared
-//! currency — no airport metadata crosses into WASM. Leptos renders the island's
-//! internal DOM (canvas + status line); Svelte never sees Leptos.
+//! currency — no airport metadata (and since the i18n retrofit, no user-facing text)
+//! crosses into WASM. Leptos renders the island's internal DOM (the canvas); Svelte
+//! never sees Leptos. Zoom lives here: wheel zooms at the cursor, dragging pans, and
+//! `zoom_in`/`zoom_out`/`reset_view` back the host's toolbar buttons.
 
 mod draw;
 pub mod geometry;
@@ -14,25 +16,103 @@ use std::rc::Rc;
 use leptos::prelude::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlElement, MouseEvent};
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlElement, MouseEvent, WheelEvent};
 
 use draw::Palette;
-use geometry::{pick, Projection};
+use geometry::{pick, Projection, View};
 
 const CANVAS_WIDTH: f32 = 960.0;
 const CANVAS_HEIGHT: f32 = 480.0; // 2:1 — undistorted equirectangular
 const PICK_RADIUS: f32 = 8.0;
+const WHEEL_ZOOM_STEP: f32 = 1.2;
+const BUTTON_ZOOM_STEP: f32 = 1.5;
+const DRAG_THRESHOLD: f32 = 3.0; // canvas px of movement that turns a click into a pan
+
+/// What is currently painted — kept so zoom/pan repaint the same scene.
+enum Scene {
+    Base,
+    Destinations { from: u32, dests: Vec<u32> },
+    Path(Vec<u32>),
+}
+
+struct Drag {
+    start_x: f32,
+    start_y: f32,
+    last_x: f32,
+    last_y: f32,
+}
 
 struct State {
     projected: Vec<(f32, f32)>,
     coords: Vec<(f32, f32)>, // (lat, lon) per airport index
     ctx: Option<CanvasRenderingContext2d>,
+    view: View,
+    scene: Scene,
+    drag: Option<Drag>,
+    dragged: bool, // suppresses the click-pick that follows a pan
+}
+
+fn canvas_point(canvas: &HtmlCanvasElement, client_x: i32, client_y: i32) -> Option<(f32, f32)> {
+    let rect = canvas.get_bounding_client_rect();
+    if rect.width() <= 0.0 {
+        return None;
+    }
+    // Map CSS pixels back to the fixed canvas coordinate space.
+    let scale_x = CANVAS_WIDTH as f64 / rect.width();
+    let scale_y = CANVAS_HEIGHT as f64 / rect.height();
+    Some((
+        ((client_x as f64 - rect.left()) * scale_x) as f32,
+        ((client_y as f64 - rect.top()) * scale_y) as f32,
+    ))
+}
+
+fn paint(state: &Rc<RefCell<State>>, projection: Projection) {
+    let s = state.borrow();
+    let Some(ctx) = s.ctx.as_ref() else { return };
+    draw::clear(ctx, projection);
+    draw::apply_view(ctx, s.view);
+    let zoom = s.view.zoom;
+    draw::draw_dots(ctx, &s.projected, zoom);
+    match &s.scene {
+        Scene::Base => {}
+        Scene::Destinations { from, dests } => {
+            let Some(&origin) = s.coords.get(*from as usize) else { return };
+            for &dest in dests {
+                if let Some(&target) = s.coords.get(dest as usize) {
+                    draw::draw_arc(ctx, projection, origin, target, Palette::ARC, 1.0, zoom);
+                }
+            }
+            for &dest in dests {
+                if let Some(&point) = s.projected.get(dest as usize) {
+                    draw::draw_highlight(ctx, point, zoom);
+                }
+            }
+            if let Some(&point) = s.projected.get(*from as usize) {
+                draw::draw_highlight(ctx, point, zoom);
+            }
+        }
+        Scene::Path(path) => {
+            for pair in path.windows(2) {
+                let (Some(&from), Some(&to)) = (
+                    s.coords.get(pair[0] as usize),
+                    s.coords.get(pair[1] as usize),
+                ) else {
+                    continue;
+                };
+                draw::draw_arc(ctx, projection, from, to, Palette::PATH, 2.0, zoom);
+            }
+            for &index in path {
+                if let Some(&point) = s.projected.get(index as usize) {
+                    draw::draw_highlight(ctx, point, zoom);
+                }
+            }
+        }
+    }
 }
 
 #[wasm_bindgen]
 pub struct RouteMap {
     state: Rc<RefCell<State>>,
-    status: RwSignal<String>,
     projection: Projection,
     // Dropping the handle unmounts the Leptos island; freeing RouteMap tears it down.
     _unmount: Box<dyn std::any::Any>,
@@ -54,25 +134,118 @@ impl RouteMap {
             projected,
             coords,
             ctx: None,
+            view: View::identity(),
+            scene: Scene::Base,
+            drag: None,
+            dragged: false,
         }));
-        let status = RwSignal::new(format!("{} airports — click one to see its routes", lats.len()));
 
         let canvas_ref: NodeRef<leptos::html::Canvas> = NodeRef::new();
-        let click_state = Rc::clone(&state);
-        let on_click = move |ev: MouseEvent| {
-            let Some(canvas) = canvas_ref.get_untracked() else { return };
-            let rect = canvas.get_bounding_client_rect();
-            if rect.width() <= 0.0 {
-                return;
+
+        let on_click = {
+            let state = Rc::clone(&state);
+            move |ev: MouseEvent| {
+                let Some(canvas) = canvas_ref.get_untracked() else { return };
+                let Some((x, y)) = canvas_point(&canvas, ev.client_x(), ev.client_y()) else {
+                    return;
+                };
+                // End the borrow before calling back into JS, which may re-enter the handle.
+                let hit = {
+                    let mut s = state.borrow_mut();
+                    if s.dragged {
+                        s.dragged = false; // the click that ends a pan is not a pick
+                        return;
+                    }
+                    let (bx, by) = s.view.to_base(x, y);
+                    pick(&s.projected, bx, by, PICK_RADIUS / s.view.zoom)
+                };
+                if let Some(index) = hit {
+                    let _ = on_pick.call1(&JsValue::NULL, &JsValue::from(index as u32));
+                }
             }
-            // Map CSS pixels back to the fixed canvas coordinate space.
-            let scale_x = CANVAS_WIDTH as f64 / rect.width();
-            let scale_y = CANVAS_HEIGHT as f64 / rect.height();
-            let x = (ev.client_x() as f64 - rect.left()) * scale_x;
-            let y = (ev.client_y() as f64 - rect.top()) * scale_y;
-            let hit = pick(&click_state.borrow().projected, x as f32, y as f32, PICK_RADIUS);
-            if let Some(index) = hit {
-                let _ = on_pick.call1(&JsValue::NULL, &JsValue::from(index as u32));
+        };
+
+        let on_mousedown = {
+            let state = Rc::clone(&state);
+            move |ev: MouseEvent| {
+                if ev.button() != 0 {
+                    return;
+                }
+                let Some(canvas) = canvas_ref.get_untracked() else { return };
+                let Some((x, y)) = canvas_point(&canvas, ev.client_x(), ev.client_y()) else {
+                    return;
+                };
+                let mut s = state.borrow_mut();
+                s.drag = Some(Drag {
+                    start_x: x,
+                    start_y: y,
+                    last_x: x,
+                    last_y: y,
+                });
+                s.dragged = false;
+            }
+        };
+
+        let on_mousemove = {
+            let state = Rc::clone(&state);
+            move |ev: MouseEvent| {
+                let Some(canvas) = canvas_ref.get_untracked() else { return };
+                let Some((x, y)) = canvas_point(&canvas, ev.client_x(), ev.client_y()) else {
+                    return;
+                };
+                {
+                    let mut guard = state.borrow_mut();
+                    let s = &mut *guard;
+                    let Some(drag) = s.drag.as_mut() else { return };
+                    if !s.dragged {
+                        let travelled = (x - drag.start_x).abs() + (y - drag.start_y).abs();
+                        if travelled < DRAG_THRESHOLD {
+                            return;
+                        }
+                        s.dragged = true;
+                    }
+                    let (dx, dy) = (x - drag.last_x, y - drag.last_y);
+                    drag.last_x = x;
+                    drag.last_y = y;
+                    s.view = s.view.panned(dx, dy, CANVAS_WIDTH, CANVAS_HEIGHT);
+                }
+                paint(&state, projection);
+            }
+        };
+
+        // `dragged` deliberately survives mouseup: the click event that follows a pan
+        // consumes it in on_click; the next mousedown resets it either way.
+        let on_mouseup = {
+            let state = Rc::clone(&state);
+            move |_ev: MouseEvent| {
+                state.borrow_mut().drag = None;
+            }
+        };
+        let on_mouseleave = {
+            let state = Rc::clone(&state);
+            move |_ev: MouseEvent| {
+                state.borrow_mut().drag = None;
+            }
+        };
+
+        let on_wheel = {
+            let state = Rc::clone(&state);
+            move |ev: WheelEvent| {
+                ev.prevent_default(); // the map zooms; the page must not scroll
+                let Some(canvas) = canvas_ref.get_untracked() else { return };
+                let Some((x, y)) = canvas_point(&canvas, ev.client_x(), ev.client_y()) else {
+                    return;
+                };
+                let factor = if ev.delta_y() < 0.0 {
+                    WHEEL_ZOOM_STEP
+                } else {
+                    1.0 / WHEEL_ZOOM_STEP
+                };
+                {
+                    let mut s = state.borrow_mut();
+                    s.view = s.view.zoomed_at(factor, x, y, CANVAS_WIDTH, CANVAS_HEIGHT);
+                }
+                paint(&state, projection);
             }
         };
 
@@ -83,10 +256,14 @@ impl RouteMap {
                         node_ref=canvas_ref
                         width="960"
                         height="480"
-                        style="width: 100%; height: auto; display: block; border-radius: 8px; cursor: crosshair;"
+                        style="width: 100%; height: auto; display: block; cursor: crosshair; touch-action: none;"
                         on:click=on_click
+                        on:mousedown=on_mousedown
+                        on:mousemove=on_mousemove
+                        on:mouseup=on_mouseup
+                        on:mouseleave=on_mouseleave
+                        on:wheel=on_wheel
                     ></canvas>
-                    <p class="map-status">{move || status.get()}</p>
                 </div>
             }
         };
@@ -104,7 +281,6 @@ impl RouteMap {
 
         RouteMap {
             state,
-            status,
             projection,
             _unmount: Box::new(unmount),
         }
@@ -112,58 +288,54 @@ impl RouteMap {
 
     /// Repaint every airport as a dot.
     pub fn draw_base(&self) {
-        let state = self.state.borrow();
-        let Some(ctx) = state.ctx.as_ref() else { return };
-        draw::clear(ctx, self.projection);
-        draw::draw_dots(ctx, &state.projected);
+        self.state.borrow_mut().scene = Scene::Base;
+        paint(&self.state, self.projection);
     }
 
     /// Base map plus arcs from one airport to each destination index.
     pub fn highlight_destinations(&self, from: u32, dests: &[u32]) {
-        self.draw_base();
-        let state = self.state.borrow();
-        let Some(ctx) = state.ctx.as_ref() else { return };
-        let Some(&origin) = state.coords.get(from as usize) else { return };
-
-        for &dest in dests {
-            if let Some(&target) = state.coords.get(dest as usize) {
-                draw::draw_arc(ctx, self.projection, origin, target, Palette::ARC, 1.0);
-            }
-        }
-        for &dest in dests {
-            if let Some(&point) = state.projected.get(dest as usize) {
-                draw::draw_highlight(ctx, point);
-            }
-        }
-        if let Some(&point) = state.projected.get(from as usize) {
-            draw::draw_highlight(ctx, point);
-        }
-        self.status.set(format!("{} destinations shown", dests.len()));
+        self.state.borrow_mut().scene = Scene::Destinations {
+            from,
+            dests: dests.to_vec(),
+        };
+        paint(&self.state, self.projection);
     }
 
     /// Base map plus a searched itinerary drawn leg by leg.
     pub fn show_path(&self, path: &[u32]) {
-        self.draw_base();
-        let state = self.state.borrow();
-        let Some(ctx) = state.ctx.as_ref() else { return };
+        self.state.borrow_mut().scene = Scene::Path(path.to_vec());
+        paint(&self.state, self.projection);
+    }
 
-        for pair in path.windows(2) {
-            let (Some(&from), Some(&to)) = (
-                state.coords.get(pair[0] as usize),
-                state.coords.get(pair[1] as usize),
-            ) else {
-                continue;
-            };
-            draw::draw_arc(ctx, self.projection, from, to, Palette::PATH, 2.0);
+    /// Step-zoom on the canvas centre — backs the host's "+" button.
+    pub fn zoom_in(&self) {
+        self.zoom_centered(BUTTON_ZOOM_STEP);
+    }
+
+    /// Step-zoom out on the canvas centre — backs the host's "−" button.
+    pub fn zoom_out(&self) {
+        self.zoom_centered(1.0 / BUTTON_ZOOM_STEP);
+    }
+
+    /// Back to the whole-world view.
+    pub fn reset_view(&self) {
+        self.state.borrow_mut().view = View::identity();
+        paint(&self.state, self.projection);
+    }
+}
+
+impl RouteMap {
+    fn zoom_centered(&self, factor: f32) {
+        {
+            let mut s = self.state.borrow_mut();
+            s.view = s.view.zoomed_at(
+                factor,
+                CANVAS_WIDTH / 2.0,
+                CANVAS_HEIGHT / 2.0,
+                CANVAS_WIDTH,
+                CANVAS_HEIGHT,
+            );
         }
-        for &index in path {
-            if let Some(&point) = state.projected.get(index as usize) {
-                draw::draw_highlight(ctx, point);
-            }
-        }
-        self.status.set(format!(
-            "itinerary with {} leg(s)",
-            path.len().saturating_sub(1)
-        ));
+        paint(&self.state, self.projection);
     }
 }

@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { strings } from "../../strings";
+  import type { ComponentProps } from "svelte";
+  import { strings, formatNumber } from "../../strings";
   import AirportPicker from "../../lib/AirportPicker.svelte";
+  import MapPanel from "../map/MapPanel.svelte";
   import type { AirportHit } from "../explore/exploreData";
   import { searchAirports as gatewaySearch } from "../explore/exploreData";
   import {
@@ -13,11 +15,14 @@
     search = gatewaySearch,
     routeSearch = gatewayRouteSearch,
     onresult,
+    mapProps = {},
   }: {
     search?: (query: string) => Promise<AirportHit[]>;
     routeSearch?: (from: string, to: string, optimize: RouteOptimize) => Promise<RoutePathResult | null>;
     /** Reports the found itinerary's iata sequence upward (the map tab draws it). */
     onresult?: (iatas: string[]) => void;
+    /** Overrides forwarded to the inline result map (tests inject a fake island). */
+    mapProps?: Partial<ComponentProps<typeof MapPanel>>;
   } = $props();
 
   const OPTIMIZE_OPTIONS: { value: RouteOptimize; label: string }[] = [
@@ -34,6 +39,10 @@
   let loading = $state(false);
   let failed = $state(false);
 
+  function pathToIatas(path: RoutePathResult): string[] {
+    return [...path.legs.map((leg) => leg.from.iata), path.legs.at(-1)?.to.iata ?? ""].filter(Boolean);
+  }
+
   async function run() {
     if (!from || !to) return;
     loading = true;
@@ -44,7 +53,7 @@
       const path = await routeSearch(from.iata, to.iata, optimize);
       if (path) {
         result = path;
-        onresult?.([...path.legs.map((leg) => leg.from.iata), path.legs.at(-1)?.to.iata ?? ""].filter(Boolean));
+        onresult?.(pathToIatas(path));
       } else {
         noRoute = true; // unreachable is a value on the happy rail, not an error
       }
@@ -65,10 +74,12 @@
     result
       ? strings.totalSummary
           .replace("{hops}", String(result.hops))
-          .replace("{km}", result.totalKm.toLocaleString("en-US"))
+          .replace("{km}", formatNumber(result.totalKm))
           .replace("{duration}", formatDuration(result.totalMin))
       : "",
   );
+
+  let resultIatas = $derived(result ? pathToIatas(result) : null);
 </script>
 
 <section class="route-search">
@@ -102,7 +113,7 @@
     <p class="summary">
       {summary}
       {#if result.estimatedPoints !== null}
-        <span class="points-badge">{strings.pointsBadge.replace("{points}", result.estimatedPoints.toLocaleString("en-US"))}</span>
+        <span class="points-badge">{strings.pointsBadge.replace("{points}", formatNumber(result.estimatedPoints))}</span>
       {/if}
     </p>
     <table>
@@ -120,13 +131,15 @@
           <tr>
             <td><strong>{leg.from.iata}</strong> {leg.from.city}</td>
             <td><strong>{leg.to.iata}</strong> {leg.to.city}</td>
-            <td>{leg.km.toLocaleString("en-US")} km</td>
+            <td>{formatNumber(leg.km)} km</td>
             <td>{formatDuration(leg.min)}</td>
             <td>{leg.carriers.length > 0 ? leg.carriers.map((c) => c.name).join(", ") : strings.noCarriers}</td>
           </tr>
         {/each}
       </tbody>
     </table>
+    <!-- The found itinerary on a world map, right where the search happened. -->
+    <MapPanel pathIatas={resultIatas} {...mapProps} />
   {/if}
 </section>
 
@@ -134,7 +147,16 @@
   .route-search {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.1rem;
+  }
+
+  h2 {
+    font-family: var(--re-font-display, "Fraunces", Georgia, serif);
+    font-weight: 540;
+    font-size: 1.25rem;
+    letter-spacing: 0.005em;
+    color: var(--re-heading, #f7f1e4);
+    margin: 0.5rem 0 0;
   }
 
   .pickers {
@@ -149,83 +171,137 @@
 
   fieldset {
     display: flex;
-    gap: 1rem;
-    border: 1px solid #c8d0d8;
-    border-radius: 0.5rem;
-    padding: 0.6rem 0.9rem;
+    gap: 1.25rem;
+    border: 1px solid var(--re-line-soft, rgba(255, 247, 232, 0.06));
+    border-radius: 12px;
+    background: var(--re-surface-2, #241a10);
+    padding: 0.7rem 1rem 0.8rem;
     max-width: 28rem;
+    margin: 0;
   }
 
   legend {
-    font-size: 0.85rem;
+    font-size: 0.72rem;
     font-weight: 600;
-    color: #5b6770;
-    padding: 0 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--re-muted, #c1a274);
+    padding: 0 0.35rem;
   }
 
   fieldset label {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.4rem;
     font-size: 0.95rem;
-  }
-
-  .go {
-    align-self: flex-start;
-    padding: 0.55rem 1.4rem;
-    font-size: 1rem;
-    border: none;
-    border-radius: 0.5rem;
-    background: #12436d;
-    color: #fff;
+    color: var(--re-text, #efe6d3);
     cursor: pointer;
   }
 
+  fieldset input[type="radio"] {
+    accent-color: var(--re-accent, #e3ae36);
+    cursor: pointer;
+  }
+
+  /* Primary action: the fleet's amber gradient pill with the soft glow. */
+  .go {
+    align-self: flex-start;
+    font: inherit;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 0.7rem 1.6rem;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--re-accent, #e3ae36), var(--re-accent-deep, #c8901f));
+    color: var(--re-on-accent, #140d06);
+    cursor: pointer;
+    box-shadow: 0 6px 16px -8px rgba(227, 174, 54, 0.6);
+    transition: transform 0.12s ease, filter 0.15s ease;
+  }
+
+  .go:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+  }
+
   .go:disabled {
-    background: #9db2c2;
+    opacity: 0.32;
     cursor: not-allowed;
+    box-shadow: none;
   }
 
   .summary {
-    color: #5b6770;
+    color: var(--re-heading, #f7f1e4);
+    font-variant-numeric: tabular-nums;
     margin: 0;
   }
 
   .points-badge {
     display: inline-block;
     margin-left: 0.6rem;
-    padding: 0.15rem 0.6rem;
+    padding: 0.18rem 0.7rem;
     border-radius: 999px;
-    background: #eef6ee;
-    color: #1d6b2f;
-    font-weight: 600;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(227, 174, 54, 0.16);
+    color: var(--re-accent, #e3ae36);
+    box-shadow: 0 0 18px -6px rgba(227, 174, 54, 0.35);
   }
 
   .error {
-    color: #b3261e;
+    margin: 0;
+    padding: 0.6rem 0.85rem;
+    border-radius: 10px;
+    background: rgba(208, 106, 57, 0.14);
+    border: 1px solid rgba(208, 106, 57, 0.4);
+    color: var(--re-error, #d06a39);
   }
 
   .empty,
   .loading {
-    color: #5b6770;
+    color: var(--re-muted, #c1a274);
   }
 
+  /* Mirrors the member portal's .transactions table. */
   table {
     border-collapse: collapse;
     width: 100%;
+    font-size: 0.9rem;
   }
 
   th,
   td {
     text-align: left;
-    padding: 0.45rem 0.6rem;
-    border-bottom: 1px solid #eef1f4;
+    padding: 0.55rem 0.75rem;
   }
 
   th {
-    color: #5b6770;
+    color: var(--re-muted, #c1a274);
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.68rem;
     text-transform: uppercase;
+    letter-spacing: 0.12em;
+    border-bottom: 1px solid var(--re-line, rgba(227, 174, 54, 0.22));
+  }
+
+  td {
+    border-bottom: 1px solid var(--re-line-soft, rgba(255, 247, 232, 0.06));
+    font-variant-numeric: tabular-nums;
+  }
+
+  tbody tr {
+    transition: background 0.12s ease;
+  }
+
+  tbody tr:hover {
+    background: rgba(255, 247, 232, 0.03);
+  }
+
+  td strong {
+    color: var(--re-accent, #e3ae36);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
   }
 </style>

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/svelte";
+import { render, screen, waitFor } from "@testing-library/svelte";
 import { userEvent } from "@testing-library/user-event";
 import { expect, test, vi } from "vitest";
 import RouteSearchPage from "../src/features/route-search/RouteSearchPage.svelte";
@@ -49,6 +49,42 @@ test("picking both airports enables search; the result renders legs and totals",
   const table = screen.getByRole("table");
   expect(table).toHaveTextContent("DOH");
   expect(table).toHaveTextContent("Qatar Airways");
+});
+
+test("a found route is drawn on the inline world map below the itinerary", async () => {
+  const search = vi.fn();
+  const routeSearch = vi.fn(async () => path);
+  const showPath = vi.fn();
+  class FakeRouteMap {
+    draw_base = vi.fn();
+    highlight_destinations = vi.fn();
+    show_path = showPath;
+    zoom_in = vi.fn();
+    zoom_out = vi.fn();
+    reset_view = vi.fn();
+  }
+  render(RouteSearchPage, {
+    props: {
+      search,
+      routeSearch,
+      mapProps: {
+        loadIsland: async () => ({ RouteMap: FakeRouteMap }),
+        airports: async () => [
+          { iata: "ARN", latitude: 59.65, longitude: 17.93 },
+          { iata: "DOH", latitude: 25.27, longitude: 51.61 },
+          { iata: "SYD", latitude: -33.95, longitude: 151.18 },
+        ],
+      },
+    },
+  });
+
+  await pickAirports(search);
+  await userEvent.click(screen.getByRole("button", { name: /find route/i }));
+  await screen.findByRole("heading", { name: "Itinerary" });
+
+  // ARN → DOH → SYD as indices into the map payload.
+  await waitFor(() => expect(showPath).toHaveBeenCalled());
+  expect(Array.from(showPath.mock.calls[0]![0] as Uint32Array)).toEqual([0, 1, 2]);
 });
 
 test("a degraded points estimate hides the badge but keeps the itinerary", async () => {

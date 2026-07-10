@@ -85,6 +85,62 @@ pub fn pick(points: &[(f32, f32)], x: f32, y: f32, radius: f32) -> Option<usize>
     best.map(|(i, _)| i)
 }
 
+/// Zoom bounds for the [`View`]: 1 shows the whole world; 16 is street-of-dots level.
+pub const MIN_ZOOM: f32 = 1.0;
+pub const MAX_ZOOM: f32 = 16.0;
+
+/// The zoom/pan window over base canvas space: `screen = base * zoom - offset`.
+/// Offsets are clamped so the canvas always shows map, never void beyond the edges.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub struct View {
+    pub zoom: f32,
+    pub offset_x: f32,
+    pub offset_y: f32,
+}
+
+impl View {
+    pub fn identity() -> Self {
+        Self {
+            zoom: 1.0,
+            offset_x: 0.0,
+            offset_y: 0.0,
+        }
+    }
+
+    /// Screen (canvas) coordinates back to base map coordinates.
+    pub fn to_base(&self, x: f32, y: f32) -> (f32, f32) {
+        ((x + self.offset_x) / self.zoom, (y + self.offset_y) / self.zoom)
+    }
+
+    /// Zoom by `factor`, keeping the base point under screen `(x, y)` fixed.
+    pub fn zoomed_at(&self, factor: f32, x: f32, y: f32, width: f32, height: f32) -> View {
+        let zoom = (self.zoom * factor).clamp(MIN_ZOOM, MAX_ZOOM);
+        let (bx, by) = self.to_base(x, y);
+        View {
+            zoom,
+            offset_x: bx * zoom - x,
+            offset_y: by * zoom - y,
+        }
+        .clamped(width, height)
+    }
+
+    /// Pan by a screen-space delta: the content follows the pointer.
+    pub fn panned(&self, dx: f32, dy: f32, width: f32, height: f32) -> View {
+        View {
+            zoom: self.zoom,
+            offset_x: self.offset_x - dx,
+            offset_y: self.offset_y - dy,
+        }
+        .clamped(width, height)
+    }
+
+    fn clamped(mut self, width: f32, height: f32) -> View {
+        self.offset_x = self.offset_x.clamp(0.0, width * self.zoom - width);
+        self.offset_y = self.offset_y.clamp(0.0, height * self.zoom - height);
+        self
+    }
+}
+
 /// Split a projected polyline where it wraps the antimeridian, so the canvas
 /// never draws a horizontal stroke across the whole map. A jump wider than half
 /// the canvas width can only be a wrap, not a real segment.
@@ -150,6 +206,49 @@ mod tests {
         assert_eq!(pick(&points, 101.0, 101.0, 6.0), Some(0));
         assert_eq!(pick(&points, 104.0, 100.0, 6.0), Some(1));
         assert_eq!(pick(&points, 200.0, 200.0, 6.0), None);
+    }
+
+    #[test]
+    fn the_identity_view_maps_screen_to_base_unchanged() {
+        let view = View::identity();
+        assert_eq!(view.to_base(123.0, 45.0), (123.0, 45.0));
+    }
+
+    #[test]
+    fn zooming_at_a_point_keeps_it_fixed_on_screen() {
+        let view = View::identity().zoomed_at(2.0, 240.0, 120.0, W, H);
+        let (bx, by) = view.to_base(240.0, 120.0);
+        // The base point under the cursor before the zoom is still under it after.
+        assert!((bx - 240.0).abs() < 1e-2);
+        assert!((by - 120.0).abs() < 1e-2);
+    }
+
+    #[test]
+    fn zoom_clamps_to_min_and_max() {
+        let out = View::identity().zoomed_at(0.5, W / 2.0, H / 2.0, W, H);
+        assert_eq!(out.zoom, MIN_ZOOM);
+        let mut view = View::identity();
+        for _ in 0..20 {
+            view = view.zoomed_at(2.0, W / 2.0, H / 2.0, W, H);
+        }
+        assert_eq!(view.zoom, MAX_ZOOM);
+    }
+
+    #[test]
+    fn panning_clamps_to_the_map_bounds() {
+        let view = View::identity().zoomed_at(2.0, W / 2.0, H / 2.0, W, H);
+        let dragged_off_one_way = view.panned(1e6, 1e6, W, H);
+        assert_eq!(dragged_off_one_way.offset_x, 0.0);
+        assert_eq!(dragged_off_one_way.offset_y, 0.0);
+        let dragged_off_the_other = view.panned(-1e6, -1e6, W, H);
+        assert_eq!(dragged_off_the_other.offset_x, W * view.zoom - W);
+        assert_eq!(dragged_off_the_other.offset_y, H * view.zoom - H);
+    }
+
+    #[test]
+    fn at_zoom_one_panning_cannot_move_the_map() {
+        let view = View::identity().panned(50.0, -30.0, W, H);
+        assert_eq!(view, View::identity());
     }
 
     #[test]

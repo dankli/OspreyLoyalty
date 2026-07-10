@@ -1,32 +1,35 @@
-// English-only for v1. Gathered in one module so retrofitting the fleet's five-language
-// i18n is a mechanical swap. TODO(ADR-0009): wire i18next like the other portals.
-export const strings = {
-  title: "Route Explorer",
-  tabExplore: "Explore",
-  tabRouteSearch: "Route search",
-  tabMap: "Map",
-  searchPlaceholder: "Search airports by name, city or IATA…",
-  fromLabel: "From",
-  toLabel: "To",
-  optimizeLabel: "Optimize for",
-  optimizeKm: "Distance",
-  optimizeMin: "Flight time",
-  optimizeHops: "Fewest stops",
-  searchButton: "Find route",
-  noRouteFound: "No route found within six hops.",
-  legsHeading: "Itinerary",
-  totalSummary: "{hops} hop(s) · {km} km · {duration}",
-  pointsBadge: "≈ {points} Osprey points",
-  mapUnavailable: "Map unavailable — build the WASM island with: npm run build:wasm",
-  mapSelected: "Routes from {iata}",
-  searchEmpty: "No airports match.",
-  destinationsHeading: "Direct destinations from",
-  colDestination: "Destination",
-  colCountry: "Country",
-  colDistance: "Distance",
-  colDuration: "Flight time",
-  colCarriers: "Carriers",
-  noCarriers: "—",
-  loadFailed: "Something went wrong talking to the gateway. Try again.",
-  loading: "Loading…",
-} as const;
+// Five-language catalogs per ADR-0009: JSON catalogs, the fleet's shared
+// localStorage("lang") switch, English byte-for-byte as the fallback. Svelte gets the
+// same tiny framework-less lookup as the shell — property reads resolve against the
+// locale current *at access time*, so a remount after a language switch in another
+// portal picks up the new language without a reload.
+import en from "./locales/en.json";
+import sv from "./locales/sv.json";
+import es from "./locales/es.json";
+import de from "./locales/de.json";
+import it from "./locales/it.json";
+
+export type Strings = typeof en;
+
+// Record<string, Strings> makes tsc prove every catalog carries every key.
+const MESSAGES: Record<string, Strings> = { en, sv, es, de, it };
+
+export function currentLocale(): string {
+  try {
+    return localStorage.getItem("lang") ?? "en";
+  } catch {
+    return "en"; // no storage (SSR, sandboxed iframe) — English fallback
+  }
+}
+
+export function formatNumber(value: number): string {
+  return value.toLocaleString(currentLocale());
+}
+
+export const strings: Strings = new Proxy(en, {
+  get(fallback, key) {
+    if (typeof key !== "string") return Reflect.get(fallback, key);
+    const table = MESSAGES[currentLocale()] ?? fallback;
+    return table[key as keyof Strings] ?? fallback[key as keyof Strings];
+  },
+});

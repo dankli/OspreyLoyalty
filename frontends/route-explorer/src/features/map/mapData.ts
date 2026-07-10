@@ -11,11 +11,40 @@ const MapAirportsDocument = graphql(`
   }
 `);
 
-export type MapAirportRow = { iata: string; latitude: number; longitude: number };
+// Full details are fetched per click via the existing airport query — the bulk map
+// payload stays lean (iata + coordinates only), metadata arrives on demand.
+const MapAirportDetailsDocument = graphql(`
+  query MapAirportDetails($iata: ID!) {
+    airport(iata: $iata) {
+      iata
+      name
+      city
+      country
+    }
+  }
+`);
 
-export async function fetchMapAirports(): Promise<MapAirportRow[]> {
-  const data = await gatewayClient.request(MapAirportsDocument);
-  return data.mapAirports;
+export type MapAirportRow = { iata: string; latitude: number; longitude: number };
+export type AirportDetails = { iata: string; name: string; city: string; country: string };
+
+// Two islands can be on screen at once (Map tab + the route-search inline map);
+// one gateway round-trip serves both. A failure clears the memo so a retry can succeed.
+let mapAirportsPromise: Promise<MapAirportRow[]> | null = null;
+
+export function fetchMapAirports(): Promise<MapAirportRow[]> {
+  mapAirportsPromise ??= gatewayClient.request(MapAirportsDocument).then(
+    (data) => data.mapAirports,
+    (error: unknown) => {
+      mapAirportsPromise = null;
+      throw error;
+    },
+  );
+  return mapAirportsPromise;
+}
+
+export async function fetchAirportDetails(iata: string): Promise<AirportDetails | null> {
+  const data = await gatewayClient.request(MapAirportDetailsDocument, { iata });
+  return data.airport ?? null;
 }
 
 /** The island's JS boundary (ADR-0022): typed arrays in, airport indices as the shared currency. */
@@ -23,6 +52,9 @@ export type RouteMapHandle = {
   draw_base(): void;
   highlight_destinations(from: number, dests: Uint32Array): void;
   show_path(path: Uint32Array): void;
+  zoom_in(): void;
+  zoom_out(): void;
+  reset_view(): void;
   free?(): void;
 };
 

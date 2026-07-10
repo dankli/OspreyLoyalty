@@ -13,6 +13,9 @@ declare module "*/wasm/pkg/wasm_map.js" {
     draw_base(): void;
     highlight_destinations(from: number, dests: Uint32Array): void;
     show_path(path: Uint32Array): void;
+    zoom_in(): void;
+    zoom_out(): void;
+    reset_view(): void;
     free(): void;
   }
 }

@@ -41,6 +41,29 @@ test("typing searches (debounced) and picking an airport lists its destinations"
   expect(table).toHaveTextContent("—"); // the carrier-less Visby row degrades to a dash
 });
 
+test("long destination lists page at 25 with a show-more button", async () => {
+  const manyDestinations: DestinationRow[] = Array.from({ length: 30 }, (_, i) => ({
+    airport: { iata: `A${String(i).padStart(2, "0")}`, name: `Airport ${i}`, city: `City ${i}`, country: "Sweden" },
+    km: 100 + i,
+    min: 60,
+    carriers: [],
+  }));
+  const search = vi.fn(async () => [arlanda]);
+  render(ExplorePage, { props: { search, destinations: vi.fn(async () => manyDestinations) } });
+
+  await userEvent.type(screen.getByPlaceholderText(/search airports/i), "arlanda");
+  await userEvent.click(await screen.findByRole("button", { name: /ARN.*Stockholm/i }));
+  await screen.findByText(/Direct destinations from/);
+
+  // 25 data rows + 1 header row, and the button announces the remainder.
+  expect(screen.getAllByRole("row")).toHaveLength(26);
+  const more = screen.getByRole("button", { name: /show 5 more/i });
+
+  await userEvent.click(more);
+  expect(screen.getAllByRole("row")).toHaveLength(31);
+  expect(screen.queryByRole("button", { name: /more/i })).not.toBeInTheDocument();
+});
+
 test("a failing gateway shows one visible error, not a blank page", async () => {
   const search = vi.fn(async () => {
     throw new Error("gateway down");

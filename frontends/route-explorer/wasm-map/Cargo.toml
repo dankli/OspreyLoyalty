@@ -22,6 +22,7 @@ features = [
   "Element",
   "DomRect",
   "MouseEvent",
+  "WheelEvent",
 ]
 
 [profile.release]

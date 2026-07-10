@@ -8,6 +8,7 @@
     "isolatedModules": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,
+    "resolveJsonModule": true,
     "noEmit": true,
     "skipLibCheck": true,
     "types": ["svelte", "vite/client"]

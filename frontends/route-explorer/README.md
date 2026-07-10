@@ -17,9 +17,13 @@ The map is a **Rust/Leptos WASM island** ([`wasm-map/`](wasm-map)), compiled by 
 the Svelte host imports lazily. The JS↔WASM boundary is typed arrays and airport indices — Svelte
 keeps all the metadata. Neither `npm run dev` nor `npm test` needs a Rust toolchain: without the pkg
 the Map tab shows a placeholder, and the Docker build compiles the crate in its own Rust stage. The
-remote is English-only in v1; its strings live in `src/strings.ts` for a later
-[ADR-0009](../../docs/decisions/0009-i18n-strategy.md) retrofit (the shell's nav label is already
-localized).
+remote follows [ADR-0009](../../docs/decisions/0009-i18n-strategy.md): five JSON catalogs in
+`src/locales/`, resolved by the tiny lookup in `src/strings.ts` off the fleet's shared
+`localStorage("lang")` switch, English as fallback. The UI follows the fleet's "field-guide" design
+system (see `frontends/member-portal/src/index.css` for the reference tokens): Fraunces display
+headings, Hanken Grotesk UI, the bark/amber/cream palette via `--re-*` custom properties that
+inherit the shell's tokens and fall back to the same values standalone. All user-facing text —
+including the map's status line — renders on the Svelte side; the WASM island carries no copy.
 
 ```bash
 npm run dev          # standalone on :5175, expects the gateway on :4000
