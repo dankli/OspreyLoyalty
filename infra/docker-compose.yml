@@ -12,13 +12,18 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
+    # Run as the rabbitmq user from the start: the image's root entrypoint otherwise writes
+    # the erlang cookie root-owned onto the fresh tmpfs and the broker can't read it back.
+    user: rabbitmq
     ports: ["5672:5672", "15672:15672"]
     # Keep broker state (incl. the Erlang cookie) on an ephemeral tmpfs so a
     # fresh cookie is created on every start. Avoids the "Error when reading
     # /var/lib/rabbitmq/.erlang.cookie: eacces" a stale anonymous volume can
     # cause on Docker Desktop. Safe for a demo: the queues are transient.
     tmpfs:
-      - /var/lib/rabbitmq
+      # uid/gid 999 = the rabbitmq user; without them Docker Desktop 29 mounts the tmpfs
+      # root-owned and the broker gets eacces reading the erlang cookie it just wrote.
+      - /var/lib/rabbitmq:uid=999,gid=999
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
@@ -101,10 +106,15 @@ services:
     ports: ["5174:80"]
     depends_on: [gateway]
 
+  route-explorer:
+    build: ../frontends/route-explorer
+    ports: ["5175:80"]
+    depends_on: [gateway]
+
   shell:
     build: ../frontends/shell
     ports: ["5170:80"]
-    depends_on: [member-portal, admin-portal]
+    depends_on: [member-portal, admin-portal, route-explorer]
 
   prometheus:
     image: prom/prometheus:v2.53.0
