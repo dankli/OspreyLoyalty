@@ -49,6 +49,12 @@ export async function writeQuery(
   }
 }
 
+/** True when the error is the server terminating a transaction for exceeding its client-set timeout. */
+export function isTransactionTimeout(error: unknown): boolean {
+  const code = (error as { code?: string })?.code ?? "";
+  return code.includes("TransactionTimedOut") || code.includes("TransactionTimeout");
+}
+
 /** Schema operations (CREATE CONSTRAINT/INDEX, awaitIndexes) must run auto-commit — Neo4j rejects them inside managed transactions. */
 export async function runSchema(driver: Driver, cypher: string): Promise<void> {
   const session = driver.session();

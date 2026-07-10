@@ -96,9 +96,31 @@ type MapAirport {
   longitude: Float!
 }
 
+type RouteLeg {
+  from: Airport!
+  to: Airport!
+  km: Int!
+  min: Int!
+  carriers: [Carrier!]!
+}
+
+type RoutePath {
+  legs: [RouteLeg!]!
+  totalKm: Int!
+  totalMin: Int!
+  hops: Int!
+}
+
+enum RouteOptimize {
+  KM
+  MIN
+  HOPS
+}
+
 extend type Query {
   airports(query: String!, limit: Int! = 10): [Airport!]!
   airport(iata: ID!): Airport
   airportDestinations(iata: ID!): [Destination!]!
   mapAirports: [MapAirport!]!
+  routeSearch(from: ID!, to: ID!, optimize: RouteOptimize! = KM): RoutePath
 }

@@ -6,7 +6,9 @@ import { createApp } from "./app.js";
 import { createAuthorizer } from "./auth.js";
 import { createDriver } from "./neo4j.js";
 import { createAllAirports, getAirport, getDestinations, searchAirports } from "./features/airports/queries.js";
+import { searchRoute } from "./features/route-search/searchRoute.js";
 import { loadDataset, seedRoutes } from "./features/seed/seedRoutes.js";
+import { warmRouteGraph } from "./features/route-search/warmup.js";
 
 const logger = pino();
 const driver = createDriver(env.NEO4J_URL);
@@ -18,6 +20,7 @@ const app = createApp({
   getAirport: (iata) => getAirport(driver, iata),
   getDestinations: (iata) => getDestinations(driver, iata),
   allAirports: createAllAirports(driver),
+  searchRoute: (from, to, optimize) => searchRoute(driver, from, to, optimize),
   isReady: () => ready,
   authorize: createAuthorizer({
     enabled: env.AUTH_ENABLED,
@@ -38,6 +41,7 @@ void (async () => {
     } else {
       logger.info("SEED_ROUTES=false — assuming an already-seeded graph");
     }
+    await warmRouteGraph(driver, logger); // /ready implies warm: see warmup.ts
     ready = true;
   } catch (error) {
     logger.error({ err: error }, "seeding failed — staying unready");

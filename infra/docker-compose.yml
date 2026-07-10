@@ -155,6 +155,9 @@ services:
     image: neo4j:5-community
     environment:
       NEO4J_AUTH: none
+      # apoc core ships inside the image (labs/); this just enables it — no download.
+      # Needed for apoc.algo.dijkstra in weighted route search (ADR-0021).
+      NEO4J_PLUGINS: '["apoc"]'
       NEO4J_server_memory_heap_max__size: 512m
       NEO4J_server_memory_pagecache_size: 256m
     ports: ["7474:7474", "7687:7687"]

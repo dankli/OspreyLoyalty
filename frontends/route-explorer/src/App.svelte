@@ -1,9 +1,13 @@
 <script lang="ts">
   import { strings } from "./strings";
   import ExplorePage from "./features/explore/ExplorePage.svelte";
+  import RouteSearchPage from "./features/route-search/RouteSearchPage.svelte";
 
-  // One tab today; route search and the map join this list in their own slices.
-  const TABS = [{ id: "explore", label: strings.tabExplore }] as const;
+  // The map joins this list in its own slice.
+  const TABS = [
+    { id: "explore", label: strings.tabExplore },
+    { id: "route-search", label: strings.tabRouteSearch },
+  ] as const;
   type TabId = (typeof TABS)[number]["id"];
   let tab = $state<TabId>("explore");
 </script>
@@ -24,6 +28,8 @@
 
   {#if tab === "explore"}
     <ExplorePage />
+  {:else if tab === "route-search"}
+    <RouteSearchPage />
   {/if}
 </div>
 

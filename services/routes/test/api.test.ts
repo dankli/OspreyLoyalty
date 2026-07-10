@@ -23,6 +23,7 @@ function fakeDeps(overrides: Partial<AppDeps> = {}): AppDeps {
       { airport: arlanda, km: 400, min: 60, carriers: [{ iata: "SK", name: "SAS" }] },
     ]),
     allAirports: vi.fn(async () => [{ iata: "ARN", latitude: 59.651944, longitude: 17.918611 }]),
+    searchRoute: vi.fn(async () => null),
     isReady: () => true,
     authorize: async () => true,
     ...overrides,
@@ -96,6 +97,34 @@ test("/airports/all returns the map payload", async () => {
   const base = await listen(fakeDeps());
   const body = await (await fetch(`${base}/airports/all`)).json();
   expect(body).toEqual([{ iata: "ARN", latitude: 59.651944, longitude: 17.918611 }]);
+});
+
+test("route search validates its inputs at the edge", async () => {
+  const base = await listen(fakeDeps());
+  expect((await fetch(`${base}/routes/search`)).status).toBe(400);
+  expect((await fetch(`${base}/routes/search?from=ARN&to=ARN`)).status).toBe(400);
+  expect((await fetch(`${base}/routes/search?from=ARN&to=SYD&optimize=fastest`)).status).toBe(400);
+});
+
+test("route search normalizes iatas, defaults to km, and 404s when unreachable", async () => {
+  const deps = fakeDeps();
+  const base = await listen(deps);
+  const res = await fetch(`${base}/routes/search?from=arn&to=syd`);
+  expect(res.status).toBe(404);
+  expect(deps.searchRoute).toHaveBeenCalledWith("ARN", "SYD", "km");
+});
+
+test("route search returns the assembled path", async () => {
+  const path = {
+    legs: [{ from: arlanda, to: arlanda, km: 522, min: 75, carriers: [{ iata: "SK", name: "SAS" }] }],
+    totalKm: 522,
+    totalMin: 75,
+    hops: 1,
+  };
+  const base = await listen(fakeDeps({ searchRoute: vi.fn(async () => path) }));
+  const res = await fetch(`${base}/routes/search?from=ARN&to=CPH&optimize=min`);
+  expect(res.status).toBe(200);
+  expect(await res.json()).toEqual(path);
 });
 
 test("unknown paths are 404", async () => {

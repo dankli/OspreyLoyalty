@@ -8,7 +8,7 @@ import type { TransactionsPage } from "./features/member/transactionsClient.js";
 import type { Partner } from "./features/partner/partnersClient.js";
 import type { Reward } from "./features/reward/rewardsClient.js";
 import type { RedemptionOutcome } from "./features/reward/redeemClient.js";
-import type { Airport, Destination, MapAirport } from "./features/routes/routesClient.js";
+import type { Airport, Destination, MapAirport, RouteOptimize, RoutePath } from "./features/routes/routesClient.js";
 
 export type Deps = {
   fetchMember: (baseUrl: string, id: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Member | null>;
@@ -20,6 +20,7 @@ export type Deps = {
   fetchAirport: (baseUrl: string, iata: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Airport | null>;
   fetchDestinations: (baseUrl: string, iata: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Destination[]>;
   fetchAllAirports: (baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<MapAirport[]>;
+  searchRoute: (baseUrl: string, from: string, to: string, optimize: RouteOptimize, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<RoutePath | null>;
 };
 
 const typeDefs = readFileSync(new URL("../schema.graphql", import.meta.url), "utf8");
@@ -69,6 +70,8 @@ export function schema(deps: Deps): GraphQLSchemaWithContext<YogaInitialContext>
           deps.fetchDestinations(env.ROUTES_URL, args.iata, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
         mapAirports: (_parent: unknown, _args: unknown, context: RequestContext) =>
           deps.fetchAllAirports(env.ROUTES_URL, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
+        routeSearch: (_parent: unknown, args: { from: string; to: string; optimize: "KM" | "MIN" | "HOPS" }, context: RequestContext) =>
+          deps.searchRoute(env.ROUTES_URL, args.from, args.to, args.optimize.toLowerCase() as RouteOptimize, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
       },
       Mutation: {
         redeem: async (

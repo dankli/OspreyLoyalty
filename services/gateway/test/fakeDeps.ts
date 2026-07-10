@@ -18,6 +18,7 @@ export function fakeDeps(overrides: Partial<Deps> = {}): Deps {
     fetchAirport: async () => null,
     fetchDestinations: async () => [],
     fetchAllAirports: async () => [],
+    searchRoute: async () => null,
     ...overrides,
   };
 }

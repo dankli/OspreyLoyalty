@@ -3,6 +3,8 @@ import pino from "pino";
 import { CORRELATION_HEADER, resolveCorrelationId } from "./correlation.js";
 import { httpRequestDuration, metricsRegistry } from "./metrics.js";
 import type { Airport, Destination, MapAirport } from "./features/airports/mapRecords.js";
+import type { RoutePath } from "./features/route-search/cypher.js";
+import type { Optimize } from "./features/route-search/searchRoute.js";
 import type { Authorizer } from "./auth.js";
 
 const logger = pino();
@@ -14,9 +16,12 @@ export type AppDeps = {
   getAirport(iata: string): Promise<Airport | null>;
   getDestinations(iata: string): Promise<Destination[]>;
   allAirports(): Promise<MapAirport[]>;
+  searchRoute(from: string, to: string, optimize: Optimize): Promise<RoutePath | null>;
   isReady(): boolean;
   authorize: Authorizer;
 };
+
+const OPTIMIZE_VALUES: readonly Optimize[] = ["km", "min", "hops"];
 
 /** Validation failures throw this at the edge; the catch below maps it to a clean status. */
 class HttpError extends Error {
@@ -109,6 +114,20 @@ async function dispatch(deps: AppDeps, req: IncomingMessage, res: ServerResponse
   }
 
   if (pathname === "/airports/all") return json(res, 200, await deps.allAirports());
+
+  if (pathname === "/routes/search") {
+    const from = requestUrl.searchParams.get("from")?.toUpperCase();
+    const to = requestUrl.searchParams.get("to")?.toUpperCase();
+    if (!from || !to) throw new HttpError(400, "query parameters from and to are required");
+    if (from === to) throw new HttpError(400, "from and to must differ");
+    const optimize = (requestUrl.searchParams.get("optimize") ?? "km") as Optimize;
+    if (!OPTIMIZE_VALUES.includes(optimize)) {
+      throw new HttpError(400, "optimize must be one of km, min, hops");
+    }
+    const path = await deps.searchRoute(from, to, optimize);
+    if (!path) throw new HttpError(404, "no route found");
+    return json(res, 200, path);
+  }
 
   const destinationsMatch = pathname.match(/^\/airports\/([^/]+)\/destinations$/);
   if (destinationsMatch) {
