@@ -54,6 +54,12 @@ test("destinations come back ordered by km with carriers zipped into objects", a
   expect(destinations[1]?.carriers).toEqual([]);
 });
 
+test("search orders matches by destination count, then name", async () => {
+  // "airport" matches every seeded name; degrees are AAA=2, BBB=1, CCC=0.
+  const hits = await searchAirports(driver, "airport", 10);
+  expect(hits.map((a) => a.iata)).toEqual(["AAA", "BBB", "CCC"]);
+});
+
 test("full-text search finds airports by partial name and survives lucene syntax", async () => {
   const byName = await searchAirports(driver, "bet", 10);
   expect(byName.map((a) => a.iata)).toContain("BBB");
@@ -72,7 +78,7 @@ test("airport lookup returns the full profile or null", async () => {
   expect(await getAirport(driver, "XXX")).toBeNull();
 });
 
-test("the map payload holds every seeded airport with coordinates only", async () => {
+test("the map payload holds every seeded airport with coordinates and degree", async () => {
   const all = await createAllAirports(driver)();
   expect(all).toHaveLength(3);
   expect(all.map((a) => a.iata)).toEqual(["AAA", "BBB", "CCC"]);

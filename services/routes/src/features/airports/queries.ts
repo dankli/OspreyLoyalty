@@ -11,11 +11,18 @@ export const SEARCH_LIMIT_MAX = 25; // typeahead never needs more; clamps caller
 export async function searchAirports(driver: Driver, q: string, limit: number): Promise<Airport[]> {
   const query = luceneQuery(q);
   if (query === "") return [];
+  // Relevance gates the candidates (top 50 by lucene score, bounded); hubs order
+  // them — a typeahead for flight search should surface Heathrow before a field
+  // strip that happens to score similarly. Name breaks degree ties.
   const rows = await readQuery(
     driver,
     `CALL db.index.fulltext.queryNodes('airport_search', $query) YIELD node, score
-     RETURN node ${AIRPORT_PROJECTION} AS airport
+     WITH node, score
      ORDER BY score DESC
+     LIMIT 50
+     WITH node, COUNT { (node)-[:ROUTE]->() } AS degree
+     RETURN node ${AIRPORT_PROJECTION} AS airport
+     ORDER BY degree DESC, node.name ASC
      LIMIT $limit`,
     { query, limit: neo4j.int(Math.min(limit, SEARCH_LIMIT_MAX)) },
   );
