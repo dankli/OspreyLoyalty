@@ -29,7 +29,7 @@ test("redeem mutation returns the redemption result", async () => {
     ...baseDeps,
     fetchRewards: async () => [],
     postRedemption: async () => ({
-      rewardId: "lounge-pass", pointsSpent: 15000, spendablePoints: 36000, alreadyApplied: false,
+      ok: true, result: { rewardId: "lounge-pass", pointsSpent: 15000, spendablePoints: 36000, alreadyApplied: false },
     }),
   });
 
@@ -49,7 +49,7 @@ test("insufficient balance surfaces the members error message", async () => {
   const yoga = buildYoga({
     ...baseDeps,
     fetchRewards: async () => [],
-    postRedemption: async () => { throw new Error("Insufficient spendable points."); },
+    postRedemption: async () => ({ ok: false, reason: "rejected", message: "Insufficient spendable points." }),
   });
 
   const response = await yoga.fetch("http://gateway/graphql", {

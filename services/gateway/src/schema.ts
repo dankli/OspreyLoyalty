@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { GraphQLError } from "graphql";
 import { createSchema } from "graphql-yoga";
 import type { GraphQLSchemaWithContext, YogaInitialContext } from "graphql-yoga";
 import { env } from "./env.js";
@@ -6,14 +7,14 @@ import type { Member } from "./features/member/membersClient.js";
 import type { TransactionsPage } from "./features/member/transactionsClient.js";
 import type { Partner } from "./features/partner/partnersClient.js";
 import type { Reward } from "./features/reward/rewardsClient.js";
-import type { RedemptionResult } from "./features/reward/redeemClient.js";
+import type { RedemptionOutcome } from "./features/reward/redeemClient.js";
 
 export type Deps = {
   fetchMember: (baseUrl: string, id: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Member | null>;
   fetchTransactions: (baseUrl: string, memberId: string, page: number, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<TransactionsPage>;
   fetchPartners: (baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Partner[]>;
   fetchRewards: (baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Reward[]>;
-  postRedemption: (baseUrl: string, memberId: string, rewardId: string, idempotencyKey: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<RedemptionResult>;
+  postRedemption: (baseUrl: string, memberId: string, rewardId: string, idempotencyKey: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<RedemptionOutcome>;
 };
 
 const typeDefs = readFileSync(new URL("../schema.graphql", import.meta.url), "utf8");
@@ -57,12 +58,17 @@ export function schema(deps: Deps): GraphQLSchemaWithContext<YogaInitialContext>
           deps.fetchRewards(env.MEMBERS_URL, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
       },
       Mutation: {
-        redeem: (
+        redeem: async (
           _parent: unknown,
           args: { memberId: string; rewardId: string; idempotencyKey: string },
           context: RequestContext,
-        ) =>
-          deps.postRedemption(env.MEMBERS_URL, args.memberId, args.rewardId, args.idempotencyKey, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
+        ) => {
+          const outcome = await deps.postRedemption(env.MEMBERS_URL, args.memberId, args.rewardId, args.idempotencyKey, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context));
+          if (outcome.ok) return outcome.result;
+          // Expected refusal (unknown member / insufficient / unknown reward) → the GraphQL error
+          // edge, carrying members' already-localized message. Genuine faults threw upstream.
+          throw new GraphQLError(outcome.message);
+        },
       },
     },
   });

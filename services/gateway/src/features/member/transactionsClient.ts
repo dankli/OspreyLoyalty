@@ -1,18 +1,23 @@
+import { z } from "zod";
+
 const REQUEST_TIMEOUT_MS = 2000; // the BFF must answer fast or not at all
 
-export type PointsTransaction = {
-  id: string;
-  type: string;
-  points: number;
-  source: string;
-  occurredAtUtc: string;
-};
+export const PointsTransactionSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  points: z.number(),
+  source: z.string(),
+  occurredAtUtc: z.string(),
+});
 
-export type TransactionsPage = {
-  items: PointsTransaction[];
-  page: number;
-  hasMore: boolean;
-};
+export const TransactionsPageSchema = z.object({
+  items: z.array(PointsTransactionSchema),
+  page: z.number(),
+  hasMore: z.boolean(),
+});
+
+export type PointsTransaction = z.infer<typeof PointsTransactionSchema>;
+export type TransactionsPage = z.infer<typeof TransactionsPageSchema>;
 
 export async function fetchTransactions(
   baseUrl: string,
@@ -30,5 +35,5 @@ export async function fetchTransactions(
     },
   );
   if (!response.ok) throw new Error(`members service responded ${response.status}`);
-  return (await response.json()) as TransactionsPage;
+  return TransactionsPageSchema.parse(await response.json()); // trust boundary — validate, don't cast
 }

@@ -1,10 +1,14 @@
+import { z } from "zod";
+
 const REQUEST_TIMEOUT_MS = 2000; // the BFF must answer fast or not at all
 
-export type Reward = {
-  id: string;
-  name: string;
-  cost: number;
-};
+export const RewardSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  cost: z.number(),
+});
+
+export type Reward = z.infer<typeof RewardSchema>;
 
 export async function fetchRewards(baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string): Promise<Reward[]> {
   const response = await fetch(`${baseUrl}/api/rewards`, {
@@ -12,5 +16,5 @@ export async function fetchRewards(baseUrl: string, correlationId?: string, auth
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error(`members service responded ${response.status}`);
-  return (await response.json()) as Reward[];
+  return z.array(RewardSchema).parse(await response.json()); // trust boundary — validate, don't cast
 }

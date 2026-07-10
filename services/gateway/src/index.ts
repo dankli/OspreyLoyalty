@@ -1,6 +1,7 @@
 import "./otel.js"; // must be first — starts tracing before anything else loads
 import { createServer } from "node:http";
 import pino from "pino";
+import { z } from "zod";
 import { buildYoga } from "./server.js";
 import { env } from "./env.js";
 import { fetchMember } from "./features/member/membersClient.js";
@@ -10,6 +11,15 @@ import { httpRequestDuration, metricsRegistry } from "./metrics.js";
 
 const logger = pino();
 const yoga = buildYoga();
+
+// Shape guard for the browser telemetry sink (/client-logs): untrusted JSON from the frontends,
+// so parse (don't cast) — a malformed or hostile body is dropped, not logged as an unchecked value.
+const ClientLogSchema = z.object({
+  level: z.string().optional(),
+  message: z.string().optional(),
+  context: z.unknown().optional(),
+  app: z.string().optional(),
+});
 
 /** Low-cardinality route label: known paths as-is, the proxy with the id stripped, anything else lumped. */
 function routeLabel(url: string | undefined): string {
@@ -84,13 +94,13 @@ const server = createServer((req, res) => {
           return;
         }
         try {
-          const entry = JSON.parse(body) as { level?: string; message?: string; context?: unknown; app?: string };
+          const entry = ClientLogSchema.parse(JSON.parse(body));
           logger.info(
             { source: "frontend", app: entry.app, clientLevel: entry.level, clientMessage: entry.message, context: entry.context, correlationId },
             "client-log",
           );
         } catch {
-          // ignore malformed client payloads — never let telemetry break the request
+          // ignore malformed client payloads (bad JSON or unexpected shape) — telemetry must never break the request
         }
         res.writeHead(204).end();
       });

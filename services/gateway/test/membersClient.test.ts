@@ -25,3 +25,13 @@ test("5xx from members throws", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 500 })));
   await expect(fetchMember("http://members", "demo-ada")).rejects.toThrow("members service responded 500");
 });
+
+test("a drifted members shape is rejected, not passed through", async () => {
+  // zod is the trust boundary: a 200 whose body is missing required fields must fail loudly here.
+  vi.stubGlobal("fetch", vi.fn(async () =>
+    new Response(JSON.stringify({ id: "x", name: "No Tier Here" }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    })));
+  await expect(fetchMember("http://members", "x")).rejects.toThrow();
+});

@@ -19,11 +19,10 @@ test("t translates gateway-owned messages", () => {
   expect(t("redemption_rejected", "de")).toBe("Einlösung abgelehnt.");
 });
 
-test("redeem 404 message is localized by the caller's language", async () => {
+test("redeem 404 maps to a not_found outcome with a localized message", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 404 })));
-  await expect(
-    postRedemption("http://members", "nope", "lounge-pass", "key-1234567890", undefined, undefined, "sv"),
-  ).rejects.toThrow("Medlemmen hittades inte.");
+  const outcome = await postRedemption("http://members", "nope", "lounge-pass", "key-1234567890", undefined, undefined, "sv");
+  expect(outcome).toEqual({ ok: false, reason: "not_found", message: "Medlemmen hittades inte." });
 });
 
 test("redeem forwards Accept-Language downstream so members localizes its own 400", async () => {
@@ -35,9 +34,8 @@ test("redeem forwards Accept-Language downstream so members localizes its own 40
   );
   vi.stubGlobal("fetch", fetchMock);
 
-  await expect(
-    postRedemption("http://members", "demo-erik", "x", "key-1234567890", undefined, undefined, "sv-SE,sv;q=0.9"),
-  ).rejects.toThrow("Otillräckliga poäng.");
+  const outcome = await postRedemption("http://members", "demo-erik", "x", "key-1234567890", undefined, undefined, "sv-SE,sv;q=0.9");
+  expect(outcome).toEqual({ ok: false, reason: "rejected", message: "Otillräckliga poäng." });
 
   const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
   expect((init.headers as Record<string, string>)["accept-language"]).toBe("sv-SE,sv;q=0.9");
