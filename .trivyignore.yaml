@@ -1,0 +1,91 @@
+# Trivy ignore file — triaged, path-scoped suppressions for the demo stack.
+#
+# Philosophy mirrors SECURITY.md ("establish a clean baseline, triage what the tools
+# surface"): every first-party workload we build IS hardened (non-root, dropped
+# capabilities, no privilege escalation, seccomp RuntimeDefault, read-only root fs —
+# see services/*/Dockerfile and infra/k8s/{gateway,members,partners,points-engine,
+# security,shell,admin-portal,member-portal}.yaml). What remains below is either
+# required by a component's function, or a third-party ops image whose hardening needs
+# per-image UID + writable-path mapping verified against the live cluster.
+#
+# Each entry is scoped to a single path and carries a statement explaining WHY, so the
+# difference between "fixed", "won't fix" and "not yet" stays visible rather than hidden.
+
+misconfigurations:
+  # ── Required by design: monitoring agents that must reach the host ────────────────
+  - id: KSV-0009
+    paths: ["infra/k8s/node-exporter.yaml"]
+    statement: >-
+      node-exporter is a host-metrics DaemonSet; hostNetwork is how it exposes the
+      node's own network stack. Removing it defeats the exporter's purpose.
+  - id: KSV-0010
+    paths: ["infra/k8s/node-exporter.yaml"]
+    statement: >-
+      node-exporter needs hostPID to read per-process host metrics. Required by design.
+  - id: KSV-0121
+    paths: ["infra/k8s/node-exporter.yaml"]
+    statement: >-
+      node-exporter mounts host /, /proc and /sys read-only to collect node metrics.
+      These host mounts are the component's entire reason to exist.
+
+  # ── Required by design: scrape/read RBAC for the observability stack ──────────────
+  - id: KSV-0047
+    paths: ["infra/k8s/prometheus.yaml"]
+    statement: >-
+      Prometheus needs the nodes/proxy permission to scrape the kubelet/cAdvisor
+      metrics endpoints. Standard, documented Prometheus RBAC.
+  - id: KSV-0047
+    paths: ["infra/k8s/promtail.yaml"]
+    statement: >-
+      Promtail uses the same node-proxy read access to discover pod log targets.
+      Required for cluster log collection.
+  - id: KSV-0041
+    paths: ["infra/k8s/kube-state-metrics.yaml"]
+    statement: >-
+      kube-state-metrics reads Secrets cluster-wide to emit kube_secret_* metrics
+      (metadata only, never values). Read access is inherent to the exporter.
+  - id: KSV-0041
+    paths: ["infra/k8s/ingress/traefik.yaml"]
+    statement: >-
+      Traefik reads Secrets to load the osprey-tls certificate for ingress TLS
+      termination. Removing Secret access breaks HTTPS for every host.
+
+  # ── Third-party ops images: securityContext / read-only root fs ───────────────────
+  # First-party services are hardened. These upstream images (Grafana UID 472,
+  # Prometheus/Alertmanager 65534, Mongo/RabbitMQ stateful stores, Traefik/Promtail
+  # needing root for port-bind / host-log access) each need a per-image non-root UID
+  # and writable-path mapping validated against the running stack. Tracked as a
+  # dedicated infra-hardening follow-up; not shipped unverified to keep the local
+  # `run-local-k8s` demo working.
+  - id: KSV-0118
+    paths:
+      - "infra/k8s/alertmanager.yaml"
+      - "infra/k8s/grafana.yaml"
+      - "infra/k8s/jaeger.yaml"
+      - "infra/k8s/loki.yaml"
+      - "infra/k8s/mongo.yaml"
+      - "infra/k8s/otel-collector.yaml"
+      - "infra/k8s/prometheus.yaml"
+      - "infra/k8s/promtail.yaml"
+      - "infra/k8s/rabbitmq.yaml"
+      - "infra/k8s/ingress/traefik.yaml"
+    statement: >-
+      Third-party ops component. First-party workloads set a hardened securityContext;
+      hardening these upstream images is a tracked infra follow-up (needs per-image
+      non-root UID validated against the live cluster).
+  - id: KSV-0014
+    paths:
+      - "infra/k8s/alertmanager.yaml"
+      - "infra/k8s/grafana.yaml"
+      - "infra/k8s/jaeger.yaml"
+      - "infra/k8s/loki.yaml"
+      - "infra/k8s/mongo.yaml"
+      - "infra/k8s/otel-collector.yaml"
+      - "infra/k8s/prometheus.yaml"
+      - "infra/k8s/promtail.yaml"
+      - "infra/k8s/rabbitmq.yaml"
+      - "infra/k8s/ingress/traefik.yaml"
+    statement: >-
+      Third-party ops component with runtime disk writes (TSDB, DB files, WAL, config
+      rendering). read-only root fs needs per-image writable-path mapping verified
+      against the running stack; tracked as an infra follow-up.

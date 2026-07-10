@@ -15,6 +15,10 @@ spec:
       labels:
         app: security
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: security
           image: osprey-loyalty-security:latest
@@ -47,6 +51,21 @@ spec:
             limits:
               cpu: 1000m
               memory: 768Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001 # non-root `app` user baked into the image
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

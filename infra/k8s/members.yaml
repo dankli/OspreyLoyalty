@@ -15,6 +15,10 @@ spec:
       labels:
         app: members
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: members
           image: osprey-loyalty-members:latest
@@ -55,6 +59,21 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1654 # APP_UID in the chiseled .NET runtime image
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

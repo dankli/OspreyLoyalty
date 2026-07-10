@@ -12,5 +12,9 @@ RUN touch src/main.rs src/lib.rs && cargo build --release
 FROM debian:bookworm-slim
 WORKDIR /app
 COPY --from=build /src/target/release/osprey-points-engine .
+# Run as a non-root user (UID 10001). The statically-laid-out binary is world-executable
+# and the service holds no writable state on disk.
+RUN groupadd --system --gid 10001 app && useradd --system --uid 10001 --gid app app
+USER app
 EXPOSE 8082
 ENTRYPOINT ["./osprey-points-engine"]

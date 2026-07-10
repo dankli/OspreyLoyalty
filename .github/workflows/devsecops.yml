@@ -46,6 +46,7 @@ jobs:
             --scanners vuln,misconfig,secret \
             --severity HIGH,CRITICAL \
             --offline-scan \
+            --ignorefile /repo/.trivyignore.yaml \
             --format sarif --output /repo/trivy.sarif \
             --exit-code 0
       - name: Upload Trivy SARIF
