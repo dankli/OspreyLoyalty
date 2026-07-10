@@ -1,0 +1,29 @@
+[package]
+name = "wasm-map"
+version = "0.1.0"
+edition = "2021"
+description = "Route Explorer map island (ADR-0022): Canvas 2D world map behind a typed-array JS boundary"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+js-sys = "0.3"
+leptos = { version = "0.8", features = ["csr"] }
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+  "HtmlCanvasElement",
+  "CanvasRenderingContext2d",
+  "HtmlElement",
+  "Element",
+  "DomRect",
+  "MouseEvent",
+]
+
+[profile.release]
+opt-level = "z"
+lto = true

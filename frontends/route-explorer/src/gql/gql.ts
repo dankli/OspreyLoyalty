@@ -16,11 +16,13 @@ import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-
 type Documents = {
     "\n  query AirportSearch($query: String!) {\n    airports(query: $query) {\n      iata\n      name\n      city\n      country\n    }\n  }\n": typeof types.AirportSearchDocument,
     "\n  query Destinations($iata: ID!) {\n    airportDestinations(iata: $iata) {\n      airport {\n        iata\n        name\n        city\n        country\n      }\n      km\n      min\n      carriers {\n        name\n      }\n    }\n  }\n": typeof types.DestinationsDocument,
+    "\n  query MapAirports {\n    mapAirports {\n      iata\n      latitude\n      longitude\n    }\n  }\n": typeof types.MapAirportsDocument,
     "\n  query RouteSearch($from: ID!, $to: ID!, $optimize: RouteOptimize!) {\n    routeSearch(from: $from, to: $to, optimize: $optimize) {\n      hops\n      totalKm\n      totalMin\n      estimatedPoints\n      legs {\n        from {\n          iata\n          name\n          city\n          country\n        }\n        to {\n          iata\n          name\n          city\n          country\n        }\n        km\n        min\n        carriers {\n          name\n        }\n      }\n    }\n  }\n": typeof types.RouteSearchDocument,
 };
 const documents: Documents = {
     "\n  query AirportSearch($query: String!) {\n    airports(query: $query) {\n      iata\n      name\n      city\n      country\n    }\n  }\n": types.AirportSearchDocument,
     "\n  query Destinations($iata: ID!) {\n    airportDestinations(iata: $iata) {\n      airport {\n        iata\n        name\n        city\n        country\n      }\n      km\n      min\n      carriers {\n        name\n      }\n    }\n  }\n": types.DestinationsDocument,
+    "\n  query MapAirports {\n    mapAirports {\n      iata\n      latitude\n      longitude\n    }\n  }\n": types.MapAirportsDocument,
     "\n  query RouteSearch($from: ID!, $to: ID!, $optimize: RouteOptimize!) {\n    routeSearch(from: $from, to: $to, optimize: $optimize) {\n      hops\n      totalKm\n      totalMin\n      estimatedPoints\n      legs {\n        from {\n          iata\n          name\n          city\n          country\n        }\n        to {\n          iata\n          name\n          city\n          country\n        }\n        km\n        min\n        carriers {\n          name\n        }\n      }\n    }\n  }\n": types.RouteSearchDocument,
 };
 
@@ -46,6 +48,10 @@ export function graphql(source: "\n  query AirportSearch($query: String!) {\n   
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query Destinations($iata: ID!) {\n    airportDestinations(iata: $iata) {\n      airport {\n        iata\n        name\n        city\n        country\n      }\n      km\n      min\n      carriers {\n        name\n      }\n    }\n  }\n"): (typeof documents)["\n  query Destinations($iata: ID!) {\n    airportDestinations(iata: $iata) {\n      airport {\n        iata\n        name\n        city\n        country\n      }\n      km\n      min\n      carriers {\n        name\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query MapAirports {\n    mapAirports {\n      iata\n      latitude\n      longitude\n    }\n  }\n"): (typeof documents)["\n  query MapAirports {\n    mapAirports {\n      iata\n      latitude\n      longitude\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

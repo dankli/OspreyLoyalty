@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "codegen": "graphql-codegen",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:wasm": "wasm-pack build wasm-map --target web --out-dir ../src/wasm/pkg --out-name wasm_map"
   },
   "dependencies": {
     "graphql": "^16.14.2",
@@ -27,6 +28,7 @@
     "jsdom": "^29.1.1",
     "typescript": "^7.0.2",
     "vite": "^8.1.4",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "wasm-pack": "^0.15.0"
   }
 }

@@ -2,14 +2,18 @@
   import { strings } from "./strings";
   import ExplorePage from "./features/explore/ExplorePage.svelte";
   import RouteSearchPage from "./features/route-search/RouteSearchPage.svelte";
+  import MapPanel from "./features/map/MapPanel.svelte";
 
-  // The map joins this list in its own slice.
   const TABS = [
     { id: "explore", label: strings.tabExplore },
     { id: "route-search", label: strings.tabRouteSearch },
+    { id: "map", label: strings.tabMap },
   ] as const;
   type TabId = (typeof TABS)[number]["id"];
   let tab = $state<TabId>("explore");
+
+  // The latest searched itinerary, shared with the map so "find route" → "Map" draws it.
+  let lastPathIatas = $state.raw<string[] | null>(null);
 </script>
 
 <div class="route-explorer">
@@ -29,7 +33,9 @@
   {#if tab === "explore"}
     <ExplorePage />
   {:else if tab === "route-search"}
-    <RouteSearchPage />
+    <RouteSearchPage onresult={(iatas) => (lastPathIatas = iatas)} />
+  {:else if tab === "map"}
+    <MapPanel pathIatas={lastPathIatas} />
   {/if}
 </div>
 

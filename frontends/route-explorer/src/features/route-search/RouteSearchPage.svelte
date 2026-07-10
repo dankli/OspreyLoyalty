@@ -12,9 +12,12 @@
   let {
     search = gatewaySearch,
     routeSearch = gatewayRouteSearch,
+    onresult,
   }: {
     search?: (query: string) => Promise<AirportHit[]>;
     routeSearch?: (from: string, to: string, optimize: RouteOptimize) => Promise<RoutePathResult | null>;
+    /** Reports the found itinerary's iata sequence upward (the map tab draws it). */
+    onresult?: (iatas: string[]) => void;
   } = $props();
 
   const OPTIMIZE_OPTIONS: { value: RouteOptimize; label: string }[] = [
@@ -39,8 +42,12 @@
     result = null;
     try {
       const path = await routeSearch(from.iata, to.iata, optimize);
-      if (path) result = path;
-      else noRoute = true; // unreachable is a value on the happy rail, not an error
+      if (path) {
+        result = path;
+        onresult?.([...path.legs.map((leg) => leg.from.iata), path.legs.at(-1)?.to.iata ?? ""].filter(Boolean));
+      } else {
+        noRoute = true; // unreachable is a value on the happy rail, not an error
+      }
     } catch {
       failed = true;
     } finally {

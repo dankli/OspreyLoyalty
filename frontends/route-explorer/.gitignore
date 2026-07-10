@@ -1,0 +1,5 @@
+# wasm-pack output — built by `npm run build:wasm` (or the Docker rust stage)
+src/wasm/pkg/
+
+# cargo build artifacts for the island crate
+wasm-map/target/
