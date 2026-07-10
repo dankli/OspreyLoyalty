@@ -15,6 +15,10 @@ spec:
       labels:
         app: points-engine
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: points-engine
           image: osprey-loyalty-points-engine:latest
@@ -46,6 +50,21 @@ spec:
             limits:
               cpu: 250m
               memory: 128Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001 # non-root `app` user baked into the image
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

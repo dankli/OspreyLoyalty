@@ -19,7 +19,11 @@ ENV VITE_AUTH_ENABLED=$VITE_AUTH_ENABLED \
     VITE_PARTNERS_URL=$VITE_PARTNERS_URL
 RUN npm run build
 
-FROM nginx:alpine
+# Unprivileged nginx: runs as UID 101 and serves on 8080, so no root and no
+# CAP_NET_BIND_SERVICE. pid + temp paths already point at /tmp in this image, which
+# the k8s manifest backs with an emptyDir under readOnlyRootFilesystem.
+FROM nginxinc/nginx-unprivileged:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
+USER 101
+EXPOSE 8080

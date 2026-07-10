@@ -19,6 +19,10 @@ spec:
       # which would clobber this app's own RABBITMQ_PORT and break Spring's spring.rabbitmq.port.
       # Disable the legacy service links; we address services by DNS name instead.
       enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: partners
           image: osprey-loyalty-partners:latest
@@ -60,6 +64,21 @@ spec:
             limits:
               cpu: 1000m
               memory: 768Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001 # non-root `app` user baked into the image
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

@@ -92,17 +92,17 @@ services:
 
   member-portal:
     build: ../frontends/member-portal
-    ports: ["5173:80"]
+    ports: ["5173:8080"] # unprivileged nginx serves on 8080
     depends_on: [gateway]
 
   admin-portal:
     build: ../frontends/admin-portal
-    ports: ["5174:80"]
+    ports: ["5174:8080"] # unprivileged nginx serves on 8080
     depends_on: [gateway]
 
   shell:
     build: ../frontends/shell
-    ports: ["5170:80"]
+    ports: ["5170:8080"] # unprivileged nginx serves on 8080
     depends_on: [member-portal, admin-portal]
 
   prometheus:
