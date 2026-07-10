@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Osprey Route Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400&family=Hanken+Grotesk:wght@400..700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Standalone dev mirrors the fleet's field-guide chrome (fonts + bark
+         atmosphere) so the components' token fallbacks render true to prod. */
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(1100px 620px at 82% -8%, rgba(227, 174, 54, 0.14), transparent 60%),
+          linear-gradient(168deg, #1d1409 0%, #150e08 46%, #0f0a05 100%);
+        background-attachment: fixed;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

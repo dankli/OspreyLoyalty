@@ -16,12 +16,14 @@ ARG VITE_OIDC_REDIRECT_URI=http://localhost:5170/callback
 # ingress mode overrides them with the member./admin. hostnames so the browser fetches the remotes there.
 ARG MEMBER_PORTAL_URL=http://localhost:5173/assets/remoteEntry.js
 ARG ADMIN_PORTAL_URL=http://localhost:5174/assets/remoteEntry.js
+ARG ROUTE_EXPLORER_URL=http://localhost:5175/assets/remoteEntry.js
 ENV VITE_AUTH_ENABLED=$VITE_AUTH_ENABLED \
     VITE_OIDC_ISSUER=$VITE_OIDC_ISSUER \
     VITE_OIDC_CLIENT_ID=$VITE_OIDC_CLIENT_ID \
     VITE_OIDC_REDIRECT_URI=$VITE_OIDC_REDIRECT_URI \
     MEMBER_PORTAL_URL=$MEMBER_PORTAL_URL \
-    ADMIN_PORTAL_URL=$ADMIN_PORTAL_URL
+    ADMIN_PORTAL_URL=$ADMIN_PORTAL_URL \
+    ROUTE_EXPLORER_URL=$ROUTE_EXPLORER_URL
 RUN npm run build
 
 # Unprivileged nginx: runs as UID 101 and serves on 8080, so no root and no

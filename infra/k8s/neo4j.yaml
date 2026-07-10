@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: neo4j
+  namespace: osprey
+  labels:
+    app: neo4j
+spec:
+  serviceName: neo4j # the headless Service below — gives the pod a stable DNS identity (neo4j-0)
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neo4j
+  template:
+    metadata:
+      labels:
+        app: neo4j
+    spec:
+      securityContext:
+        fsGroup: 7474 # make the PVC writable by the neo4j group
+      containers:
+        - name: neo4j
+          image: neo4j:5-community
+          ports:
+            - containerPort: 7474 # http (browser/UI)
+            - containerPort: 7687 # bolt (drivers)
+          env:
+            # Authless like the demo Mongo; cluster-internal only — never exposed via ingress (ADR-0021).
+            - name: NEO4J_AUTH
+              value: none
+            # apoc core ships inside the image (labs/); this just enables it — no download.
+            # Needed for apoc.algo.dijkstra in weighted route search (ADR-0021).
+            - name: NEO4J_PLUGINS
+              value: '["apoc"]'
+            # Memory-bounded so the graph workload can't crowd the rest of the fleet.
+            - name: NEO4J_server_memory_heap_max__size
+              value: 512m
+            - name: NEO4J_server_memory_pagecache_size
+              value: 256m
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            tcpSocket:
+              port: 7687 # bolt accepting connections ≈ the compose cypher-shell healthcheck
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 7687
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1536Mi # 512m heap + 256m pagecache + JVM/native overhead
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neo4j
+  namespace: osprey
+  labels:
+    app: neo4j
+spec:
+  clusterIP: None # headless: required by the StatefulSet; clients still resolve neo4j:7687
+  selector:
+    app: neo4j
+  ports:
+    - name: http
+      port: 7474
+      targetPort: 7474
+    - name: bolt
+      port: 7687
+      targetPort: 7687

@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: routes
+  namespace: osprey
+  labels:
+    app: routes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: routes
+  template:
+    metadata:
+      labels:
+        app: routes
+    spec:
+      containers:
+        - name: routes
+          image: osprey-loyalty-routes:latest
+          imagePullPolicy: Never # kind: image is side-loaded
+          ports:
+            - containerPort: 8083
+          env:
+            - name: NEO4J_URL
+              value: bolt://neo4j:7687
+            - name: SEED_ROUTES
+              value: "true"
+            - name: POINTS_ENGINE_URL
+              value: http://points-engine:8082
+            - name: PORT
+              value: "8083"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector:4318 # Node OTel exports OTLP/HTTP
+            - name: OTEL_SERVICE_NAME
+              value: routes
+            # Auth is off by default; routes reads AUTH_ENABLED + AUTH_SECRET (HS256 shared secret,
+            # like the RabbitMQ-hop demo), so no auth env is baked here. See ADR-0007.
+          readinessProbe:
+            httpGet:
+              path: /ready # 200 only after seed + query warmup
+              port: 8083
+            # First boot seeds 3.9k airports + 59k edges into Neo4j and warms the query
+            # plans, which can take ~60-90 s — hence the generous delay and threshold.
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 18
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8083
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: routes
+  namespace: osprey
+  labels:
+    app: routes
+spec:
+  type: ClusterIP
+  selector:
+    app: routes
+  ports:
+    - port: 8083
+      targetPort: 8083

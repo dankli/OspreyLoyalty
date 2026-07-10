@@ -15,6 +15,8 @@ export default defineConfig({
           process.env.MEMBER_PORTAL_URL ?? "http://localhost:5173/assets/remoteEntry.js",
         adminPortal:
           process.env.ADMIN_PORTAL_URL ?? "http://localhost:5174/assets/remoteEntry.js",
+        routeExplorer:
+          process.env.ROUTE_EXPLORER_URL ?? "http://localhost:5175/assets/remoteEntry.js",
       },
       // No `shared` here on purpose: the shell is framework-less, so each remote falls back
       // to the copy of React/Vue it bundled itself. ADR-0004 accepts the missing dedup.

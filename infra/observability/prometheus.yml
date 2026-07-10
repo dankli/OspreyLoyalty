@@ -19,6 +19,8 @@ scrape_configs:
     static_configs: [{ targets: ["partners:8080"] }]
   - job_name: points-engine
     static_configs: [{ targets: ["points-engine:8082"] }]
+  - job_name: routes
+    static_configs: [{ targets: ["routes:8083"] }]
   - job_name: security
     metrics_path: /actuator/prometheus
     static_configs: [{ targets: ["security:8080"] }]

@@ -7,7 +7,7 @@ These manifests deploy the full Osprey Loyalty stack to a local Kubernetes clust
 Docker Desktop ships a single-node Kubernetes and `kubectl`. Its Kubernetes is **kind-based and runs its own containerd**, so locally-built images are *not* visible to the cluster automatically — the helper script **loads each image into the node** after building (the `kind load` equivalent: `docker save … | docker exec -i <node> ctr -n k8s.io images import -`). The manifests use `imagePullPolicy: Never`, so once loaded the node uses them without pulling.
 
 1. **Enable Kubernetes:** Docker Desktop → **Settings → Kubernetes → Enable Kubernetes → Apply & Restart**. Wait until the Kubernetes indicator (bottom-left) turns **green**. This creates the `docker-desktop` kubectl context.
-2. **Run the helper script** from the repo root — it checks prerequisites, builds the six images, applies the manifests (namespace first), and waits for every rollout:
+2. **Run the helper script** from the repo root — it checks prerequisites, builds the ten images, applies the manifests (namespace first), and waits for every rollout:
 
    ```powershell
    ./run-local-k8s.ps1                 # PowerShell: authenticated stack behind Traefik ingress (default)
@@ -72,12 +72,14 @@ This produces the application images used by the manifests:
 - `osprey-loyalty-partners:latest`
 - `osprey-loyalty-security:latest`
 - `osprey-loyalty-points-engine:latest`
+- `osprey-loyalty-routes:latest`
 - `osprey-loyalty-member-portal:latest`
 - `osprey-loyalty-admin-portal:latest`
+- `osprey-loyalty-route-explorer:latest`
 - `osprey-loyalty-shell:latest`
 
-The observability images (jaeger, otel-collector, loki, promtail, prometheus, grafana) are public
-and are pulled by the cluster rather than side-loaded.
+The observability images (jaeger, otel-collector, loki, promtail, prometheus, grafana) and the
+neo4j route-graph store are public and are pulled by the cluster rather than side-loaded.
 
 ### 2. Create the kind cluster
 
@@ -95,8 +97,10 @@ kind load docker-image osprey-loyalty-gateway:latest --name osprey
 kind load docker-image osprey-loyalty-partners:latest --name osprey
 kind load docker-image osprey-loyalty-security:latest --name osprey
 kind load docker-image osprey-loyalty-points-engine:latest --name osprey
+kind load docker-image osprey-loyalty-routes:latest --name osprey
 kind load docker-image osprey-loyalty-member-portal:latest --name osprey
 kind load docker-image osprey-loyalty-admin-portal:latest --name osprey
+kind load docker-image osprey-loyalty-route-explorer:latest --name osprey
 kind load docker-image osprey-loyalty-shell:latest --name osprey
 ```
 
@@ -112,7 +116,7 @@ kubectl apply -f infra/k8s/
 kubectl -n osprey get pods -w
 ```
 
-Partners (Spring Boot / JVM) has a 20 s readiness delay and is the slowest to start. Expect 60–90 s for all pods to reach `Running 1/1`.
+Partners (Spring Boot / JVM) has a 20 s readiness delay, and routes seeds ~3.9k airports + 59k edges into Neo4j and warms its query plans on first boot before `/ready` returns 200. Expect 60–90 s for most pods and up to ~2–3 min for routes to reach `Running 1/1`.
 
 ### 6. Access the services
 
@@ -138,9 +142,9 @@ The member portal's Vite build has the gateway URL baked in as `http://localhost
 
 These manifests are intentionally minimal for local development and demos:
 
-- **Persistent state, single replica.** MongoDB and RabbitMQ are **StatefulSets with PersistentVolumeClaims** (2Gi each via the default StorageClass), so their data **survives a pod restart**. It is still a single replica with no HA, and the data is removed when the namespace/PVCs are deleted (`-Delete`).
+- **Persistent state, single replica.** MongoDB, RabbitMQ and Neo4j are **StatefulSets with PersistentVolumeClaims** (2Gi each via the default StorageClass), so their data **survives a pod restart**. It is still a single replica with no HA, and the data is removed when the namespace/PVCs are deleted (`-Delete`).
 - **Single replicas.** Every workload runs as a single replica. There is no high availability or pod disruption budget.
 - **No ingress.** Services are ClusterIP only; access requires `kubectl port-forward`.
 - **Secrets in plain env vars.** Environment variables (connection strings, hostnames) are embedded directly in the manifests. For any non-local environment, move these to Kubernetes Secrets or an external secrets manager.
-- **The full stack.** All application services (members, gateway, partners, security, points-engine), all three frontends (member-portal, admin-portal, shell), their dependencies (mongo, rabbitmq), and the complete observability stack — tracing (jaeger, otel-collector), logging (loki, promtail), and metrics/dashboards (prometheus, grafana) — are deployed. **Grafana** (`localhost:3000`, opens anonymously as Admin) is the single pane of glass: RED dashboards from Prometheus, logs from Loki, and traces from Jaeger, cross-linked by `trace_id`.
+- **The full stack.** All application services (members, gateway, partners, security, points-engine, routes), all four frontends (member-portal, admin-portal, route-explorer, shell), their dependencies (mongo, rabbitmq, neo4j), and the complete observability stack — tracing (jaeger, otel-collector), logging (loki, promtail), and metrics/dashboards (prometheus, grafana) — are deployed. **Grafana** (`localhost:3000`, opens anonymously as Admin) is the single pane of glass: RED dashboards from Prometheus, logs from Loki, and traces from Jaeger, cross-linked by `trace_id`.
 - **Auth off by default.** The zero-trust kill-switch is off in these manifests (as in compose), so the stack runs without tokens. Turning it on means setting `Auth__Enabled`/`AUTH_ENABLED` and the shared signing config across services — see ADR-0007.

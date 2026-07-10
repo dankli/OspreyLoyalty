@@ -30,6 +30,8 @@ spec:
               value: http://members:8080
             - name: PARTNERS_URL
               value: http://partners:8080
+            - name: ROUTES_URL
+              value: http://routes:8083
             - name: PORT
               value: "4000"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT

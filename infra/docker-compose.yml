@@ -12,13 +12,18 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
+    # Run as the rabbitmq user from the start: the image's root entrypoint otherwise writes
+    # the erlang cookie root-owned onto the fresh tmpfs and the broker can't read it back.
+    user: rabbitmq
     ports: ["5672:5672", "15672:15672"]
     # Keep broker state (incl. the Erlang cookie) on an ephemeral tmpfs so a
     # fresh cookie is created on every start. Avoids the "Error when reading
     # /var/lib/rabbitmq/.erlang.cookie: eacces" a stale anonymous volume can
     # cause on Docker Desktop. Safe for a demo: the queues are transient.
     tmpfs:
-      - /var/lib/rabbitmq
+      # uid/gid 999 = the rabbitmq user; without them Docker Desktop 29 mounts the tmpfs
+      # root-owned and the broker gets eacces reading the erlang cookie it just wrote.
+      - /var/lib/rabbitmq:uid=999,gid=999
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
@@ -73,11 +78,12 @@ services:
     environment:
       MEMBERS_URL: http://members:8080
       PARTNERS_URL: http://partners:8080
+      ROUTES_URL: http://routes:8083
       PORT: "4000"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_SERVICE_NAME: gateway
     ports: ["4000:4000"]
-    depends_on: [members, partners]
+    depends_on: [members, partners, routes]
 
   # First-party OIDC/OAuth2 identity service (Spring Authorization Server).
   # Issuer is the browser-facing URL; resource servers fetch JWKS internally.
@@ -100,10 +106,15 @@ services:
     ports: ["5174:8080"] # unprivileged nginx serves on 8080
     depends_on: [gateway]
 
+  route-explorer:
+    build: ../frontends/route-explorer
+    ports: ["5175:80"]
+    depends_on: [gateway]
+
   shell:
     build: ../frontends/shell
     ports: ["5170:8080"] # unprivileged nginx serves on 8080
-    depends_on: [member-portal, admin-portal]
+    depends_on: [member-portal, admin-portal, route-explorer]
 
   prometheus:
     image: prom/prometheus:v2.53.0
@@ -137,6 +148,40 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       OTEL_SERVICE_NAME: points-engine
     ports: ["8082:8082"]
+
+  # Route graph store (ADR-0021). Authless like the demo Mongo; never exposed via ingress.
+  # Memory-bounded so the graph workload can't crowd the rest of the fleet on a laptop.
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: none
+      # apoc core ships inside the image (labs/); this just enables it — no download.
+      # Needed for apoc.algo.dijkstra in weighted route search (ADR-0021).
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 256m
+    ports: ["7474:7474", "7687:7687"]
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell 'RETURN 1'"]
+      interval: 5s
+      timeout: 10s
+      retries: 24
+
+  routes:
+    build: ../services/routes
+    environment:
+      NEO4J_URL: bolt://neo4j:7687
+      SEED_ROUTES: "true"
+      POINTS_ENGINE_URL: http://points-engine:8082
+      PORT: "8083"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: routes
+      AUTH_ENABLED: ${AUTH_ENABLED:-false}
+      AUTH_SECRET: ${AUTH_SHARED_SECRET:-}
+    ports: ["8083:8083"]
+    depends_on:
+      neo4j:
+        condition: service_healthy
 
   # ── Observability: traces (Jaeger), logs (Loki via Promtail), OTLP collector ──
   jaeger:

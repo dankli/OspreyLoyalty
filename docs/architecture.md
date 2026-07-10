@@ -1,6 +1,6 @@
 # Architecture overview
 
-Osprey Loyalty is a miniature airline-style loyalty platform built as a multi-language demo. It runs as a set of Docker containers — five backend services (including a first-party OIDC identity service and a Rust points engine), a message broker, a database, three frontend artifacts, and a full observability stack (OpenTelemetry → Jaeger for traces, Loki for logs, Prometheus/Grafana for metrics) — all wired together in a single `docker compose up`. Phase 6 added enterprise concerns: zero-trust JWT validation on every service (with a per-service kill-switch, off by default), five-language i18n on both the frontends and backend messages, and an in-app help system. The intended audience for this document is a reviewer spending five minutes in the repo.
+Osprey Loyalty is a miniature airline-style loyalty platform built as a multi-language demo. It runs as a set of Docker containers — six backend services (including a first-party OIDC identity service and a Rust points engine), a message broker, two databases, four frontend artifacts, and a full observability stack (OpenTelemetry → Jaeger for traces, Loki for logs, Prometheus/Grafana for metrics) — all wired together in a single `docker compose up`. Phase 6 added enterprise concerns: zero-trust JWT validation on every service (with a per-service kill-switch, off by default), five-language i18n on both the frontends and backend messages, and an in-app help system. The intended audience for this document is a reviewer spending five minutes in the repo.
 
 ---
 
@@ -14,6 +14,7 @@ flowchart TD
         Shell["shell<br/>(TypeScript / Nginx)<br/>module federation host"]
         MemberPortal["member-portal<br/>(React 19 / Nginx)"]
         AdminPortal["admin-portal<br/>(Vue 3 / Nginx)"]
+        RouteExplorer["route-explorer<br/>(Svelte 5 / Nginx)<br/>+ Rust/WASM map island"]
     end
 
     subgraph Services
@@ -22,11 +23,13 @@ flowchart TD
         Partners["partners<br/>(Java 21 / Spring Boot)<br/>partner earn simulations<br/>:8081"]
         Security["security<br/>(Java 21 / Spring Auth Server)<br/>OIDC / JWKS / PKCE<br/>:9000"]
         PointsEngine["points-engine<br/>(Rust / axum)<br/>pure points calc<br/>:8082"]
+        Routes["routes<br/>(TypeScript / Node 22)<br/>airline route graph<br/>:8083"]
     end
 
     subgraph Infra
         RabbitMQ["RabbitMQ 3<br/>earn-events queue"]
         Mongo["MongoDB 7<br/>members documents"]
+        Neo4j["Neo4j 5<br/>route graph"]
     end
 
     subgraph Observability
@@ -41,22 +44,27 @@ flowchart TD
     Browser --> Shell
     Shell -->|"module federation mount"| MemberPortal
     Shell -->|"module federation mount"| AdminPortal
+    Shell -->|"module federation mount"| RouteExplorer
     Browser -.->|"OIDC login (auth code + PKCE)"| Security
 
     MemberPortal -->|"GraphQL<br/>Bearer + X-Correlation-Id + Accept-Language"| Gateway
+    RouteExplorer -->|"GraphQL<br/>Bearer"| Gateway
     AdminPortal -->|"REST (direct, demo CORS)<br/>Bearer + X-Correlation-Id"| Members
     AdminPortal -->|"REST (direct, demo CORS)<br/>Bearer"| Partners
 
     Gateway -->|"REST, 2 s timeout<br/>forwards Bearer + correlation + language"| Members
     Gateway -->|"REST, 2 s timeout"| Partners
+    Gateway -->|"REST, 2 s timeout"| Routes
 
     Partners -->|"EarnEvent (JSON)<br/>correlationId + authToken in the payload"| RabbitMQ
     RabbitMQ -->|"at-least-once delivery<br/>token validated before apply"| Members
 
     Members --> Mongo
-    Members & Partners -.->|"validate JWT via direct JWKS"| Security
+    Routes --> Neo4j
+    Routes -->|"points estimate, 600 ms budget"| PointsEngine
+    Members & Partners & Routes -.->|"validate JWT via direct JWKS"| Security
 
-    Members & Partners & Gateway & PointsEngine -->|"OTLP traces"| OTel
+    Members & Partners & Gateway & PointsEngine & Routes -->|"OTLP traces"| OTel
     OTel --> Jaeger
     Promtail -->|"container stdout"| Loki
     Prometheus -->|"scrape /metrics, /actuator/prometheus"| Services
@@ -71,13 +79,15 @@ flowchart TD
 
 ## Containers
 
-**shell** — a thin TypeScript host served by Nginx that composes the two portals via Vite module federation. It owns navigation only; it has no knowledge of either app's internals. See ADR-0004 for the trade-off analysis and an honest account of when not to use this pattern.
+**shell** — a thin TypeScript host served by Nginx that composes the three remotes via Vite module federation. It owns navigation only; it has no knowledge of any remote's internals. See ADR-0004 for the trade-off analysis and an honest account of when not to use this pattern.
 
 **member-portal** — the main user-facing app, built in React 19 with TanStack Query and GraphQL codegen against the gateway schema. The showpiece frontend: dashboard with tier progress, paginated transactions, rewards with optimistic UI, a tier overview, and a Travel Agent page that streams a simulated, points-first trip planner over SSE (its own feature slice under `src/features/travel-agent`).
 
 **admin-portal** — a Vue 3 app for admin tasks: member lookup, manual point adjustments, partner rate editing, and OSPREY invitations. Calls members and partners directly over REST rather than through the gateway, which is acceptable for an internal admin surface in a demo context with no auth.
 
-**gateway** — a TypeScript/Node 22 BFF using GraphQL Yoga. It owns the schema the member portal queries and enforces a 2-second timeout on every call to members and partners. Input validation with zod; environment validated at startup. The aggregation edge: member portal never calls backend services directly. Alongside GraphQL it hosts one Server-Sent-Events endpoint, `GET /travel-agent/stream`, a self-contained feature slice (`src/features/travel-agent`) that streams the simulated Travel Agent's reply — a pure planning core over a fake, award-priced trip catalogue behind a single thin SSE edge (A-Frame, with failures surfaced as an `error` event; see the README).
+**route-explorer** — the third module-federation remote, in Svelte 5: airport typeahead with paginated direct destinations, A→B itinerary search (shortest by distance, time, or hops) with an estimated-points badge and the found route drawn inline on a world map, and a full-page zoomable map (wheel/drag/toolbar; clicking an airport shows its details and route fan). Tabs keep their state — visited panels hide rather than unmount. The map is a Rust/Leptos WASM island behind a typed-array boundary — Svelte keeps the metadata and all user-facing text, the island gets coordinates and indices, and a missing wasm pkg degrades to a placeholder rather than breaking the remote (ADR-0022). Queries the gateway over GraphQL like the member portal; localized in the fleet's five languages per ADR-0009 and styled to the shared field-guide design system.
+
+**gateway** — a TypeScript/Node 22 BFF using GraphQL Yoga. It owns the schema the member portal and route explorer query and enforces a 2-second timeout on every call to members, partners, and routes. Input validation with zod; environment validated at startup. The aggregation edge: the member portal and route explorer never call backend services directly. Alongside GraphQL it hosts one Server-Sent-Events endpoint, `GET /travel-agent/stream`, a self-contained feature slice (`src/features/travel-agent`) that streams the simulated Travel Agent's reply — a pure planning core over a fake, award-priced trip catalogue behind a single thin SSE edge (A-Frame, with failures surfaced as an `error` event; see the README).
 
 **members** — the core loyalty domain, written in C# on .NET 10 with Vertical Slice Architecture. Handles enrollment, member profiles, the tier ladder (rolling 12-month window, MEMBER through DIAMOND thresholds, OSPREY by invitation only), the points ledger, redemption, manual adjustments, and point expiry. Stores one document per member in MongoDB. The deepest quality surface in the repo: strict TDD, pure domain core with no I/O, idempotent event processing, and a showcase duplicate-delivery test. Privileged actions (adjustments, OSPREY grants, erasures) are recorded in an append-only audit log with the actor taken from the JWT `sub` (ADR-0017), and GDPR right-to-erasure pseudonymizes a member's PII while keeping the numeric ledger intact (ADR-0018).
 
@@ -87,15 +97,19 @@ flowchart TD
 
 **points-engine** — a small Rust/axum service (`:8082`) exposing a pure points-calculation endpoint over exact decimal arithmetic, kept in parity with the members earn formula (ADR-0006). It sits outside the earn path and is the fleet's fourth metrics source.
 
+**routes** — a TypeScript/Node 22 service (`:8083`) owning the airline route graph in Neo4j: airport typeahead over a full-text index, direct destinations, and shortest-itinerary search. The workload — variable-length traversal and weighted shortest path — is graph-shaped, which is precisely what earned Neo4j a place next to Mongo (ADR-0021); km/min-optimal search runs `apoc.algo.dijkstra`, hop-optimal the built-in `shortestPath` capped at six hops. The dataset (~3,900 airports, 59k directed routes) seeds idempotently at startup behind a marker node, and the service then executes each search query shape once before `/ready` flips — the plan-compilation cost belongs to deploy time, not the first caller. Budgets are explicit: a 2 s read-transaction timeout, 1.2 s to prove a route's absence (so "no route found" beats the gateway's 2 s abort), and 600 ms for the points estimate, which reuses the Rust points-engine (ADR-0006) and degrades to `estimatedPoints: null` when the engine is down — decoration, not dependency. Auth is the fleet's opt-in kill-switch (ADR-0007).
+
 **RabbitMQ** — the event backbone between partners and members. One quorum queue (`earn-events`) with a delivery limit of five; undeliverable messages land on `earn-events.dead`. See ADR-0001.
 
 **MongoDB** — document store for the members service. Stands in for Cosmos DB's Mongo API; query patterns and index shapes are identical. One collection per concern; bounded queries throughout.
 
-**Prometheus** — scrapes `/metrics` from members and gateway, and `/actuator/prometheus` from partners, on a 15-second interval. No data leaves the compose network.
+**Neo4j** — graph store for the routes service (Neo4j 5 Community with the apoc core plugin enabled for `apoc.algo.dijkstra`), memory-bounded to 512 MB heap / 256 MB page cache. Authless in the demo — parity with the authless Mongo — and never exposed through the ingress; only routes talks to it. See ADR-0021.
+
+**Prometheus** — scrapes `/metrics` from members, gateway, points-engine and routes, and `/actuator/prometheus` from partners and security, on a 15-second interval. No data leaves the compose network.
 
 **Grafana** — pre-provisioned dashboards reading from all three backends: RED metrics (request rate, error rate, duration) from Prometheus, traces from Jaeger, and logs from Loki, cross-linked by `trace_id`. Available at `localhost:3000` in the compose stack.
 
-**otel-collector** — the single OTLP sink for the fleet. Receives spans from members, gateway, partners, and points-engine, batches them, and forwards traces to Jaeger; any OTLP metrics are re-exposed for Prometheus. See ADR-0008.
+**otel-collector** — the single OTLP sink for the fleet. Receives spans from members, gateway, partners, points-engine, and routes, batches them, and forwards traces to Jaeger; any OTLP metrics are re-exposed for Prometheus. See ADR-0008.
 
 **Jaeger** — all-in-one trace store and UI (`localhost:16686`), ingesting OTLP from the collector. One trace spans frontend → gateway → members/partners → (RabbitMQ) → members.
 
@@ -127,6 +141,8 @@ flowchart TD
 | [ADR-0018](decisions/0018-gdpr-erasure.md) | GDPR right-to-erasure by pseudonymizing member PII while retaining the numeric ledger, with a resurrection guard |
 | [ADR-0019](decisions/0019-gitops-argocd.md) | Declarative GitOps via ArgoCD syncing `infra/k8s` — drift control, auditable deploys, self-heal |
 | [ADR-0020](decisions/0020-progressive-delivery-argo-rollouts.md) | Canary progressive delivery via Argo Rollouts with Prometheus analysis that reuses the SLO/RED metrics and auto-rolls-back on breach |
+| [ADR-0021](decisions/0021-neo4j-route-graph.md) | Neo4j for the airline route graph — variable-length traversal and shortest-path are graph-shaped queries Mongo answers badly; carriers as relationship arrays, idempotent marker-gated seeding |
+| [ADR-0022](decisions/0022-svelte-mfe-leptos-wasm-island.md) | A Svelte route-explorer remote with a Rust/Leptos WASM map island — typed-array JS boundary, Canvas 2D, graceful fallback when the wasm pkg is absent |
 
 ---
 

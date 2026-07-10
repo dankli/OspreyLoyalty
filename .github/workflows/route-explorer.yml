@@ -1,0 +1,44 @@
+name: route-explorer
+on:
+  push:
+    branches: [main]
+    paths: ["frontends/route-explorer/**", "services/gateway/schema.graphql", ".github/workflows/route-explorer.yml"]
+  pull_request:
+    paths: ["frontends/route-explorer/**", "services/gateway/schema.graphql", ".github/workflows/route-explorer.yml"]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: frontends/route-explorer }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm run codegen
+      - run: git diff --exit-code -- src/gql
+      - run: npm test
+
+  wasm:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: frontends/route-explorer }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: frontends/route-explorer/wasm-map
+      - run: cargo test
+        working-directory: frontends/route-explorer/wasm-map
+      - run: rustup target add wasm32-unknown-unknown
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - run: npm ci
+      # wasm-pack is an npm devDependency, so npx resolves it after npm ci.
+      - run: npm run build:wasm
+      # The Vite build imports the generated pkg, so it must follow build:wasm.
+      - run: npm run build

@@ -31,7 +31,7 @@ NAMESPACE="osprey"
 COMPOSE="docker compose -f infra/docker-compose.yml"
 MANIFESTS="infra/k8s"
 DOMAIN="osprey.localtest.me"
-BACKENDS=(members gateway partners security points-engine)
+BACKENDS=(members gateway partners security points-engine routes)
 
 BUILD=1
 INGRESS=1
@@ -56,15 +56,17 @@ if [ "$INGRESS" -eq 1 ]; then
   ISSUER="https://id.$DOMAIN"
   MEMBER_REDIRECT="https://member.$DOMAIN/callback"; ADMIN_REDIRECT="https://admin.$DOMAIN/callback"; SHELL_REDIRECT="https://app.$DOMAIN/callback"
   GATEWAY_URL="https://api.$DOMAIN/graphql"; MEMBERS_URL="https://members.$DOMAIN"; PARTNERS_URL="https://partners.$DOMAIN"
-  POINTS_URL="https://points-engine.$DOMAIN"
+  POINTS_URL="https://points-engine.$DOMAIN"; ROUTES_URL="https://routes.$DOMAIN"
   MEMBER_REMOTE="https://member.$DOMAIN/assets/remoteEntry.js"; ADMIN_REMOTE="https://admin.$DOMAIN/assets/remoteEntry.js"
+  EXPLORER_REMOTE="https://explorer.$DOMAIN/assets/remoteEntry.js"
   ENTRY="https://app.$DOMAIN"
 else
   ISSUER="http://localhost:9000"
   MEMBER_REDIRECT="http://localhost:5173/callback"; ADMIN_REDIRECT="http://localhost:5174/callback"; SHELL_REDIRECT="http://localhost:5170/callback"
   GATEWAY_URL="http://localhost:4000/graphql"; MEMBERS_URL="http://localhost:5080"; PARTNERS_URL="http://localhost:8081"
-  POINTS_URL="http://localhost:8082"
+  POINTS_URL="http://localhost:8082"; ROUTES_URL="http://localhost:8083"
   MEMBER_REMOTE="http://localhost:5173/assets/remoteEntry.js"; ADMIN_REMOTE="http://localhost:5174/assets/remoteEntry.js"
+  EXPLORER_REMOTE="http://localhost:5175/assets/remoteEntry.js"
   ENTRY="http://localhost:5170"
 fi
 
@@ -102,10 +104,12 @@ print_ingress_access() {
   print_url "Shell" "$ENTRY"
   print_url "Member portal" "https://member.$DOMAIN"
   print_url "Admin portal" "https://admin.$DOMAIN"
+  print_url "Route explorer" "https://explorer.$DOMAIN"
   print_url "Identity" "https://id.$DOMAIN"
   print_url "Gateway GraphQL" "$GATEWAY_URL"
   print_url "Members API" "$MEMBERS_URL"
   print_url "Partners API" "$PARTNERS_URL"
+  print_url "Routes API" "$ROUTES_URL"
   print_url "Points engine" "$POINTS_URL"
   print_url "Grafana" "https://grafana.$DOMAIN"
   print_url "Jaeger" "https://jaeger.$DOMAIN"
@@ -117,10 +121,12 @@ print_port_forward_access() {
   print_url "Shell" "$ENTRY"
   print_url "Member portal" "http://localhost:5173"
   print_url "Admin portal" "http://localhost:5174"
+  print_url "Route explorer" "http://localhost:5175"
   [ "$AUTH" -eq 1 ] && print_url "Identity" "http://localhost:9000"
   print_url "Gateway GraphQL" "$GATEWAY_URL"
   print_url "Members API" "$MEMBERS_URL"
   print_url "Partners API" "$PARTNERS_URL"
+  print_url "Routes API" "$ROUTES_URL"
   print_url "Points engine" "$POINTS_URL"
   print_url "Grafana" "http://localhost:3000"
 }
@@ -179,14 +185,18 @@ if [ "$BUILD" -eq 1 ]; then
       --build-arg "VITE_PARTNERS_URL=$PARTNERS_URL" \
       -t osprey-loyalty-admin-portal:latest ./frontends/admin-portal
     docker build \
+      --build-arg "VITE_GATEWAY_URL=$GATEWAY_URL" \
+      -t osprey-loyalty-route-explorer:latest ./frontends/route-explorer
+    docker build \
       --build-arg VITE_AUTH_ENABLED=true --build-arg "VITE_OIDC_ISSUER=$ISSUER" \
       --build-arg VITE_OIDC_CLIENT_ID=admin-portal \
       --build-arg "VITE_OIDC_REDIRECT_URI=$SHELL_REDIRECT" \
       --build-arg "MEMBER_PORTAL_URL=$MEMBER_REMOTE" \
       --build-arg "ADMIN_PORTAL_URL=$ADMIN_REMOTE" \
+      --build-arg "ROUTE_EXPLORER_URL=$EXPLORER_REMOTE" \
       -t osprey-loyalty-shell:latest ./frontends/shell
   else
-    $COMPOSE build member-portal admin-portal shell
+    $COMPOSE build member-portal admin-portal route-explorer shell
   fi
   echo "✓ Images built"
 
@@ -194,7 +204,7 @@ if [ "$BUILD" -eq 1 ]; then
   # the Docker daemon — load them into the node (the `kind load` equivalent). Bash pipes are binary-safe.
   echo "=== Loading images into the cluster node ==="
   NODE=$(kubectl --context "$CONTEXT" get nodes -o jsonpath='{.items[0].metadata.name}')
-  for svc in members gateway partners security points-engine member-portal admin-portal shell; do
+  for svc in members gateway partners security points-engine routes member-portal admin-portal route-explorer shell; do
     docker save "osprey-loyalty-$svc:latest" | docker exec -i "$NODE" ctr -n k8s.io images import - >/dev/null 2>&1 \
       || echo "  ! could not load osprey-loyalty-$svc"
   done
@@ -273,7 +283,7 @@ echo ""
 if [ "$INGRESS" -eq 1 ]; then
   print_ingress_access
 else
-  FORWARDS=(shell:5170:80 member-portal:5173:80 admin-portal:5174:80 gateway:4000:4000 members:5080:8080 partners:8081:8080 grafana:3000:3000)
+  FORWARDS=(shell:5170:80 member-portal:5173:80 admin-portal:5174:80 route-explorer:5175:80 gateway:4000:4000 members:5080:8080 partners:8081:8080 routes:8083:8083 grafana:3000:3000)
   [ "$AUTH" -eq 1 ] && FORWARDS+=(security:9000:8080)
   echo "Starting background port-forwards…"
   for f in "${FORWARDS[@]}"; do

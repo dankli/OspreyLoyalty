@@ -8,7 +8,7 @@ Through phase 5 the platform was English-only. Phase 6 makes it multilingual in 
 
 ## Decision
 
-**Frontends use each framework's idiomatic library, one shared set of catalogs.** member-portal uses `react-i18next`, admin-portal uses `vue-i18n`, and the shell uses a tiny framework-less lookup. Each app ships JSON catalogs `locales/{sv,en,es,de,it}.json`; a language switcher persists the choice in `localStorage("lang")` so the shell and both remotes agree.
+**Frontends use each framework's idiomatic library, one shared set of catalogs.** member-portal uses `react-i18next`, admin-portal uses `vue-i18n`, and the shell uses a tiny framework-less lookup; route-explorer (added later, ADR-0022) reuses the shell's tiny-lookup approach rather than adding a Svelte i18n dependency, resolving the locale per property access so a remount after a language switch picks up the change. Each app ships JSON catalogs `locales/{sv,en,es,de,it}.json`; a language switcher persists the choice in `localStorage("lang")` so the shell and the remotes agree.
 
 **Backends localize their own messages off `Accept-Language`.** Each service keeps a small in-process catalog keyed by a stable message key, with English matching the original hard-coded wording verbatim:
 

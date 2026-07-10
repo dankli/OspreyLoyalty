@@ -4,7 +4,7 @@
 
 .DESCRIPTION
   Runs unit/component test commands without starting Docker Compose, Kubernetes, or the e2e smoke test.
-  Members integration tests (Testcontainers) run by default when Docker is available; use
+  Members and routes integration tests (Testcontainers) run by default when Docker is available; use
   -SkipIntegration to force unit-only. They are auto-skipped with a warning when Docker is not running.
   Node dependencies are installed with npm ci only when node_modules is missing, or always with -Install.
 
@@ -12,7 +12,7 @@
   Force npm ci before every Node/Vite test suite.
 
 .PARAMETER SkipIntegration
-  Force members unit-only, skipping the Testcontainers integration suites even when Docker is available.
+  Force unit-only, skipping the Testcontainers integration suites even when Docker is available.
 
 .EXAMPLE
   ./run-unit-tests.ps1
@@ -100,12 +100,25 @@ else {
     Invoke-Step 'members (.NET, incl. integration)' '.' { dotnet test services\members --nologo }
 }
 Invoke-NpmTests 'gateway (Node/TypeScript)' 'services\gateway'
+Invoke-NpmTests 'routes (Node/TypeScript)' 'services\routes'
+# The routes Testcontainers suites (Neo4j) follow the same Docker gate as members above.
+if ($SkipIntegration) {
+    Write-Host 'Skipping routes integration tests (-SkipIntegration).' -ForegroundColor Yellow
+}
+elseif (-not $dockerAvailable) {
+    Write-Host 'Docker not available — SKIPPING routes integration tests (Testcontainers Neo4j). Start Docker to run them.' -ForegroundColor Yellow
+}
+else {
+    Invoke-Step 'routes integration (Testcontainers Neo4j)' 'services\routes' { npm run test:integration }
+}
 Invoke-Step 'partners (Spring Boot)' 'services\partners' { .\mvnw.cmd -q test }
 Invoke-Step 'security (Spring Boot)' 'services\security' { .\mvnw.cmd -q test }
 Invoke-Step 'points-engine (Rust)' 'services\points-engine' { cargo test }
+Invoke-Step 'route-explorer wasm-map (Rust)' 'frontends\route-explorer\wasm-map' { cargo test }
 Invoke-NpmTests 'member-portal (React/Vite)' 'frontends\member-portal'
 Invoke-NpmTests 'admin-portal (Vue/Vite)' 'frontends\admin-portal'
 Invoke-NpmTests 'shell (Vite)' 'frontends\shell'
+Invoke-NpmTests 'route-explorer (Svelte/Vite)' 'frontends\route-explorer'
 
 Write-Host ''
 Write-Host 'All unit/component test suites passed.' -ForegroundColor Green

@@ -1,0 +1,24 @@
+name: routes
+on:
+  push:
+    branches: [main]
+    paths: ["services/routes/**", ".github/workflows/routes.yml"]
+  pull_request:
+    paths: ["services/routes/**", ".github/workflows/routes.yml"]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: services/routes }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      # Testcontainers Neo4j suites — GitHub-hosted ubuntu runners provide Docker,
+      # same as the members workflow's ungated Testcontainers run.
+      - run: npm run test:integration
