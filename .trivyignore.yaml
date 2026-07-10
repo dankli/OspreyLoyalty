@@ -4,7 +4,8 @@
 # surface"): every first-party workload we build IS hardened (non-root, dropped
 # capabilities, no privilege escalation, seccomp RuntimeDefault, read-only root fs —
 # see services/*/Dockerfile and infra/k8s/{gateway,members,partners,points-engine,
-# security,shell,admin-portal,member-portal}.yaml). What remains below is either
+# security,shell,admin-portal,member-portal,route-explorer,routes}.yaml). What remains
+# below is either
 # required by a component's function, or a third-party ops image whose hardening needs
 # per-image UID + writable-path mapping verified against the live cluster.
 #
@@ -52,7 +53,7 @@ misconfigurations:
 
   # ── Third-party ops images: securityContext / read-only root fs ───────────────────
   # First-party services are hardened. These upstream images (Grafana UID 472,
-  # Prometheus/Alertmanager 65534, Mongo/RabbitMQ stateful stores, Traefik/Promtail
+  # Prometheus/Alertmanager 65534, Mongo/RabbitMQ/Neo4j stateful stores, Traefik/Promtail
   # needing root for port-bind / host-log access) each need a per-image non-root UID
   # and writable-path mapping validated against the running stack. Tracked as a
   # dedicated infra-hardening follow-up; not shipped unverified to keep the local
@@ -64,6 +65,7 @@ misconfigurations:
       - "infra/k8s/jaeger.yaml"
       - "infra/k8s/loki.yaml"
       - "infra/k8s/mongo.yaml"
+      - "infra/k8s/neo4j.yaml"
       - "infra/k8s/otel-collector.yaml"
       - "infra/k8s/prometheus.yaml"
       - "infra/k8s/promtail.yaml"
@@ -80,6 +82,7 @@ misconfigurations:
       - "infra/k8s/jaeger.yaml"
       - "infra/k8s/loki.yaml"
       - "infra/k8s/mongo.yaml"
+      - "infra/k8s/neo4j.yaml"
       - "infra/k8s/otel-collector.yaml"
       - "infra/k8s/prometheus.yaml"
       - "infra/k8s/promtail.yaml"

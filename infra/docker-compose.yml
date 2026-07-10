@@ -108,7 +108,7 @@ services:
 
   route-explorer:
     build: ../frontends/route-explorer
-    ports: ["5175:80"]
+    ports: ["5175:8080"] # unprivileged nginx serves on 8080
     depends_on: [gateway]
 
   shell:

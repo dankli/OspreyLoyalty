@@ -15,22 +15,26 @@ spec:
       labels:
         app: route-explorer
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: route-explorer
           image: osprey-loyalty-route-explorer:latest
           imagePullPolicy: Never # kind: image is side-loaded
           ports:
-            - containerPort: 80
+            - containerPort: 8080
           readinessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8080
             initialDelaySeconds: 15
             periodSeconds: 20
           resources:
@@ -40,6 +44,21 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 101 # nginx user in the unprivileged image
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp # nginx-unprivileged writes pid + *_temp under /tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -54,4 +73,4 @@ spec:
     app: route-explorer
   ports:
     - port: 80
-      targetPort: 80
+      targetPort: 8080 # unprivileged nginx; Service keeps 80 so ingress is unchanged
