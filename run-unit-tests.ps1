@@ -4,14 +4,15 @@
 
 .DESCRIPTION
   Runs unit/component test commands without starting Docker Compose, Kubernetes, or the e2e smoke test.
-  Members tests that require Testcontainers are skipped by default; use -IncludeIntegration to include them.
+  Members integration tests (Testcontainers) run by default when Docker is available; use
+  -SkipIntegration to force unit-only. They are auto-skipped with a warning when Docker is not running.
   Node dependencies are installed with npm ci only when node_modules is missing, or always with -Install.
 
 .PARAMETER Install
   Force npm ci before every Node/Vite test suite.
 
-.PARAMETER IncludeIntegration
-  Include members Testcontainers integration tests.
+.PARAMETER SkipIntegration
+  Force members unit-only, skipping the Testcontainers integration suites even when Docker is available.
 
 .EXAMPLE
   ./run-unit-tests.ps1
@@ -21,7 +22,7 @@
 [CmdletBinding()]
 param(
     [switch]$Install,
-    [switch]$IncludeIntegration
+    [switch]$SkipIntegration
 )
 
 $ErrorActionPreference = 'Stop'
@@ -77,12 +78,26 @@ Require-Command cargo
 
 Write-Host 'Osprey Loyalty unit/component test suites' -ForegroundColor Green
 
-$membersIntegrationFilter = 'FullyQualifiedName!~ApplyEarnIdempotencyTests&FullyQualifiedName!~AuthTests&FullyQualifiedName!~EarnEventsAuthQueueTests&FullyQualifiedName!~EarnEventsQueueTests&FullyQualifiedName!~ExpirySweepTests&FullyQualifiedName!~MembersApiTests&FullyQualifiedName!~RedeemConcurrencyTests'
-if ($IncludeIntegration) {
-    Invoke-Step 'members (.NET)' '.' { dotnet test services\members --nologo }
+# The members Testcontainers suites hold the showcase distributed-correctness invariants
+# (idempotency/duplicate-delivery, redemption concurrency, expiry sweep, HTTP API, queue, auth).
+# They run BY DEFAULT when Docker is available so the headline command actually exercises them;
+# skipped (with a visible warning) only when Docker is down or -SkipIntegration is passed.
+$membersUnitFilter = 'FullyQualifiedName!~ApplyEarnIdempotencyTests&FullyQualifiedName!~AuthTests&FullyQualifiedName!~EarnEventsAuthQueueTests&FullyQualifiedName!~EarnEventsQueueTests&FullyQualifiedName!~ExpirySweepTests&FullyQualifiedName!~MembersApiTests&FullyQualifiedName!~RedeemConcurrencyTests'
+$dockerAvailable = $false
+if (Get-Command docker -ErrorAction SilentlyContinue) {
+    docker info *>$null 2>&1
+    if ($LASTEXITCODE -eq 0) { $dockerAvailable = $true }
+}
+if ($SkipIntegration) {
+    Write-Host 'Skipping members integration tests (-SkipIntegration).' -ForegroundColor Yellow
+    Invoke-Step 'members (.NET unit only)' '.' { dotnet test services\members --nologo --filter $membersUnitFilter }
+}
+elseif (-not $dockerAvailable) {
+    Write-Host 'Docker not available — SKIPPING members integration tests (idempotency, redemption concurrency, expiry sweep, API, queue, auth). Start Docker to run them.' -ForegroundColor Yellow
+    Invoke-Step 'members (.NET unit only)' '.' { dotnet test services\members --nologo --filter $membersUnitFilter }
 }
 else {
-    Invoke-Step 'members (.NET unit)' '.' { dotnet test services\members --nologo --filter $membersIntegrationFilter }
+    Invoke-Step 'members (.NET, incl. integration)' '.' { dotnet test services\members --nologo }
 }
 Invoke-NpmTests 'gateway (Node/TypeScript)' 'services\gateway'
 Invoke-Step 'partners (Spring Boot)' 'services\partners' { .\mvnw.cmd -q test }
