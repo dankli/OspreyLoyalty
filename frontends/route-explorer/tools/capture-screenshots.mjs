@@ -68,7 +68,8 @@ if (box) {
   const x = box.x + box.width * 0.545;
   const y = box.y + box.height * 0.24;
   await page.mouse.move(x, y);
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 12; i++) {
+    // 1.2^12 ≈ 8.9× — deep enough that mid-size airports label alongside the hubs
     await page.mouse.wheel(0, -240);
     await page.waitForTimeout(120);
   }
