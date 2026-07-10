@@ -127,6 +127,8 @@ flowchart TD
 | [ADR-0018](decisions/0018-gdpr-erasure.md) | GDPR right-to-erasure by pseudonymizing member PII while retaining the numeric ledger, with a resurrection guard |
 | [ADR-0019](decisions/0019-gitops-argocd.md) | Declarative GitOps via ArgoCD syncing `infra/k8s` — drift control, auditable deploys, self-heal |
 | [ADR-0020](decisions/0020-progressive-delivery-argo-rollouts.md) | Canary progressive delivery via Argo Rollouts with Prometheus analysis that reuses the SLO/RED metrics and auto-rolls-back on breach |
+| [ADR-0021](decisions/0021-neo4j-route-graph.md) | Neo4j for the airline route graph — variable-length traversal and shortest-path are graph-shaped queries Mongo answers badly; carriers as relationship arrays, idempotent marker-gated seeding |
+| [ADR-0022](decisions/0022-svelte-mfe-leptos-wasm-island.md) | A Svelte route-explorer remote with a Rust/Leptos WASM map island — typed-array JS boundary, Canvas 2D, graceful fallback when the wasm pkg is absent |
 
 ---
 
