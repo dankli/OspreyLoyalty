@@ -65,6 +65,7 @@ export type IslandModule = {
     lats: Float32Array,
     lons: Float32Array,
     degrees: Uint32Array, // out-degree per airport — the island sizes hub dots by it
+    labels: string[], // IATA code per airport — drawn on the canvas at deep zoom
     onPick: (index: number) => void,
   ) => RouteMapHandle;
 };

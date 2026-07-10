@@ -20,7 +20,7 @@ use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlElement, MouseEvent, WheelEvent};
 
 use draw::Palette;
-use geometry::{dot_class, pick, place_labels, rank_ceiling, Projection, View};
+use geometry::{airport_label_floor, dot_class, pick, place_labels, rank_ceiling, Projection, View};
 
 const CANVAS_WIDTH: f32 = 960.0;
 const CANVAS_HEIGHT: f32 = 480.0; // 2:1 — undistorted equirectangular
@@ -55,6 +55,7 @@ struct State {
     projected: Vec<(f32, f32)>,
     coords: Vec<(f32, f32)>, // (lat, lon) per airport index
     dot_classes: Vec<u8>,    // out-degree bucket per airport (hub dot size/colour)
+    airport_labels: Vec<String>, // IATA code per airport index — labels at deep zoom
     land: Vec<Vec<Vec<(f32, f32)>>>, // basemap polygons, projected
     cities: Vec<CityLabel>,  // rank-sorted, most important first
     ctx: Option<CanvasRenderingContext2d>,
@@ -78,16 +79,30 @@ fn canvas_point(canvas: &HtmlCanvasElement, client_x: i32, client_y: i32) -> Opt
     ))
 }
 
-/// City labels visible in the current view: rank-filtered by zoom, then greedily
-/// decluttered in screen space so important names win the fight for pixels.
-fn visible_labels(s: &State) -> Vec<usize> {
+/// One label plan entry: which list the index points into.
+enum Label {
+    City(usize),
+    Airport(usize),
+}
+
+/// Labels visible in the current view: cities rank-filtered by zoom, airport IATA
+/// codes admitted per dot class (hubs first), then one greedy declutter pass in
+/// screen space. Cities go first — geography anchors the map — and sit above their
+/// anchors while airport codes sit below their dots, so the two rarely collide.
+fn visible_labels(s: &State) -> Vec<Label> {
     let view = s.view;
     let ceiling = rank_ceiling(view.zoom);
     const LABEL_HEIGHT: f32 = 13.0;
     const CHAR_WIDTH: f32 = 6.4; // ≈11px Hanken Grotesk average advance
+    const CODE_CHAR_WIDTH: f32 = 5.8; // ≈9.5px, weight 600
     const MARGIN: f32 = 60.0;
 
-    let mut indexes = Vec::new();
+    let on_screen = |sx: f32, sy: f32| {
+        (-MARGIN..CANVAS_WIDTH + MARGIN).contains(&sx)
+            && (-MARGIN..CANVAS_HEIGHT + MARGIN).contains(&sy)
+    };
+
+    let mut labels = Vec::new();
     let mut boxes = Vec::new();
     for (index, city) in s.cities.iter().enumerate() {
         if city.rank > ceiling {
@@ -95,19 +110,40 @@ fn visible_labels(s: &State) -> Vec<usize> {
         }
         let sx = city.x * view.zoom - view.offset_x;
         let sy = city.y * view.zoom - view.offset_y;
-        if !(-MARGIN..CANVAS_WIDTH + MARGIN).contains(&sx)
-            || !(-MARGIN..CANVAS_HEIGHT + MARGIN).contains(&sy)
-        {
+        if !on_screen(sx, sy) {
             continue;
         }
         let half = city.name.chars().count() as f32 * CHAR_WIDTH / 2.0;
-        indexes.push(index);
+        labels.push(Label::City(index));
         boxes.push((sx - half, sy - LABEL_HEIGHT - 3.0, sx + half, sy));
     }
+
+    if view.zoom >= airport_label_floor(3) {
+        // Hubs claim space before smaller fields; ties resolve by index (stable).
+        let mut order: Vec<usize> = (0..s.projected.len())
+            .filter(|&i| {
+                view.zoom >= airport_label_floor(*s.dot_classes.get(i).unwrap_or(&0))
+                    && !s.airport_labels.get(i).map_or(true, String::is_empty)
+            })
+            .collect();
+        order.sort_by(|&a, &b| s.dot_classes[b].cmp(&s.dot_classes[a]));
+        for index in order {
+            let (x, y) = s.projected[index];
+            let sx = x * view.zoom - view.offset_x;
+            let sy = y * view.zoom - view.offset_y;
+            if !on_screen(sx, sy) {
+                continue;
+            }
+            let half = s.airport_labels[index].chars().count() as f32 * CODE_CHAR_WIDTH / 2.0;
+            labels.push(Label::Airport(index));
+            boxes.push((sx - half, sy + 2.0, sx + half, sy + LABEL_HEIGHT + 2.0));
+        }
+    }
+
     place_labels(&boxes)
         .into_iter()
-        .zip(indexes)
-        .filter_map(|(keep, index)| keep.then_some(index))
+        .zip(labels)
+        .filter_map(|(keep, label)| keep.then_some(label))
         .collect()
 }
 
@@ -154,9 +190,17 @@ fn paint(state: &Rc<RefCell<State>>, projection: Projection) {
             }
         }
     }
-    for index in visible_labels(&s) {
-        let city = &s.cities[index];
-        draw::draw_label(ctx, city.x, city.y, &city.name, zoom);
+    for label in visible_labels(&s) {
+        match label {
+            Label::City(index) => {
+                let city = &s.cities[index];
+                draw::draw_label(ctx, city.x, city.y, &city.name, zoom);
+            }
+            Label::Airport(index) => {
+                let (x, y) = s.projected[index];
+                draw::draw_airport_label(ctx, x, y, &s.airport_labels[index], zoom);
+            }
+        }
     }
 }
 
@@ -170,14 +214,16 @@ pub struct RouteMap {
 
 #[wasm_bindgen]
 impl RouteMap {
-    /// `lats`/`lons`/`degrees` are parallel arrays (degree = destinations served, for
-    /// hub dot sizing); `on_pick` is invoked with the clicked airport's index.
+    /// `lats`/`lons`/`degrees`/`labels` are parallel arrays (degree = destinations
+    /// served, for hub dot sizing; label = the IATA code drawn at deep zoom);
+    /// `on_pick` is invoked with the clicked airport's index.
     #[wasm_bindgen(constructor)]
     pub fn new(
         host: HtmlElement,
         lats: &[f32],
         lons: &[f32],
         degrees: &[u32],
+        labels: Vec<String>,
         on_pick: js_sys::Function,
     ) -> RouteMap {
         let projection = Projection::new(CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -188,6 +234,8 @@ impl RouteMap {
             .collect();
         let mut dot_classes: Vec<u8> = degrees.iter().map(|&d| dot_class(d)).collect();
         dot_classes.resize(coords.len(), 0); // tolerate a short array — extras render smallest
+        let mut airport_labels = labels;
+        airport_labels.resize(coords.len(), String::new()); // short array — extras stay unlabelled
 
         // The embedded Natural Earth basemap, projected once up front.
         let land = basemap::land_polygons()
@@ -220,6 +268,7 @@ impl RouteMap {
             projected,
             coords,
             dot_classes,
+            airport_labels,
             land,
             cities,
             ctx: None,

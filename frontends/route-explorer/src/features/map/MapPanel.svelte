@@ -112,6 +112,7 @@
           Float32Array.from(rows.map((row) => row.latitude)),
           Float32Array.from(rows.map((row) => row.longitude)),
           Uint32Array.from(rows.map((row) => row.degree)),
+          rows.map((row) => row.iata),
           (index) => void pickAirport(index),
         );
         map.draw_base();

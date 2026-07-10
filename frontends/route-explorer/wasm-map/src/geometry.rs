@@ -153,6 +153,17 @@ pub fn dot_class(degree: u32) -> u8 {
     }
 }
 
+/// The zoom at which an airport's IATA code starts labelling, per dot class:
+/// major hubs name themselves on a regional view, field strips only close up.
+pub fn airport_label_floor(class: u8) -> f32 {
+    match class {
+        3 => 4.0,
+        2 => 8.0,
+        1 => 14.0,
+        _ => 22.0,
+    }
+}
+
 /// Which Natural Earth scaleranks are labelled at a zoom level: the whole-world
 /// view names only the biggest cities; each zoom step admits smaller ones.
 pub fn rank_ceiling(zoom: f32) -> u8 {
@@ -250,6 +261,14 @@ mod tests {
         assert_eq!(pick(&points, 101.0, 101.0, 6.0), Some(0));
         assert_eq!(pick(&points, 104.0, 100.0, 6.0), Some(1));
         assert_eq!(pick(&points, 200.0, 200.0, 6.0), None);
+    }
+
+    #[test]
+    fn airport_labels_admit_hubs_first_and_everything_within_max_zoom() {
+        assert!(airport_label_floor(3) < airport_label_floor(2));
+        assert!(airport_label_floor(2) < airport_label_floor(1));
+        assert!(airport_label_floor(1) < airport_label_floor(0));
+        assert!(airport_label_floor(0) < MAX_ZOOM);
     }
 
     #[test]

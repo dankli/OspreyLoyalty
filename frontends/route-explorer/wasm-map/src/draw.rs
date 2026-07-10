@@ -96,6 +96,24 @@ pub fn draw_label(ctx: &CanvasRenderingContext2d, x: f32, y: f32, name: &str, zo
 }
 
 /// One pass per style bucket keeps canvas state changes to four, not thousands.
+/// An airport's IATA code, set below its dot in amber so it reads as airline
+/// content, not geography; haloed and screen-size-constant like the city labels.
+pub fn draw_airport_label(ctx: &CanvasRenderingContext2d, x: f32, y: f32, code: &str, zoom: f32) {
+    let z = zoom as f64;
+    ctx.set_font(&format!(
+        "600 {}px 'Hanken Grotesk', system-ui, sans-serif",
+        9.5 / z
+    ));
+    ctx.set_text_align("center");
+    ctx.set_text_baseline("top");
+    let baseline_y = (y + 4.5 / zoom) as f64;
+    ctx.set_stroke_style_str(Palette::BACKGROUND);
+    ctx.set_line_width(3.0 / z);
+    let _ = ctx.stroke_text(code, x as f64, baseline_y);
+    ctx.set_fill_style_str("rgba(227, 174, 54, 0.9)");
+    let _ = ctx.fill_text(code, x as f64, baseline_y);
+}
+
 pub fn draw_dots(ctx: &CanvasRenderingContext2d, points: &[(f32, f32)], classes: &[u8], zoom: f32) {
     for (class, &(radius, color)) in DOT_STYLES.iter().enumerate() {
         ctx.set_fill_style_str(color);

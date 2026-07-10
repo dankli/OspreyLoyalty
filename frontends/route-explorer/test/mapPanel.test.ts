@@ -21,6 +21,7 @@ function fakeIsland() {
     lats: undefined as Float32Array | undefined,
     lons: undefined as Float32Array | undefined,
     degrees: undefined as Uint32Array | undefined,
+    labels: undefined as string[] | undefined,
     onPick: undefined as ((index: number) => void) | undefined,
     drawBase: vi.fn(),
     highlight: vi.fn(),
@@ -35,11 +36,13 @@ function fakeIsland() {
       lats: Float32Array,
       lons: Float32Array,
       degrees: Uint32Array,
+      labels: string[],
       onPick: (index: number) => void,
     ) {
       calls.lats = lats;
       calls.lons = lons;
       calls.degrees = degrees;
+      calls.labels = labels;
       calls.onPick = onPick;
     }
     draw_base = calls.drawBase;
@@ -62,6 +65,7 @@ test("mounts the island with typed arrays from the map payload and paints the ba
   expect(calls.lats![0]).toBeCloseTo(59.65);
   expect(calls.lons![2]).toBeCloseTo(-0.46);
   expect(Array.from(calls.degrees!)).toEqual([120, 45, 250]);
+  expect(calls.labels).toEqual(["ARN", "CPH", "LHR"]);
   // The base status line is owned by Svelte now (i18n), not the island.
   await screen.findByText(/3 airports — click one/);
 });

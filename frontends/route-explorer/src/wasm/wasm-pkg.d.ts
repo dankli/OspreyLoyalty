@@ -9,6 +9,7 @@ declare module "*/wasm/pkg/wasm_map.js" {
       lats: Float32Array,
       lons: Float32Array,
       degrees: Uint32Array,
+      labels: string[],
       onPick: (index: number) => void,
     );
     draw_base(): void;
