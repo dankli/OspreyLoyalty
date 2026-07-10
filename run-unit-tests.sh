@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Run every repository unit/component test suite.
 # Does not start Docker Compose, Kubernetes, or the e2e smoke test.
-# Members integration tests (Testcontainers) run by default when Docker is available.
+# Members and routes integration tests (Testcontainers) run by default when Docker is available.
 #
 #   ./run-unit-tests.sh                    run unit/component suites (+ integration if Docker is up)
 #   ./run-unit-tests.sh --install          force npm ci before every Node/Vite suite
-#   ./run-unit-tests.sh --skip-integration force members unit-only (skip Testcontainers suites)
+#   ./run-unit-tests.sh --skip-integration force unit-only (skip Testcontainers suites)
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -75,12 +75,23 @@ else
   run_in "members (.NET, incl. integration)" "." dotnet test services/members --nologo
 fi
 npm_tests "gateway (Node/TypeScript)" "services/gateway"
+npm_tests "routes (Node/TypeScript)" "services/routes"
+# The routes Testcontainers suites (Neo4j) follow the same Docker gate as members above.
+if [ "$SKIP_INTEGRATION" -eq 1 ]; then
+  echo "Skipping routes integration tests (--skip-integration)."
+elif [ "$DOCKER_OK" -eq 0 ]; then
+  echo "⚠ Docker not available — SKIPPING routes integration tests (Testcontainers Neo4j). Start Docker to run them."
+else
+  run_in "routes integration (Testcontainers Neo4j)" "services/routes" npm run test:integration
+fi
 run_in "partners (Spring Boot)" "services/partners" ./mvnw -q test
 run_in "security (Spring Boot)" "services/security" ./mvnw -q test
 run_in "points-engine (Rust)" "services/points-engine" cargo test
+run_in "route-explorer wasm-map (Rust)" "frontends/route-explorer/wasm-map" cargo test
 npm_tests "member-portal (React/Vite)" "frontends/member-portal"
 npm_tests "admin-portal (Vue/Vite)" "frontends/admin-portal"
 npm_tests "shell (Vite)" "frontends/shell"
+npm_tests "route-explorer (Svelte/Vite)" "frontends/route-explorer"
 
 echo ""
 echo "All unit/component test suites passed."

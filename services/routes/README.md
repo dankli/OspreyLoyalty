@@ -13,10 +13,16 @@ GraphQL BFF — the Route Explorer frontend never calls it directly.
 | `GET /airports/:iata` | one airport profile, or 404 |
 | `GET /airports/:iata/destinations` | direct destinations with km/min/carriers, ordered by km (bounded to 300) |
 | `GET /airports/all` | every airport's iata + coordinates — the one-shot map payload, cached in-process |
+| `GET /routes/search?from=ARN&to=SYD&optimize=km` | the best itinerary A→B (`optimize` = `km` \| `min` \| `hops`): legs, totals, and an estimated points figure — or 404 if no route exists |
 | `GET /health` / `GET /ready` / `GET /metrics` | liveness / readiness (200 only after seeding) / Prometheus |
 
 Every read runs with a 2 s server-side transaction timeout — the gateway aborts its
-call at 2 s, so longer answers help nobody.
+call at 2 s, so longer answers help nobody. Search runs `apoc.algo.dijkstra` for km/min
+and the built-in `shortestPath` (capped at six hops) for hops; proving a route's *absence*
+gets a tighter 1.2 s budget so "no route found" still beats the gateway's abort. The
+points estimate is a call to the Rust points-engine (`ROUTE_POINTS_PER_KM`, 600 ms
+budget) — a dead engine yields `estimatedPoints: null`, never a failed search
+([ADR-0006](../../docs/decisions/0006-rust-points-engine.md)).
 
 ## Auth
 

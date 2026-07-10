@@ -56,6 +56,8 @@ wait_for shell http://localhost:5170/
 wait_for prometheus http://localhost:9090/-/ready
 wait_for grafana http://localhost:3000/api/health
 wait_for points-engine http://localhost:8082/health
+# /ready (not /health) — it flips only once the route graph is seeded and warm.
+wait_for routes http://localhost:8083/ready
 
 # ── Opt-in zero-trust check (auth is OFF by default, so the flow below needs no tokens) ──
 # When the stack is brought up with auth ON across the services (AUTH_ENABLED=true — see
@@ -346,6 +348,29 @@ pe_corr_resp=$(curl -si -H "X-Correlation-Id: e2e-corr-pe-001" \
 echo "$pe_corr_resp" | grep -qi "x-correlation-id: e2e-corr-pe-001" \
   || fail "points-engine did not echo X-Correlation-Id"
 echo "✓ points-engine echoes X-Correlation-Id: e2e-corr-pe-001"
+
+echo ""
+echo "=== 20. Routes: airport search and route search via the gateway ==="
+
+# Airport search: 'arlanda' must resolve to ARN through the gateway slice.
+gql=$(curl -fsS -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ airports(query: \"arlanda\") { iata } }"}')
+echo "$gql" | grep -q '"iata":"ARN"' || fail "airport search for arlanda did not return ARN: $gql"
+echo "✓ airport search for 'arlanda' returns ARN"
+
+# Route search ARN -> SYD: a path must exist (hops >= 1) and estimatedPoints must be
+# a number — points-engine runs in the compose stack, so the decoration is non-null.
+gql=$(curl -fsS -X POST http://localhost:4000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ routeSearch(from: \"ARN\", to: \"SYD\", optimize: KM) { hops estimatedPoints } }"}')
+if echo "$gql" | grep -q '"routeSearch":null'; then
+  fail "routeSearch ARN->SYD returned null: $gql"
+fi
+echo "$gql" | grep -q '"hops":[1-9]' || fail "routeSearch ARN->SYD has no hops >= 1: $gql"
+echo "$gql" | grep -q '"estimatedPoints":[0-9]' \
+  || fail "routeSearch ARN->SYD estimatedPoints is not a number: $gql"
+echo "✓ routeSearch ARN->SYD returns a path with hops >= 1 and numeric estimatedPoints"
 
 echo ""
 echo "All e2e smoke checks passed."

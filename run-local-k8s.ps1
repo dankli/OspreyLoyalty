@@ -60,8 +60,8 @@ $domain = 'osprey.localtest.me'
 $auth = -not $NoAuth
 $ingress = -not $PortForward
 
-$backends = @('members', 'gateway', 'partners', 'security', 'points-engine')
-$apps = $backends + @('member-portal', 'admin-portal', 'shell')
+$backends = @('members', 'gateway', 'partners', 'security', 'points-engine', 'routes')
+$apps = $backends + @('member-portal', 'admin-portal', 'route-explorer', 'shell')
 
 # URLs the frontends are baked with and the identity service issues for. Ingress mode uses the
 # *.osprey.localtest.me hosts (Traefik); port-forward mode uses localhost:<port>.
@@ -71,16 +71,18 @@ if ($ingress) {
     $issuer = "https://id.$domain"
     $memberRedirect = "https://member.$domain/callback"; $adminRedirect = "https://admin.$domain/callback"; $shellRedirect = "https://app.$domain/callback"
     $gatewayUrl = "https://api.$domain/graphql"; $membersUrl = "https://members.$domain"; $partnersUrl = "https://partners.$domain"
-    $pointsUrl = "https://points-engine.$domain"
+    $pointsUrl = "https://points-engine.$domain"; $routesUrl = "https://routes.$domain"
     $memberRemote = "https://member.$domain/assets/remoteEntry.js"; $adminRemote = "https://admin.$domain/assets/remoteEntry.js"
+    $explorerRemote = "https://explorer.$domain/assets/remoteEntry.js"
     $entry = "https://app.$domain"
 }
 else {
     $issuer = 'http://localhost:9000'
     $memberRedirect = 'http://localhost:5173/callback'; $adminRedirect = 'http://localhost:5174/callback'; $shellRedirect = 'http://localhost:5170/callback'
     $gatewayUrl = 'http://localhost:4000/graphql'; $membersUrl = 'http://localhost:5080'; $partnersUrl = 'http://localhost:8081'
-    $pointsUrl = 'http://localhost:8082'
+    $pointsUrl = 'http://localhost:8082'; $routesUrl = 'http://localhost:8083'
     $memberRemote = 'http://localhost:5173/assets/remoteEntry.js'; $adminRemote = 'http://localhost:5174/assets/remoteEntry.js'
+    $explorerRemote = 'http://localhost:5175/assets/remoteEntry.js'
     $entry = 'http://localhost:5170'
 }
 
@@ -120,10 +122,12 @@ function Show-IngressAccess {
     Write-Link 'Shell' $entry
     Write-Link 'Member portal' "https://member.$domain"
     Write-Link 'Admin portal' "https://admin.$domain"
+    Write-Link 'Route explorer' "https://explorer.$domain"
     Write-Link 'Identity' "https://id.$domain"
     Write-Link 'Gateway GraphQL' $gatewayUrl
     Write-Link 'Members API' $membersUrl
     Write-Link 'Partners API' $partnersUrl
+    Write-Link 'Routes API' $routesUrl
     Write-Link 'Points engine' $pointsUrl
     Write-Link 'Grafana' "https://grafana.$domain"
     Write-Link 'Jaeger' "https://jaeger.$domain"
@@ -135,10 +139,12 @@ function Show-PortForwardAccess {
     Write-Link 'Shell' $entry
     Write-Link 'Member portal' 'http://localhost:5173'
     Write-Link 'Admin portal' 'http://localhost:5174'
+    Write-Link 'Route explorer' 'http://localhost:5175'
     if ($auth) { Write-Link 'Identity' 'http://localhost:9000' }
     Write-Link 'Gateway GraphQL' $gatewayUrl
     Write-Link 'Members API' $membersUrl
     Write-Link 'Partners API' $partnersUrl
+    Write-Link 'Routes API' $routesUrl
     Write-Link 'Points engine' $pointsUrl
     Write-Link 'Grafana' 'http://localhost:3000'
 }
@@ -202,16 +208,21 @@ if (-not $NoBuild) {
             -t osprey-loyalty-admin-portal:latest ./frontends/admin-portal
         if ($LASTEXITCODE -ne 0) { throw 'admin-portal build failed.' }
         docker build `
+            --build-arg VITE_GATEWAY_URL=$gatewayUrl `
+            -t osprey-loyalty-route-explorer:latest ./frontends/route-explorer
+        if ($LASTEXITCODE -ne 0) { throw 'route-explorer build failed.' }
+        docker build `
             --build-arg VITE_AUTH_ENABLED=true --build-arg VITE_OIDC_ISSUER=$issuer `
             --build-arg VITE_OIDC_CLIENT_ID=admin-portal `
             --build-arg VITE_OIDC_REDIRECT_URI=$shellRedirect `
             --build-arg MEMBER_PORTAL_URL=$memberRemote `
             --build-arg ADMIN_PORTAL_URL=$adminRemote `
+            --build-arg ROUTE_EXPLORER_URL=$explorerRemote `
             -t osprey-loyalty-shell:latest ./frontends/shell
         if ($LASTEXITCODE -ne 0) { throw 'shell build failed.' }
     }
     else {
-        docker compose -f $composeFile build member-portal admin-portal shell
+        docker compose -f $composeFile build member-portal admin-portal route-explorer shell
         if ($LASTEXITCODE -ne 0) { throw 'Frontend image build failed.' }
     }
     Write-Host '✓ Images built' -ForegroundColor Green
@@ -307,8 +318,8 @@ if ($ingress) {
 }
 else {
     $forwards = @(
-        'shell:5170:80', 'member-portal:5173:80', 'admin-portal:5174:80',
-        'gateway:4000:4000', 'members:5080:8080', 'partners:8081:8080',
+        'shell:5170:80', 'member-portal:5173:80', 'admin-portal:5174:80', 'route-explorer:5175:80',
+        'gateway:4000:4000', 'members:5080:8080', 'partners:8081:8080', 'routes:8083:8083',
         'grafana:3000:3000'
     )
     if ($auth) { $forwards += 'security:9000:8080' }

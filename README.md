@@ -2,8 +2,8 @@
 
 Osprey Loyalty is a miniature airline-style loyalty platform — members earn points from
 partner purchases, climb a tier ladder, and redeem rewards. It is built in public as a demo
-of full-stack, polyglot engineering: five backend services across four languages
-(C#, TypeScript, Java, Rust) behind a GraphQL gateway and three micro-frontends, with a
+of full-stack, polyglot engineering: six backend services across four languages
+(C#, TypeScript, Java, Rust) behind a GraphQL gateway and four micro-frontends, with a
 first-party OIDC identity service, opt-in zero-trust auth, distributed tracing, and a
 Kubernetes deployment. The interesting bugs in this domain live in the business rules, so
 that is where the tests live too.
@@ -112,10 +112,13 @@ these are the endpoints the [Try it](#try-it) demos use.
 | http://localhost:5170 | Shell — entry point |
 | http://localhost:5173 | Member portal |
 | http://localhost:5174 | Admin portal |
+| http://localhost:5175 | Route explorer |
 | http://localhost:4000/graphql | Gateway GraphQL (GraphiQL in the browser) |
 | http://localhost:5080 | Members API (REST) |
 | http://localhost:8081 | Partners API (REST) |
 | http://localhost:8082 | Points engine (REST) |
+| http://localhost:8083 | Routes API (REST) |
+| http://localhost:7474 | Neo4j browser (route graph) |
 | http://localhost:9000/.well-known/openid-configuration | Security — OIDC identity service |
 | http://localhost:9090 | Prometheus |
 | http://localhost:3000 | Grafana (admin/admin) |
@@ -199,6 +202,21 @@ a verified view of the account balance. Watch the raw stream:
 curl -N "http://localhost:4000/travel-agent/stream?memberId=demo-ada&lang=en"
 ```
 
+### Explore the route network
+
+Open the shell (http://localhost:5170), pick **Route explorer**, and type "arlanda" — the typeahead
+finds ARN and lists its direct destinations with distance, flight time and carriers. On the **Route
+search** tab, search ARN → SYD optimized by distance to get the legs plus a ≈points badge — the
+estimate comes from the Rust points engine per ADR-0006's reuse-over-reimplement, and the badge
+simply disappears if the engine is down rather than failing the search. The **Map** tab draws the itinerary on a world
+map rendered by a Rust/WASM island. Under the hood it is a Neo4j graph queried with dijkstra
+([ADR-0021](docs/decisions/0021-neo4j-route-graph.md)); the same search over GraphQL:
+
+```bash
+curl -X POST http://localhost:4000/graphql -H "Content-Type: application/json" \
+  -d '{"query":"{ routeSearch(from: \"ARN\", to: \"SYD\", optimize: KM) { hops totalKm totalMin estimatedPoints legs { from { iata } to { iata } } } }"}'
+```
+
 ### Watch it run
 
 Every service logs one JSON line per request, tagged with a correlation id. Send your own and follow
@@ -262,9 +280,11 @@ if you just want to poke the endpoints without tokens, start the cluster with `-
 | [`services/partners`](services/partners) | Java 21 / Spring Boot | Partner earn simulations and the duplicate-delivery demo; a transactional outbox durably publishes earns ([ADR-0016](docs/decisions/0016-transactional-outbox.md)) |
 | [`services/points-engine`](services/points-engine) | Rust | Pure points calculation with promotions, property-tested; deliberately not wired into the earn path ([ADR-0006](docs/decisions/0006-rust-points-engine.md)) |
 | [`services/security`](services/security) | Java 21 / Spring Boot | First-party OIDC/OAuth2 identity service — issues the JWTs the fleet validates ([ADR-0007](docs/decisions/0007-zero-trust-auth.md)) |
+| [`services/routes`](services/routes) | TypeScript / Node 22 | The airline route graph in Neo4j: airport typeahead, direct destinations, and weighted shortest-itinerary search via APOC dijkstra ([ADR-0021](docs/decisions/0021-neo4j-route-graph.md)) |
 | [`frontends/member-portal`](frontends/member-portal) | React 19 | Member dashboard: balance, tier progress, benefits, rewards, and a simulated Travel Agent streamed over SSE |
 | [`frontends/admin-portal`](frontends/admin-portal) | Vue 3 | Admin tools: member lookup, point adjustments, partner rates, OSPREY invitations |
-| [`frontends/shell`](frontends/shell) | TypeScript | Micro-frontend host: one page composing both portals via module federation ([ADR-0004](docs/decisions/0004-micro-frontend-tradeoff.md)) |
+| [`frontends/route-explorer`](frontends/route-explorer) | Svelte 5 | Route explorer: airport search, A→B itinerary search with a points estimate, and a world map drawn by a Rust/Leptos WASM island ([ADR-0022](docs/decisions/0022-svelte-mfe-leptos-wasm-island.md)) |
+| [`frontends/shell`](frontends/shell) | TypeScript | Micro-frontend host: one page composing the three remotes via module federation ([ADR-0004](docs/decisions/0004-micro-frontend-tradeoff.md)) |
 
 That is the full fleet — each service had to justify its existence before it appeared. Tier benefits
 are hardcoded in `services/members` for the demo; in production that content would live in a headless
@@ -356,6 +376,14 @@ All five original phases are done, and Phase 6 (enterprise) is largely in place:
   k6 load/soak tests, FinOps cost reasoning); safe delivery (GitOps with ArgoCD, canary deploys with Argo
   Rollouts and automatic rollback on an SLO breach); and supply-chain security (a DevSecOps scanning pipeline,
   a STRIDE threat model, and every dependency modernized to its latest stable). See [ADR-0012 through 0020](docs/decisions).
+
+- **Route Explorer** — a feature slice on top of the phases rather than a phase of its own: an airline
+  route graph (~3,900 airports, 59k directed routes) in Neo4j with weighted shortest-path via APOC
+  dijkstra, owned by a new TypeScript `routes` service behind the gateway
+  ([ADR-0021](docs/decisions/0021-neo4j-route-graph.md)), and a third micro-frontend remote in Svelte 5
+  whose world map is a Rust/Leptos WASM island ([ADR-0022](docs/decisions/0022-svelte-mfe-leptos-wasm-island.md)).
+  The itinerary's points estimate reuses the Rust points engine and degrades to null when it is down.
+  The remote itself is English-only in v1 — its strings are gathered for a later ADR-0009 retrofit.
 
 A future phase would put promotions into the real earn path and run the stack highly available — each of
 which would first have to pay for itself.

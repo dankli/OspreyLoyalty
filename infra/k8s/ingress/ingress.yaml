@@ -5,6 +5,7 @@
 #
 #   app      -> shell (module-federation host, the entry point)
 #   member   -> member-portal remote      admin -> admin-portal remote
+#   explorer -> route-explorer remote     routes -> routes API (route graph search; neo4j stays cluster-internal)
 #   id       -> security (OIDC issuer)     api   -> gateway (GraphQL BFF)
 #   members / partners -> resource servers the admin portal calls directly
 #   points-engine -> the standalone Rust calculator (REST /calculate), exposed for direct calls
@@ -27,10 +28,12 @@ spec:
         - app.osprey.localtest.me
         - member.osprey.localtest.me
         - admin.osprey.localtest.me
+        - explorer.osprey.localtest.me
         - id.osprey.localtest.me
         - api.osprey.localtest.me
         - members.osprey.localtest.me
         - partners.osprey.localtest.me
+        - routes.osprey.localtest.me
         - points-engine.osprey.localtest.me
         - grafana.osprey.localtest.me
         - jaeger.osprey.localtest.me
@@ -54,6 +57,12 @@ spec:
           - path: /
             pathType: Prefix
             backend: { service: { name: admin-portal, port: { number: 80 } } }
+    - host: explorer.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: route-explorer, port: { number: 80 } } }
     - host: id.osprey.localtest.me
       http:
         paths:
@@ -78,6 +87,12 @@ spec:
           - path: /
             pathType: Prefix
             backend: { service: { name: partners, port: { number: 8080 } } }
+    - host: routes.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: routes, port: { number: 8083 } } }
     - host: points-engine.osprey.localtest.me
       http:
         paths:
