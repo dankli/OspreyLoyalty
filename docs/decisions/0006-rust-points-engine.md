@@ -16,6 +16,8 @@ The service is deliberately **not wired into the members earn path.** At this re
 
 `ApplyEarn.PointsFor` in members remains the earn path for all current earn events. The e2e smoke test asserts that the two implementations agree for the no-promotion case: this is the **parity contract** that keeps them from drifting without a real integration dependency.
 
+The cross-implementation check covers **only** that no-promotion branch. The promotion-aware form `floor(amount × rate × Π multipliers)` has no counterpart in members to compare against, so it is guarded by the engine's own proptests alone — not by cross-service parity. A future reader should not assume the engine validates a live promotion path: it does not, because there isn't one. If members ever grew an independent promotion calculation, this parity check would not catch drift between the two; routing earn through the engine (see below) is the intended way to keep a single source of truth.
+
 ### What would justify wiring it in
 
 - **Batch ledger repricing.** Retroactively recomputing points across millions of historical rows when a partner rate or promotion changes — a CPU-bound job where Rust throughput is the bottleneck, not network latency.

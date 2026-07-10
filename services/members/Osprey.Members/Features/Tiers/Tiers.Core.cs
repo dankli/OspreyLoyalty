@@ -41,8 +41,8 @@ public static partial class Tiers
     /// <summary>Display-only perks per spec — no logic beyond the tier mapping.</summary>
     public static IReadOnlyList<string> BenefitsFor(Tier tier) => tier switch
     {
-        Tier.Osprey => ["Dedicated service line", "Lounge access", "Extra baggage", "Priority boarding"],
-        Tier.Diamond => ["Lounge access", "Extra baggage", "Priority boarding"],
+        Tier.Osprey => ["Dedicated service line", "Lounge access", "Upgrade voucher", "Extra baggage", "Priority boarding"],
+        Tier.Diamond => ["Lounge access", "Upgrade voucher", "Extra baggage", "Priority boarding"],
         Tier.Gold => ["Lounge access", "Priority boarding"],
         Tier.Silver => ["Priority boarding"],
         _ => ["Member offers"],

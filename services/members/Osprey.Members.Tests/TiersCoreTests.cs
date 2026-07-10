@@ -39,4 +39,13 @@ public sealed class TiersCoreTests
         foreach (Tiers.Tier tier in Enum.GetValues<Tiers.Tier>())
             Assert.NotEmpty(Tiers.BenefitsFor(tier));
     }
+
+    [Fact]
+    public void Diamond_and_osprey_offer_the_upgrade_voucher()
+    {
+        // domain.md lists "upgrade voucher (DIAMOND+)" as a tier benefit example.
+        Assert.Contains("Upgrade voucher", Tiers.BenefitsFor(Tiers.Tier.Diamond));
+        Assert.Contains("Upgrade voucher", Tiers.BenefitsFor(Tiers.Tier.Osprey));
+        Assert.DoesNotContain("Upgrade voucher", Tiers.BenefitsFor(Tiers.Tier.Gold)); // not below DIAMOND
+    }
 }

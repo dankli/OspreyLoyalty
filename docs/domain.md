@@ -82,6 +82,9 @@ A multiplier applied to the earn formula before the floor is taken. Multipliers 
 **Benefit**
 A tier-linked perk displayed to the member. No points logic — display only. Examples: lounge access (GOLD+), upgrade voucher (DIAMOND+). Content is driven by a static mapping.
 
+**Travel Agent (demo)**
+A member-portal page that streams a simulated, points-first trip planner over SSE (gateway `GET /travel-agent/stream`). It reads the member's real spendable balance to show which sample trips look "affordable," but the trip catalogue is fake award pricing and its trips are **not** Rewards — there is no burn transaction, no Redemption, and no ledger effect. It is a non-transactional suggestion/marketing surface, deliberately not a spend channel.
+
 ---
 
 ## Business rules
