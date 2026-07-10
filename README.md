@@ -383,7 +383,9 @@ All five original phases are done, and Phase 6 (enterprise) is largely in place:
   ([ADR-0021](docs/decisions/0021-neo4j-route-graph.md)), and a third micro-frontend remote in Svelte 5
   whose world map is a Rust/Leptos WASM island ([ADR-0022](docs/decisions/0022-svelte-mfe-leptos-wasm-island.md)).
   The itinerary's points estimate reuses the Rust points engine and degrades to null when it is down.
-  The remote itself is English-only in v1 — its strings are gathered for a later ADR-0009 retrofit.
+  The remote ships the fleet's five-language catalogs ([ADR-0009](docs/decisions/0009-i18n-strategy.md))
+  and the shared field-guide look: zoomable world map (wheel, drag, toolbar), airport details on click,
+  the found itinerary drawn inline under the search, and tab state that survives switching.
 
 A future phase would put promotions into the real earn path and run the stack highly available — each of
 which would first have to pay for itself.
