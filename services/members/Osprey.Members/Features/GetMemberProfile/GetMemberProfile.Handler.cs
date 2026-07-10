@@ -13,8 +13,7 @@ public static partial class GetMemberProfile
 
         public async Task<Response?> Handle(string id, CancellationToken ct = default)
         {
-            Validation.RequireId(id);
-
+            // Happy path: the endpoint pipeline (Validation.Check) has already rejected a malformed id.
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(MongoTimeoutSeconds)); // bound the lookup — fail fast if Mongo is down
             MemberDocument? document = await members

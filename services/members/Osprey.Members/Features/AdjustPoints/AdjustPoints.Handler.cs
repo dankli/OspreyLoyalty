@@ -15,20 +15,20 @@ public static partial class AdjustPoints
         private const int MongoTimeoutSeconds = 5;
 
         /// <param name="caller">Who is making the change — actor + correlation from the edge (ADR-0017).</param>
-        public async Task<Response?> Handle(string memberId, Request request, Audit.Caller.Context caller, CancellationToken ct = default)
+        public async Task<Outcome> Handle(string memberId, Request request, Audit.Caller.Context caller, CancellationToken ct = default)
         {
-            Validation.Require(memberId, request);
+            // Happy path: format already validated by the endpoint pipeline.
             string reason = request.Reason.Trim();
 
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(MongoTimeoutSeconds)); // bound every hop below
 
             if (!await members.Find(m => m.Id == memberId).AnyAsync(cts.Token))
-                return null; // 404 at the edge
+                return Outcome.UnknownMember; // 404 at the edge
 
             // Retry fast-path: this key already adjusted once — succeed without changing anything again.
             if (await transactions.Find(t => t.IdempotencyKey == request.IdempotencyKey).AnyAsync(cts.Token))
-                return await AlreadyAppliedResponse(memberId, cts.Token);
+                return Outcome.Ok(await AlreadyAppliedResponse(memberId, cts.Token));
 
             var entry = new PointsTransactionDocument(
                 Guid.NewGuid().ToString("N"), memberId, TransactionTypes.Adjustment,
@@ -49,7 +49,7 @@ public static partial class AdjustPoints
                     options: null, cts.Token);
 
                 if (update.ModifiedCount == 0)
-                    throw new ArgumentException("Adjustment would overdraw the balance.");
+                    return Outcome.Overdraw;
 
                 try
                 {
@@ -61,7 +61,7 @@ public static partial class AdjustPoints
                     await members.UpdateOneAsync(m => m.Id == memberId,
                         Builders<MemberDocument>.Update.Inc(m => m.SpendablePoints, -request.Points),
                         options: null, cts.Token);
-                    return await AlreadyAppliedResponse(memberId, cts.Token);
+                    return Outcome.Ok(await AlreadyAppliedResponse(memberId, cts.Token));
                 }
             }
             else
@@ -72,7 +72,7 @@ public static partial class AdjustPoints
                 }
                 catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
                 {
-                    return await AlreadyAppliedResponse(memberId, cts.Token);
+                    return Outcome.Ok(await AlreadyAppliedResponse(memberId, cts.Token));
                 }
 
                 await members.UpdateOneAsync(m => m.Id == memberId,
@@ -89,7 +89,7 @@ public static partial class AdjustPoints
                 caller.CorrelationId), cts.Token);
 
             MemberDocument member = await members.Find(m => m.Id == memberId).FirstAsync(cts.Token);
-            return new Response(request.Points, member.SpendablePoints, AlreadyApplied: false);
+            return Outcome.Ok(new Response(request.Points, member.SpendablePoints, AlreadyApplied: false));
         }
 
         private async Task<Response> AlreadyAppliedResponse(string memberId, CancellationToken ct)

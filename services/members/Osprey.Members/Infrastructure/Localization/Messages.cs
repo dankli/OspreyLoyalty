@@ -7,8 +7,9 @@ namespace Osprey.Members.Features;
 /// Tiny in-process catalog for localized validation errors (sv/en/es/de/it). A key maps to
 /// a composite format string per culture; args fill the {0}/{1} placeholders. English is the
 /// fallback and matches the original hard-coded strings verbatim, so existing tests and the
-/// Auth:Enabled=false path are unchanged. Validation stays pure by throwing the key on the
-/// exception; the HTTP edge picks the culture from Accept-Language and renders it there.
+/// Auth:Enabled=false path are unchanged. Validation stays pure by returning the key as a
+/// <see cref="ValidationError"/> value; the endpoint pipeline picks the culture from
+/// Accept-Language and renders it there (see <c>ValidationError.ToBadRequest</c>).
 /// </summary>
 public static class Messages
 {
@@ -132,23 +133,5 @@ public static class Messages
         return args is { Length: > 0 }
             ? string.Format(CultureInfo.GetCultureInfo(culture), fmt, args)
             : fmt;
-    }
-
-    /// <summary>Exception.Data slots carrying the message key and format args past the throw site.</summary>
-    public const string KeyData = "osprey.msgKey";
-    public const string ArgsData = "osprey.msgArgs";
-
-    /// <summary>
-    /// Builds a plain <see cref="ArgumentException"/> whose Message is the English rendering and
-    /// which carries the key + args in <see cref="System.Exception.Data"/> so the HTTP edge can
-    /// re-render it in the caller's language. Deliberately NOT a subclass: the validation tests
-    /// use xUnit's exact-match <c>Assert.Throws&lt;ArgumentException&gt;</c>, which a subclass fails.
-    /// </summary>
-    public static ArgumentException Fail(string key, params object[] args)
-    {
-        var exception = new ArgumentException(Localize(key, "en", args));
-        exception.Data[KeyData] = key;
-        exception.Data[ArgsData] = args;
-        return exception;
     }
 }

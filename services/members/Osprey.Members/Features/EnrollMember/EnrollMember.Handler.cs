@@ -13,8 +13,8 @@ public static partial class EnrollMember
 
         public async Task<Response> Handle(Request request, CancellationToken ct = default)
         {
-            Validation.Require(request);
-
+            // Happy path only: the endpoint pipeline (Validation.Check) has already rejected
+            // malformed input with a 400 before we get here.
             var document = new MemberDocument(
                 Guid.NewGuid().ToString("N"),
                 request.Name.Trim(),

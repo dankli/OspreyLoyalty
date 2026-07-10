@@ -12,7 +12,7 @@ There is a second forcing function that is honest to name: each service is meant
 
 Four services, plus three frontend artifacts that are not services.
 
-**`services/members` (C# / .NET 10)** — the core loyalty domain. Enrollment, the tier ladder, the points ledger, redemption, expiry. This is the service with the deepest quality bar; C# and .NET are the right tool for a domain-heavy core with strict TDD, Vertical Slice Architecture, and railway-oriented flow.
+**`services/members` (C# / .NET 10)** — the core loyalty domain. Enrollment, the tier ladder, the points ledger, redemption, expiry. This is the service with the deepest quality bar; C# and .NET are the right tool for a domain-heavy core with strict TDD, Vertical Slice Architecture, and a railway-oriented request flow (described under Consequences).
 
 **`services/gateway` (TypeScript / Node 22)** — the BFF for both frontends. Owns the GraphQL schema the member portal queries, plus the REST proxy used for health checks and thin integrations. The aggregation and contract edge: it translates between the member portal's needs and the REST interfaces of members and partners, and it enforces a 2-second timeout on every upstream call. TypeScript on Node is the right fit for a layer that is mostly receiving, validating and reshaping JSON.
 
@@ -40,3 +40,4 @@ Four services, plus three frontend artifacts that are not services.
 - The gateway owns the frontend-facing contract. Adding a field to a GraphQL type is the gateway's concern; the members REST API is an internal contract.
 - Cross-service invariants — idempotency, duplicate delivery — are handled by the patterns in ADR-0002 and ADR-0003, not by distributed transactions.
 - The admin portal calls members and partners directly over REST (demo CORS, no auth). In production those calls would route through an authenticated BFF.
+- **Railway-oriented request flow in members.** Validation, loading and preconditions run as endpoint-pipeline guards (`Infrastructure/Pipeline/Guard.cs`) that short-circuit to the right HTTP status _before_ the handler; the handler runs the happy path only. Expected sad paths — malformed input, insufficient balance, unknown member/reward, overdraw — are returned as small **feature-local outcome values** (e.g. `Redeem.Outcome`, `AdjustPoints.Outcome`), never thrown. Exceptions are reserved for genuine technical faults (→ the framework's default 500) and, on the queue leg, poison-message dead-lettering. This deliberately avoids a fleet-wide generic `Result<T>`: that native railway lives only in the Rust points-engine (ADR-0006), where the type is idiomatic. C# and Java stay value-and-exception idiomatic, not monadic.

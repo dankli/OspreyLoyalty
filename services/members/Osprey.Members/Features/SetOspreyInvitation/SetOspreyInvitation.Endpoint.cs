@@ -9,5 +9,7 @@ public static partial class SetOspreyInvitation
         {
             Response? response = await handler.Handle(id, request, Audit.Caller.From(http), ct);
             return response is null ? Results.NotFound() : Results.Ok(response);
-        });
+        })
+        .AddEndpointFilter((ctx, next) =>
+            Guard.Validate(ctx, next, c => Validation.Check(c.GetArgument<string>(0))));
 }

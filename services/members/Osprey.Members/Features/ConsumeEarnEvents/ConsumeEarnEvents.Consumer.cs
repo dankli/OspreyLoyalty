@@ -106,6 +106,17 @@ public static partial class ConsumeEarnEvents
                         return;
                     }
 
+                    // Format guard as a pipeline step (mirrors the token check above): a well-formed
+                    // but invalid earn is dead-lettered here, so the handler stays on the happy path.
+                    ValidationError? invalid = ApplyEarn.Validation.Check(earn);
+                    if (invalid is not null)
+                    {
+                        logger.LogWarning("Rejecting earn event {Key}: invalid ({Reason}) — dead-lettering.",
+                            earn.IdempotencyKey, invalid.Key);
+                        await channel.BasicNackAsync(delivery.DeliveryTag, multiple: false, requeue: false, stoppingToken);
+                        return;
+                    }
+
                     ApplyEarn.Result result = await handler.Handle(earn, stoppingToken);
                     logger.LogInformation(
                         "Earn {Key} for {MemberId}: applied={Applied} points={Points} tier={Tier} correlationId={CorrelationId}",

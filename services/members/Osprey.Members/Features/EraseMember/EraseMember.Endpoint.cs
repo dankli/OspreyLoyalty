@@ -14,5 +14,7 @@ public static partial class EraseMember
         {
             Response? response = await handler.Handle(id, Audit.Caller.From(http), ct);
             return response is null ? Results.NotFound() : Results.Ok(response);
-        });
+        })
+        .AddEndpointFilter((ctx, next) =>
+            Guard.Validate(ctx, next, c => Validation.Check(c.GetArgument<string>(0))));
 }

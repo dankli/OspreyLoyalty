@@ -13,18 +13,20 @@ public static partial class Redeem
     {
         private const int MongoTimeoutSeconds = 5;
 
-        public async Task<Response?> Handle(string memberId, Request request, CancellationToken ct = default)
+        public async Task<Outcome> Handle(string memberId, Request request, CancellationToken ct = default)
         {
-            Validation.Require(memberId, request);
-            Rewards.Reward reward = Rewards.ById(request.RewardId)
-                ?? throw new ArgumentException($"Unknown reward: {request.RewardId}");
+            // Happy path: format already validated by the endpoint pipeline. Reward existence is a
+            // precondition — resolve it and step onto the UnknownReward rail if it isn't in the catalogue.
+            Rewards.Reward? reward = Rewards.ById(request.RewardId);
+            if (reward is null)
+                return Outcome.UnknownReward;
 
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(MongoTimeoutSeconds)); // bound every hop below
 
             // Retry fast-path: this key already burned once — succeed without spending again.
             if (await transactions.Find(t => t.IdempotencyKey == request.IdempotencyKey).AnyAsync(cts.Token))
-                return await AlreadyAppliedResponse(reward, memberId, cts.Token);
+                return Outcome.Ok(await AlreadyAppliedResponse(reward, memberId, cts.Token));
 
             // The concurrency arbiter (ADR-0003): one atomic conditional decrement.
             // The balance check lives INSIDE the filter, so two concurrent redemptions
@@ -36,9 +38,9 @@ public static partial class Redeem
 
             if (update.ModifiedCount == 0)
             {
+                // Two expected sad paths, told apart by existence — both are values, not throws.
                 bool exists = await members.Find(m => m.Id == memberId).AnyAsync(cts.Token);
-                if (!exists) return null; // 404 at the edge
-                throw new ArgumentException("Insufficient spendable points.");
+                return exists ? Outcome.InsufficientPoints : Outcome.UnknownMember;
             }
 
             var entry = new PointsTransactionDocument(
@@ -54,11 +56,11 @@ public static partial class Redeem
                 await members.UpdateOneAsync(m => m.Id == memberId,
                     Builders<MemberDocument>.Update.Inc(m => m.SpendablePoints, reward.Cost),
                     options: null, cts.Token);
-                return await AlreadyAppliedResponse(reward, memberId, cts.Token);
+                return Outcome.Ok(await AlreadyAppliedResponse(reward, memberId, cts.Token));
             }
 
             MemberDocument member = await members.Find(m => m.Id == memberId).FirstAsync(cts.Token);
-            return new Response(reward.Id, reward.Cost, member.SpendablePoints, AlreadyApplied: false);
+            return Outcome.Ok(new Response(reward.Id, reward.Cost, member.SpendablePoints, AlreadyApplied: false));
         }
 
         private async Task<Response> AlreadyAppliedResponse(Rewards.Reward reward, string memberId, CancellationToken ct)

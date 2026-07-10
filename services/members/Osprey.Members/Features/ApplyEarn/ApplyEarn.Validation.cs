@@ -11,19 +11,20 @@ public static partial class ApplyEarn
         private const int MinKeyLength = 8;
         private const int MaxKeyLength = 100;
 
-        public static void Require(EarnEvent earn)
+        public static ValidationError? Check(EarnEvent earn)
         {
             if (string.IsNullOrWhiteSpace(earn.MemberId) || earn.MemberId.Length > 64)
-                throw Messages.Fail("member_id_invalid");
+                return ValidationError.Of("member_id_invalid");
             if (string.IsNullOrWhiteSpace(earn.PartnerId) || earn.PartnerId.Length > 64)
-                throw Messages.Fail("partner_id_invalid");
+                return ValidationError.Of("partner_id_invalid");
             if (earn.Amount <= 0m || earn.Amount > MaxAmount)
-                throw Messages.Fail("earn_amount", MaxAmount);
+                return ValidationError.Of("earn_amount", MaxAmount);
             if (earn.Rate <= 0m || earn.Rate > MaxRate)
-                throw Messages.Fail("earn_rate", MaxRate);
+                return ValidationError.Of("earn_rate", MaxRate);
             if (string.IsNullOrWhiteSpace(earn.IdempotencyKey)
                 || earn.IdempotencyKey.Length is < MinKeyLength or > MaxKeyLength)
-                throw Messages.Fail("idempotency_key", MinKeyLength, MaxKeyLength);
+                return ValidationError.Of("idempotency_key", MinKeyLength, MaxKeyLength);
+            return null;
         }
     }
 }

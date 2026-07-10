@@ -16,8 +16,9 @@ public static partial class ApplyEarn
 
         public async Task<Result> Handle(EarnEvent earn, CancellationToken ct = default)
         {
-            Validation.Require(earn);
-
+            // Happy path: the consumer pipeline (Validation.Check) has already dead-lettered a
+            // malformed earn before we get here. A genuinely unknown member is still an integrity
+            // fault below — thrown, caught by the consumer, and dead-lettered as poison.
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(MongoTimeoutSeconds)); // a hung Mongo must not stall the consumer loop
 

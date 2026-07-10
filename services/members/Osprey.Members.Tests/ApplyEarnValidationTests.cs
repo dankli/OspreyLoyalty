@@ -9,29 +9,27 @@ public sealed class ApplyEarnValidationTests
         "demo-erik", "cardco", 40_000m, 0.5m, "key-1234567890", DateTime.UtcNow);
 
     [Fact]
-    public void Valid_event_passes()
+    public void Valid_event_has_no_error() =>
+        Assert.Null(ApplyEarn.Validation.Check(Valid()));
+
+    [Fact]
+    public void Non_positive_or_absurd_amount_is_rejected()
     {
-        ApplyEarn.Validation.Require(Valid()); // no throw
+        Assert.Equal("earn_amount", ApplyEarn.Validation.Check(Valid() with { Amount = 0m })?.Key);
+        Assert.Equal("earn_amount", ApplyEarn.Validation.Check(Valid() with { Amount = 2_000_000m })?.Key);
     }
 
     [Fact]
-    public void Non_positive_or_absurd_amount_fails()
+    public void Rate_outside_sane_bounds_is_rejected()
     {
-        Assert.Throws<ArgumentException>(() => ApplyEarn.Validation.Require(Valid() with { Amount = 0m }));
-        Assert.Throws<ArgumentException>(() => ApplyEarn.Validation.Require(Valid() with { Amount = 2_000_000m }));
+        Assert.Equal("earn_rate", ApplyEarn.Validation.Check(Valid() with { Rate = 0m })?.Key);
+        Assert.Equal("earn_rate", ApplyEarn.Validation.Check(Valid() with { Rate = 11m })?.Key);
     }
 
     [Fact]
-    public void Rate_outside_sane_bounds_fails()
+    public void Short_or_blank_idempotency_key_is_rejected()
     {
-        Assert.Throws<ArgumentException>(() => ApplyEarn.Validation.Require(Valid() with { Rate = 0m }));
-        Assert.Throws<ArgumentException>(() => ApplyEarn.Validation.Require(Valid() with { Rate = 11m }));
-    }
-
-    [Fact]
-    public void Short_or_blank_idempotency_key_fails()
-    {
-        Assert.Throws<ArgumentException>(() => ApplyEarn.Validation.Require(Valid() with { IdempotencyKey = "short" }));
-        Assert.Throws<ArgumentException>(() => ApplyEarn.Validation.Require(Valid() with { IdempotencyKey = " " }));
+        Assert.Equal("idempotency_key", ApplyEarn.Validation.Check(Valid() with { IdempotencyKey = "short" })?.Key);
+        Assert.Equal("idempotency_key", ApplyEarn.Validation.Check(Valid() with { IdempotencyKey = " " })?.Key);
     }
 }

@@ -103,4 +103,37 @@ public sealed class EarnEventsQueueTests : IAsyncLifetime
         }
         Assert.Equal(1u, deadCount);
     }
+
+    [Fact]
+    public async Task Well_formed_but_invalid_event_is_dead_lettered()
+    {
+        var factoryR = new ConnectionFactory
+        {
+            HostName = rabbit.Hostname,
+            Port = rabbit.GetMappedPublicPort(5672),
+            UserName = "rabbitmq",
+            Password = "rabbitmq",
+        };
+        await using IConnection connection = await factoryR.CreateConnectionAsync();
+        await using IChannel channel = await connection.CreateChannelAsync();
+        await ConsumeEarnEvents.DeclareAsync(channel);
+
+        // Valid JSON, but amount <= 0 fails the consumer's Validation.Check pipeline step — the
+        // handler never runs, so nothing reaches the ledger and the message dead-letters.
+        byte[] body = JsonSerializer.SerializeToUtf8Bytes(new
+        {
+            memberId = "demo-erik", partnerId = "cardco", amount = 0m, rate = 0.5m,
+            idempotencyKey = "queue-invalid-0001", occurredAtUtc = DateTime.UtcNow,
+        });
+        await channel.BasicPublishAsync("", ConsumeEarnEvents.Queue, body);
+
+        uint deadCount = 0;
+        for (int attempt = 0; attempt < 60; attempt++) // bounded poll
+        {
+            deadCount = await channel.MessageCountAsync(ConsumeEarnEvents.DeadQueue);
+            if (deadCount > 0) break;
+            await Task.Delay(1000);
+        }
+        Assert.Equal(1u, deadCount);
+    }
 }

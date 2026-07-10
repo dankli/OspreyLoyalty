@@ -13,8 +13,7 @@ public static partial class FindMemberByEmail
 
         public async Task<Response?> Handle(string email, CancellationToken ct = default)
         {
-            Validation.RequireEmail(email);
-
+            // Happy path: the endpoint pipeline (Validation.Check) has already rejected a malformed email.
             // Enrollment stores emails trimmed + lowercased — normalize the same way so
             // an admin typing any casing still finds the member.
             string normalized = email.Trim().ToLowerInvariant();

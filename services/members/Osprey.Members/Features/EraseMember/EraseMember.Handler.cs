@@ -27,8 +27,7 @@ public static partial class EraseMember
         /// <param name="caller">Who requested the erasure — actor + correlation from the edge (ADR-0017).</param>
         public async Task<Response?> Handle(string memberId, Audit.Caller.Context caller, CancellationToken ct = default)
         {
-            Validation.RequireId(memberId);
-
+            // Happy path: the endpoint pipeline (Validation.Check) has already rejected a malformed id.
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(MongoTimeoutSeconds)); // a hung Mongo must not hang the request
 

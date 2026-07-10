@@ -8,10 +8,9 @@ public static partial class EraseMember
     {
         private const int MaxIdLength = 64;
 
-        public static void RequireId(string id)
-        {
-            if (string.IsNullOrWhiteSpace(id) || id.Length > MaxIdLength)
-                throw Messages.Fail("member_id_invalid");
-        }
+        public static ValidationError? Check(string id) =>
+            string.IsNullOrWhiteSpace(id) || id.Length > MaxIdLength
+                ? ValidationError.Of("member_id_invalid")
+                : null;
     }
 }

@@ -47,14 +47,4 @@ public sealed class LocalizationTests
         Assert.Equal("Name is required.", Messages.Localize("name_required", "fr")); // unknown culture
         Assert.Equal("unknown_key", Messages.Localize("unknown_key", "sv")); // unknown key → key echoed
     }
-
-    [Fact]
-    public void Fail_carries_the_key_and_renders_english_by_default()
-    {
-        var ex = Messages.Fail("name_too_long", 200);
-        Assert.Equal("name_too_long", ex.Data[Messages.KeyData]);
-        Assert.Equal("Name must be at most 200 characters.", ex.Message);
-        // Exact type — a subclass would break the validation tests' Assert.Throws<ArgumentException>.
-        Assert.IsType<ArgumentException>(ex);
-    }
 }

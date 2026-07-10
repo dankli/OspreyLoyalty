@@ -9,7 +9,9 @@ namespace Osprey.Members.Tests;
 /// <summary>
 /// Spec rule 4 showcase: concurrent redemptions must not double-spend. The conditional
 /// decrement (ADR-0003) is the arbiter — ten simultaneous attempts against a balance
-/// that covers exactly one must yield exactly one success and one burn entry.
+/// that covers exactly one must yield exactly one success and one burn entry. Expected
+/// sad paths (insufficient, unknown member/reward) come back as a Redeem.Outcome value,
+/// never as a thrown exception.
 /// </summary>
 public sealed class RedeemConcurrencyTests : IAsyncLifetime
 {
@@ -35,11 +37,13 @@ public sealed class RedeemConcurrencyTests : IAsyncLifetime
     {
         var handler = new Redeem.Handler(members, transactions);
 
-        Task<Outcome>[] attempts = Enumerable.Range(0, 10).Select(i => AttemptAsync(handler, i)).ToArray();
-        Outcome[] outcomes = await Task.WhenAll(attempts);
+        Task<Redeem.Outcome>[] attempts = Enumerable.Range(0, 10)
+            .Select(i => handler.Handle("m-1", new Redeem.Request("lounge-pass", $"concurrent-key-{i:D4}")))
+            .ToArray();
+        Redeem.Outcome[] outcomes = await Task.WhenAll(attempts);
 
-        Assert.Equal(1, outcomes.Count(o => o == Outcome.Redeemed));
-        Assert.Equal(9, outcomes.Count(o => o == Outcome.Insufficient));
+        Assert.Equal(1, outcomes.Count(o => o.Status == Redeem.Status.Ok));
+        Assert.Equal(9, outcomes.Count(o => o.Status == Redeem.Status.InsufficientPoints));
 
         MemberDocument member = await members.Find(m => m.Id == "m-1").FirstAsync();
         Assert.Equal(5_000, member.SpendablePoints); // 20 000 - one lounge pass, never less
@@ -56,10 +60,10 @@ public sealed class RedeemConcurrencyTests : IAsyncLifetime
         // index picks one winner and every loser must give its decrement back.
         var request = new Redeem.Request("cardco-giftcard", "same-key-00000001"); // 5 000 cost vs 20 000 balance
 
-        Redeem.Response?[] responses = await Task.WhenAll(
-            Enumerable.Range(0, 8).Select(_ => AttemptSameKeyAsync(handler, request)));
+        Redeem.Outcome[] outcomes = await Task.WhenAll(
+            Enumerable.Range(0, 8).Select(_ => handler.Handle("m-1", request)));
 
-        Assert.Equal(1, responses.Count(r => r is { AlreadyApplied: false }));
+        Assert.Equal(1, outcomes.Count(o => o.Status == Redeem.Status.Ok && o.Response is { AlreadyApplied: false }));
         Assert.Equal(1, await transactions.CountDocumentsAsync(t => t.IdempotencyKey == "same-key-00000001"));
         MemberDocument member = await members.Find(m => m.Id == "m-1").FirstAsync();
         Assert.Equal(15_000, member.SpendablePoints); // 20 000 - one gift card; losers compensated
@@ -71,17 +75,19 @@ public sealed class RedeemConcurrencyTests : IAsyncLifetime
         var handler = new Redeem.Handler(members, transactions);
 
         // 20 000 - 15 000 leaves a balance that exactly equals the gift card cost.
-        Redeem.Response lounge = (await handler.Handle("m-1", new Redeem.Request("lounge-pass", "exact-key-0001")))!;
-        Assert.Equal(5_000, lounge.SpendablePoints);
+        Redeem.Outcome lounge = await handler.Handle("m-1", new Redeem.Request("lounge-pass", "exact-key-0001"));
+        Assert.Equal(Redeem.Status.Ok, lounge.Status);
+        Assert.Equal(5_000, lounge.Response!.SpendablePoints);
 
         // Boundary: balance == cost must pass the >= filter, not be refused.
-        Redeem.Response giftcard = (await handler.Handle("m-1", new Redeem.Request("cardco-giftcard", "exact-key-0002")))!;
-        Assert.False(giftcard.AlreadyApplied);
-        Assert.Equal(0, giftcard.SpendablePoints);
+        Redeem.Outcome giftcard = await handler.Handle("m-1", new Redeem.Request("cardco-giftcard", "exact-key-0002"));
+        Assert.Equal(Redeem.Status.Ok, giftcard.Status);
+        Assert.False(giftcard.Response!.AlreadyApplied);
+        Assert.Equal(0, giftcard.Response.SpendablePoints);
 
         // And at zero, any further redemption is refused without touching the balance.
-        await Assert.ThrowsAsync<ArgumentException>(
-            () => handler.Handle("m-1", new Redeem.Request("cardco-giftcard", "exact-key-0003")));
+        Redeem.Outcome refused = await handler.Handle("m-1", new Redeem.Request("cardco-giftcard", "exact-key-0003"));
+        Assert.Equal(Redeem.Status.InsufficientPoints, refused.Status);
         MemberDocument member = await members.Find(m => m.Id == "m-1").FirstAsync();
         Assert.Equal(0, member.SpendablePoints);
     }
@@ -92,54 +98,34 @@ public sealed class RedeemConcurrencyTests : IAsyncLifetime
         var handler = new Redeem.Handler(members, transactions);
         var request = new Redeem.Request("lounge-pass", "retry-key-0001");
 
-        Redeem.Response first = (await handler.Handle("m-1", request))!;
-        Redeem.Response second = (await handler.Handle("m-1", request))!;
+        Redeem.Outcome first = await handler.Handle("m-1", request);
+        Redeem.Outcome second = await handler.Handle("m-1", request);
 
-        Assert.False(first.AlreadyApplied);
-        Assert.Equal(15_000, first.PointsSpent);
-        Assert.True(second.AlreadyApplied);
-        Assert.Equal(0, second.PointsSpent);
-        Assert.Equal(5_000, second.SpendablePoints);
+        Assert.Equal(Redeem.Status.Ok, first.Status);
+        Assert.False(first.Response!.AlreadyApplied);
+        Assert.Equal(15_000, first.Response.PointsSpent);
+        Assert.Equal(Redeem.Status.Ok, second.Status);
+        Assert.True(second.Response!.AlreadyApplied);
+        Assert.Equal(0, second.Response.PointsSpent);
+        Assert.Equal(5_000, second.Response.SpendablePoints);
         Assert.Equal(1, await transactions.CountDocumentsAsync(t => t.IdempotencyKey == "retry-key-0001"));
     }
 
     [Fact]
-    public async Task Unknown_member_is_null_and_writes_nothing()
+    public async Task Unknown_member_is_reported_and_writes_nothing()
     {
         var handler = new Redeem.Handler(members, transactions);
-        Redeem.Response? response = await handler.Handle("ghost", new Redeem.Request("lounge-pass", "ghost-key-0001"));
-        Assert.Null(response);
+        Redeem.Outcome outcome = await handler.Handle("ghost", new Redeem.Request("lounge-pass", "ghost-key-0001"));
+        Assert.Equal(Redeem.Status.UnknownMember, outcome.Status);
+        Assert.Null(outcome.Response);
         Assert.Equal(0, await transactions.CountDocumentsAsync(t => t.IdempotencyKey == "ghost-key-0001"));
     }
 
-    private enum Outcome { Redeemed, Insufficient }
-
-    private static async Task<Redeem.Response?> AttemptSameKeyAsync(Redeem.Handler handler, Redeem.Request request)
+    [Fact]
+    public async Task Unknown_reward_is_reported()
     {
-        try
-        {
-            return await handler.Handle("m-1", request);
-        }
-        catch (ArgumentException)
-        {
-            // Transient edge: enough simultaneous decrements can momentarily drain the
-            // balance before the losers compensate, refusing a late attempt. It never
-            // decremented, so it cannot skew the winner count or the final balance.
-            return null;
-        }
-    }
-
-    private static async Task<Outcome> AttemptAsync(Redeem.Handler handler, int attempt)
-    {
-        try
-        {
-            Redeem.Response? response = await handler.Handle("m-1",
-                new Redeem.Request("lounge-pass", $"concurrent-key-{attempt:D4}"));
-            return response!.AlreadyApplied ? Outcome.Insufficient : Outcome.Redeemed;
-        }
-        catch (ArgumentException)
-        {
-            return Outcome.Insufficient;
-        }
+        var handler = new Redeem.Handler(members, transactions);
+        Redeem.Outcome outcome = await handler.Handle("m-1", new Redeem.Request("no-such-reward", "reward-key-0001"));
+        Assert.Equal(Redeem.Status.UnknownReward, outcome.Status);
     }
 }

@@ -9,5 +9,7 @@ public static partial class EnrollMember
         {
             Response response = await handler.Handle(request, ct);
             return Results.Created($"/api/members/{response.Id}", response);
-        });
+        })
+        .AddEndpointFilter((ctx, next) =>
+            Guard.Validate(ctx, next, c => Validation.Check(c.GetArgument<Request>(0))));
 }

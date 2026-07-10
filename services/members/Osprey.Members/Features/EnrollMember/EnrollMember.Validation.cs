@@ -13,16 +13,20 @@ public static partial class EnrollMember
         private const int MaxNameLength = 200;
         private const int MaxEmailLength = 254;
 
-        public static void Require(Request request)
+        // Pure input rules on the failure rail: return the first broken rule as a ValidationError
+        // (a value), or null when the request is well-formed. The endpoint pipeline turns a non-null
+        // result into a localized 400 before the handler runs, so the handler never sees bad input.
+        public static ValidationError? Check(Request request)
         {
             if (string.IsNullOrWhiteSpace(request.Name))
-                throw Messages.Fail("name_required");
+                return ValidationError.Of("name_required");
             if (request.Name.Length > MaxNameLength)
-                throw Messages.Fail("name_too_long", MaxNameLength);
+                return ValidationError.Of("name_too_long", MaxNameLength);
             if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains('@'))
-                throw Messages.Fail("email_invalid");
+                return ValidationError.Of("email_invalid");
             if (request.Email.Length > MaxEmailLength)
-                throw Messages.Fail("email_too_long", MaxEmailLength);
+                return ValidationError.Of("email_too_long", MaxEmailLength);
+            return null;
         }
     }
 }

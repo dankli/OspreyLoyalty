@@ -139,8 +139,8 @@ var app = builder.Build();
 
 Correlation.Use(app); // first — even error responses carry X-Correlation-Id
 
-// Metrics wrap the error translation below so they observe the FINAL status code —
-// a validation failure is recorded as code="400", not the in-flight "200".
+// Metrics observe the FINAL status code — a request short-circuited to a 400 by an endpoint
+// validation filter is recorded as code="400", not the in-flight "200".
 app.UseHttpMetrics(); // http_request_duration_seconds et al., labelled by endpoint/method/code
 
 app.UseCors(p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()); // demo stack — the admin portal calls this API directly from the browser
@@ -151,23 +151,11 @@ if (authEnabled)
     app.UseAuthorization();
 }
 
-// Expected failures (validation) become clean 400s here; anything unexpected
-// bubbles to the default 500 — exceptions live on the edges, not in the flow.
-app.Use(async (context, next) =>
-{
-    try { await next(); }
-    catch (ArgumentException ex)
-    {
-        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-        // Localize keyed validation failures to the caller's Accept-Language; anything else
-        // (an ArgumentException without a message key) falls back to its English message verbatim.
-        var message = ex.Data[Messages.KeyData] is string key
-            ? Messages.Localize(key, Messages.Culture(context.Request.Headers.AcceptLanguage.ToString()),
-                ex.Data[Messages.ArgsData] as object[] ?? [])
-            : ex.Message;
-        await context.Response.WriteAsJsonAsync(new { error = message });
-    }
-});
+// No global exception→400 seam: expected sad paths never throw. Validation is a pipeline guard
+// that returns a localized 400 before the handler (Infrastructure/Pipeline/Guard.cs), and the
+// intrinsic outcomes (insufficient balance, unknown member/reward) are values the endpoints map
+// to their status codes. A thrown exception on an HTTP path is therefore a genuine fault → the
+// framework's default 500. Only the queue consumer keeps its own throw→dead-letter seam.
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 EnrollMember.MapEndpoints(app);

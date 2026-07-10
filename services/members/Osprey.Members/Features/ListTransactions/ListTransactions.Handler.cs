@@ -14,8 +14,7 @@ public static partial class ListTransactions
 
         public async Task<Response> Handle(string memberId, int page, CancellationToken ct = default)
         {
-            Validation.Require(memberId, page);
-
+            // Happy path: the endpoint pipeline (Validation.Check) has already rejected a bad id/page.
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(MongoTimeoutSeconds)); // bound the read
 

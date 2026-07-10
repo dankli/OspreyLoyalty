@@ -14,19 +14,20 @@ public static partial class AdjustPoints
         private const int MinKeyLength = 8;
         private const int MaxKeyLength = 100;
 
-        public static void Require(string memberId, Request request)
+        public static ValidationError? Check(string memberId, Request request)
         {
             if (string.IsNullOrWhiteSpace(memberId) || memberId.Length > MaxIdLength)
-                throw Messages.Fail("member_id_invalid");
+                return ValidationError.Of("member_id_invalid");
             if (request.Points == 0)
-                throw Messages.Fail("adjust_points_zero");
+                return ValidationError.Of("adjust_points_zero");
             if (request.Points is > MaxAdjustment or < -MaxAdjustment)
-                throw Messages.Fail("adjust_magnitude", MaxAdjustment);
+                return ValidationError.Of("adjust_magnitude", MaxAdjustment);
             if (string.IsNullOrWhiteSpace(request.Reason) || request.Reason.Trim().Length > MaxReasonLength)
-                throw Messages.Fail("adjust_reason", MaxReasonLength);
+                return ValidationError.Of("adjust_reason", MaxReasonLength);
             if (string.IsNullOrWhiteSpace(request.IdempotencyKey)
                 || request.IdempotencyKey.Length is < MinKeyLength or > MaxKeyLength)
-                throw Messages.Fail("idempotency_key", MinKeyLength, MaxKeyLength);
+                return ValidationError.Of("idempotency_key", MinKeyLength, MaxKeyLength);
+            return null;
         }
     }
 }

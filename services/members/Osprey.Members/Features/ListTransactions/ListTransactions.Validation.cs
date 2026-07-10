@@ -8,12 +8,13 @@ public static partial class ListTransactions
     {
         private const int MaxPage = 100_000;
 
-        public static void Require(string memberId, int page)
+        public static ValidationError? Check(string memberId, int page)
         {
             if (string.IsNullOrWhiteSpace(memberId) || memberId.Length > 64)
-                throw Messages.Fail("member_id_invalid");
+                return ValidationError.Of("member_id_invalid");
             if (page is < 0 or > MaxPage)
-                throw Messages.Fail("list_page", MaxPage);
+                return ValidationError.Of("list_page", MaxPage);
+            return null;
         }
     }
 }

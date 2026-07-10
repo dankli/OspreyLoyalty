@@ -8,12 +8,13 @@ public static partial class FindMemberByEmail
     {
         private const int MaxEmailLength = 254;
 
-        public static void RequireEmail(string? email)
+        public static ValidationError? Check(string? email)
         {
             if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
-                throw Messages.Fail("email_invalid");
+                return ValidationError.Of("email_invalid");
             if (email.Length > MaxEmailLength)
-                throw Messages.Fail("email_too_long", MaxEmailLength);
+                return ValidationError.Of("email_too_long", MaxEmailLength);
+            return null;
         }
     }
 }
