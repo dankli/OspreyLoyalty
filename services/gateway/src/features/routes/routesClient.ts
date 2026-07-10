@@ -28,6 +28,9 @@ export const MapAirportSchema = z.object({
   iata: z.string(),
   latitude: z.number(),
   longitude: z.number(),
+  // default keeps the contract backward-compatible while old routes pods coexist
+  // with new gateway pods during a rolling deploy
+  degree: z.number().int().nonnegative().default(0),
 });
 
 export const RoutePathSchema = z.object({

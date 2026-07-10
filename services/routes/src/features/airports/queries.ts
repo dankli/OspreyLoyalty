@@ -53,8 +53,9 @@ export async function getDestinations(driver: Driver, iata: string): Promise<Des
 }
 
 /**
- * The one-shot map payload: every airport's position, nothing else. The graph is static
- * after seeding, so the first read is cached for the process lifetime.
+ * The one-shot map payload: every airport's position plus its out-degree (the map
+ * sizes hub dots by it). The graph is static after seeding, so the first read is
+ * cached for the process lifetime.
  */
 export function createAllAirports(driver: Driver): () => Promise<MapAirport[]> {
   let cached: MapAirport[] | undefined;
@@ -64,7 +65,8 @@ export function createAllAirports(driver: Driver): () => Promise<MapAirport[]> {
       driver,
       // LIMIT 5000: the dataset holds ~3.9k airports; the bound caps a future-grown graph.
       `MATCH (a:Airport)
-       RETURN a.iata AS iata, a.latitude AS latitude, a.longitude AS longitude
+       RETURN a.iata AS iata, a.latitude AS latitude, a.longitude AS longitude,
+              COUNT { (a)-[:ROUTE]->() } AS degree
        ORDER BY a.iata
        LIMIT 5000`,
       {},
@@ -73,6 +75,7 @@ export function createAllAirports(driver: Driver): () => Promise<MapAirport[]> {
       iata: row.iata as string,
       latitude: row.latitude as number,
       longitude: row.longitude as number,
+      degree: row.degree as number,
     }));
     return cached;
   };

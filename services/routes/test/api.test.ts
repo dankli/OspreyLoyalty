@@ -22,7 +22,7 @@ function fakeDeps(overrides: Partial<AppDeps> = {}): AppDeps {
     getDestinations: vi.fn(async () => [
       { airport: arlanda, km: 400, min: 60, carriers: [{ iata: "SK", name: "SAS" }] },
     ]),
-    allAirports: vi.fn(async () => [{ iata: "ARN", latitude: 59.651944, longitude: 17.918611 }]),
+    allAirports: vi.fn(async () => [{ iata: "ARN", latitude: 59.651944, longitude: 17.918611, degree: 120 }]),
     searchRoute: vi.fn(async () => null),
     isReady: () => true,
     authorize: async () => true,
@@ -96,7 +96,7 @@ test("destinations of a known airport come back with carriers", async () => {
 test("/airports/all returns the map payload", async () => {
   const base = await listen(fakeDeps());
   const body = await (await fetch(`${base}/airports/all`)).json();
-  expect(body).toEqual([{ iata: "ARN", latitude: 59.651944, longitude: 17.918611 }]);
+  expect(body).toEqual([{ iata: "ARN", latitude: 59.651944, longitude: 17.918611, degree: 120 }]);
 });
 
 test("route search validates its inputs at the edge", async () => {

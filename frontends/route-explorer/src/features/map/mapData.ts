@@ -7,6 +7,7 @@ const MapAirportsDocument = graphql(`
       iata
       latitude
       longitude
+      degree
     }
   }
 `);
@@ -24,7 +25,7 @@ const MapAirportDetailsDocument = graphql(`
   }
 `);
 
-export type MapAirportRow = { iata: string; latitude: number; longitude: number };
+export type MapAirportRow = { iata: string; latitude: number; longitude: number; degree: number };
 export type AirportDetails = { iata: string; name: string; city: string; country: string };
 
 // Two islands can be on screen at once (Map tab + the route-search inline map);
@@ -63,6 +64,7 @@ export type IslandModule = {
     host: HTMLElement,
     lats: Float32Array,
     lons: Float32Array,
+    degrees: Uint32Array, // out-degree per airport — the island sizes hub dots by it
     onPick: (index: number) => void,
   ) => RouteMapHandle;
 };

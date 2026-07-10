@@ -94,6 +94,7 @@ type MapAirport {
   iata: ID!
   latitude: Float!
   longitude: Float!
+  degree: Int!
 }
 
 type RouteLeg {

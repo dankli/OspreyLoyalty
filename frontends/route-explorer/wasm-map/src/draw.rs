@@ -3,20 +3,28 @@
 use crate::geometry::{great_circle_arc, split_on_wrap, Projection, View};
 use web_sys::{CanvasRenderingContext2d, CanvasWindingRule};
 
-const DOT_RADIUS: f64 = 1.4;
-const HIGHLIGHT_RADIUS: f64 = 4.0;
+/// Dot radius + colour per [`crate::geometry::dot_class`] bucket: bigger and warmer
+/// as the out-degree grows, so hubs read at a glance without stealing the amber
+/// highlight reserved for selection.
+pub const DOT_STYLES: [(f64, &str); 4] = [
+    (1.1, "#5f4d33"),
+    (1.7, "#8a6f45"),
+    (2.4, "#b08d52"),
+    (3.2, "#dfa93f"),
+];
+const HIGHLIGHT_RADIUS: f64 = 4.5;
 const ARC_SAMPLES: usize = 64;
 
 pub struct Palette;
 
 /// The fleet's "field-guide" palette (see frontends/member-portal/src/index.css):
-/// talon-dark water, tan airport dots, the amber eye as the accent, cream itinerary.
+/// talon-dark water, tan-to-amber airport dots (see [`DOT_STYLES`]), the amber eye
+/// as the accent, cream itinerary.
 impl Palette {
     pub const BACKGROUND: &'static str = "#140d06";
     pub const LAND: &'static str = "#241a10";
     pub const COAST: &'static str = "#43331d";
     pub const LABEL: &'static str = "rgba(193, 162, 116, 0.85)";
-    pub const DOT: &'static str = "#7a6340";
     pub const HIGHLIGHT: &'static str = "#e3ae36";
     pub const ARC: &'static str = "rgba(227, 174, 54, 0.45)";
     pub const PATH: &'static str = "#efe6d3";
@@ -87,13 +95,19 @@ pub fn draw_label(ctx: &CanvasRenderingContext2d, x: f32, y: f32, name: &str, zo
     let _ = ctx.fill_text(name, x as f64, baseline_y);
 }
 
-pub fn draw_dots(ctx: &CanvasRenderingContext2d, points: &[(f32, f32)], zoom: f32) {
-    ctx.set_fill_style_str(Palette::DOT);
-    let radius = DOT_RADIUS / zoom as f64;
-    for &(x, y) in points {
-        ctx.begin_path();
-        let _ = ctx.arc(x as f64, y as f64, radius, 0.0, std::f64::consts::TAU);
-        ctx.fill();
+/// One pass per style bucket keeps canvas state changes to four, not thousands.
+pub fn draw_dots(ctx: &CanvasRenderingContext2d, points: &[(f32, f32)], classes: &[u8], zoom: f32) {
+    for (class, &(radius, color)) in DOT_STYLES.iter().enumerate() {
+        ctx.set_fill_style_str(color);
+        let r = radius / zoom as f64;
+        for (i, &(x, y)) in points.iter().enumerate() {
+            if usize::from(*classes.get(i).unwrap_or(&0)) != class {
+                continue;
+            }
+            ctx.begin_path();
+            let _ = ctx.arc(x as f64, y as f64, r, 0.0, std::f64::consts::TAU);
+            ctx.fill();
+        }
     }
 }
 

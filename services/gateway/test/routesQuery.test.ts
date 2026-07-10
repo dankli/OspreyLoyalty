@@ -61,17 +61,17 @@ test("airportDestinations resolves destinations with carriers", async () => {
 
 test("mapAirports returns the bounded one-shot payload", async () => {
   const yoga = buildYoga(fakeDeps({
-    fetchAllAirports: async () => [{ iata: "ARN", latitude: 59.65, longitude: 17.93 }],
+    fetchAllAirports: async () => [{ iata: "ARN", latitude: 59.65, longitude: 17.93, degree: 120 }],
   }));
 
   const response = await yoga.fetch("http://gateway/graphql", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ query: "{ mapAirports { iata latitude longitude } }" }),
+    body: JSON.stringify({ query: "{ mapAirports { iata latitude longitude degree } }" }),
   });
   const body = await response.json();
   expect(body.errors).toBeUndefined();
-  expect(body.data.mapAirports).toEqual([{ iata: "ARN", latitude: 59.65, longitude: 17.93 }]);
+  expect(body.data.mapAirports).toEqual([{ iata: "ARN", latitude: 59.65, longitude: 17.93, degree: 120 }]);
 });
 
 test("a routes outage surfaces as a GraphQL error, not a crash", async () => {

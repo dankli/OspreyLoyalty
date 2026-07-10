@@ -85,9 +85,10 @@ pub fn pick(points: &[(f32, f32)], x: f32, y: f32, radius: f32) -> Option<usize>
     best.map(|(i, _)| i)
 }
 
-/// Zoom bounds for the [`View`]: 1 shows the whole world; 16 is street-of-dots level.
+/// Zoom bounds for the [`View`]: 1 shows the whole world; 40 puts single airports
+/// and the densest label tier comfortably apart.
 pub const MIN_ZOOM: f32 = 1.0;
-pub const MAX_ZOOM: f32 = 16.0;
+pub const MAX_ZOOM: f32 = 40.0;
 
 /// The zoom/pan window over base canvas space: `screen = base * zoom - offset`.
 /// Offsets are clamped so the canvas always shows map, never void beyond the edges.
@@ -138,6 +139,17 @@ impl View {
         self.offset_x = self.offset_x.clamp(0.0, width * self.zoom - width);
         self.offset_y = self.offset_y.clamp(0.0, height * self.zoom - height);
         self
+    }
+}
+
+/// Bucket an airport by out-degree so hubs read at a glance: 0 = field strip,
+/// 3 = major hub. Thresholds sit on the dataset's natural breaks (busiest hub ≈250).
+pub fn dot_class(degree: u32) -> u8 {
+    match degree {
+        d if d >= 100 => 3,
+        d if d >= 40 => 2,
+        d if d >= 10 => 1,
+        _ => 0,
     }
 }
 
@@ -238,6 +250,16 @@ mod tests {
         assert_eq!(pick(&points, 101.0, 101.0, 6.0), Some(0));
         assert_eq!(pick(&points, 104.0, 100.0, 6.0), Some(1));
         assert_eq!(pick(&points, 200.0, 200.0, 6.0), None);
+    }
+
+    #[test]
+    fn hub_dots_bucket_by_out_degree() {
+        assert_eq!(dot_class(0), 0);
+        assert_eq!(dot_class(9), 0);
+        assert_eq!(dot_class(10), 1);
+        assert_eq!(dot_class(40), 2);
+        assert_eq!(dot_class(100), 3);
+        assert_eq!(dot_class(250), 3);
     }
 
     #[test]

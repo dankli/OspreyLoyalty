@@ -76,5 +76,5 @@ test("the map payload holds every seeded airport with coordinates only", async (
   const all = await createAllAirports(driver)();
   expect(all).toHaveLength(3);
   expect(all.map((a) => a.iata)).toEqual(["AAA", "BBB", "CCC"]);
-  expect(all[0]).toEqual({ iata: "AAA", latitude: expect.any(Number), longitude: expect.any(Number) });
+  expect(all[0]).toEqual({ iata: "AAA", latitude: expect.any(Number), longitude: expect.any(Number), degree: expect.any(Number) });
 });

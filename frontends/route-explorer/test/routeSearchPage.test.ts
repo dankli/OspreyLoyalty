@@ -70,9 +70,9 @@ test("a found route is drawn on the inline world map below the itinerary", async
       mapProps: {
         loadIsland: async () => ({ RouteMap: FakeRouteMap }),
         airports: async () => [
-          { iata: "ARN", latitude: 59.65, longitude: 17.93 },
-          { iata: "DOH", latitude: 25.27, longitude: 51.61 },
-          { iata: "SYD", latitude: -33.95, longitude: 151.18 },
+          { iata: "ARN", latitude: 59.65, longitude: 17.93, degree: 120 },
+          { iata: "DOH", latitude: 25.27, longitude: 51.61, degree: 180 },
+          { iata: "SYD", latitude: -33.95, longitude: 151.18, degree: 90 },
         ],
       },
     },

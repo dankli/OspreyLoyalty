@@ -20,7 +20,7 @@ use wasm_bindgen::JsCast;
 use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, HtmlElement, MouseEvent, WheelEvent};
 
 use draw::Palette;
-use geometry::{pick, place_labels, rank_ceiling, Projection, View};
+use geometry::{dot_class, pick, place_labels, rank_ceiling, Projection, View};
 
 const CANVAS_WIDTH: f32 = 960.0;
 const CANVAS_HEIGHT: f32 = 480.0; // 2:1 — undistorted equirectangular
@@ -54,6 +54,7 @@ struct CityLabel {
 struct State {
     projected: Vec<(f32, f32)>,
     coords: Vec<(f32, f32)>, // (lat, lon) per airport index
+    dot_classes: Vec<u8>,    // out-degree bucket per airport (hub dot size/colour)
     land: Vec<Vec<Vec<(f32, f32)>>>, // basemap polygons, projected
     cities: Vec<CityLabel>,  // rank-sorted, most important first
     ctx: Option<CanvasRenderingContext2d>,
@@ -117,7 +118,7 @@ fn paint(state: &Rc<RefCell<State>>, projection: Projection) {
     draw::apply_view(ctx, s.view);
     let zoom = s.view.zoom;
     draw::draw_land(ctx, &s.land, zoom);
-    draw::draw_dots(ctx, &s.projected, zoom);
+    draw::draw_dots(ctx, &s.projected, &s.dot_classes, zoom);
     match &s.scene {
         Scene::Base => {}
         Scene::Destinations { from, dests } => {
@@ -169,15 +170,24 @@ pub struct RouteMap {
 
 #[wasm_bindgen]
 impl RouteMap {
-    /// `lats`/`lons` are parallel arrays; `on_pick` is invoked with the clicked airport's index.
+    /// `lats`/`lons`/`degrees` are parallel arrays (degree = destinations served, for
+    /// hub dot sizing); `on_pick` is invoked with the clicked airport's index.
     #[wasm_bindgen(constructor)]
-    pub fn new(host: HtmlElement, lats: &[f32], lons: &[f32], on_pick: js_sys::Function) -> RouteMap {
+    pub fn new(
+        host: HtmlElement,
+        lats: &[f32],
+        lons: &[f32],
+        degrees: &[u32],
+        on_pick: js_sys::Function,
+    ) -> RouteMap {
         let projection = Projection::new(CANVAS_WIDTH, CANVAS_HEIGHT);
         let coords: Vec<(f32, f32)> = lats.iter().copied().zip(lons.iter().copied()).collect();
         let projected = coords
             .iter()
             .map(|&(lat, lon)| projection.project(lat, lon))
             .collect();
+        let mut dot_classes: Vec<u8> = degrees.iter().map(|&d| dot_class(d)).collect();
+        dot_classes.resize(coords.len(), 0); // tolerate a short array — extras render smallest
 
         // The embedded Natural Earth basemap, projected once up front.
         let land = basemap::land_polygons()
@@ -209,6 +219,7 @@ impl RouteMap {
         let state = Rc::new(RefCell::new(State {
             projected,
             coords,
+            dot_classes,
             land,
             cities,
             ctx: None,

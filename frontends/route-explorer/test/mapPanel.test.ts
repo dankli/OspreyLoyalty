@@ -5,9 +5,9 @@ import MapPanel from "../src/features/map/MapPanel.svelte";
 import type { AirportDetails, IslandModule, MapAirportRow } from "../src/features/map/mapData";
 
 const airports: MapAirportRow[] = [
-  { iata: "ARN", latitude: 59.65, longitude: 17.93 },
-  { iata: "CPH", latitude: 55.62, longitude: 12.65 },
-  { iata: "LHR", latitude: 51.47, longitude: -0.46 },
+  { iata: "ARN", latitude: 59.65, longitude: 17.93, degree: 120 },
+  { iata: "CPH", latitude: 55.62, longitude: 12.65, degree: 45 },
+  { iata: "LHR", latitude: 51.47, longitude: -0.46, degree: 250 },
 ];
 
 const details: Record<string, AirportDetails> = {
@@ -20,6 +20,7 @@ function fakeIsland() {
   const calls = {
     lats: undefined as Float32Array | undefined,
     lons: undefined as Float32Array | undefined,
+    degrees: undefined as Uint32Array | undefined,
     onPick: undefined as ((index: number) => void) | undefined,
     drawBase: vi.fn(),
     highlight: vi.fn(),
@@ -33,10 +34,12 @@ function fakeIsland() {
       _host: HTMLElement,
       lats: Float32Array,
       lons: Float32Array,
+      degrees: Uint32Array,
       onPick: (index: number) => void,
     ) {
       calls.lats = lats;
       calls.lons = lons;
+      calls.degrees = degrees;
       calls.onPick = onPick;
     }
     draw_base = calls.drawBase;
@@ -58,6 +61,7 @@ test("mounts the island with typed arrays from the map payload and paints the ba
   expect(Array.from(calls.lats!)).toHaveLength(3);
   expect(calls.lats![0]).toBeCloseTo(59.65);
   expect(calls.lons![2]).toBeCloseTo(-0.46);
+  expect(Array.from(calls.degrees!)).toEqual([120, 45, 250]);
   // The base status line is owned by Svelte now (i18n), not the island.
   await screen.findByText(/3 airports — click one/);
 });
