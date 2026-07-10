@@ -8,6 +8,26 @@ beside the React member portal and the Vue admin portal
 ([ADR-0022](../../docs/decisions/0022-svelte-mfe-leptos-wasm-island.md), building on
 [ADR-0004](../../docs/decisions/0004-micro-frontend-tradeoff.md)).
 
+## Screenshots
+
+**Explore** — airport typeahead with the paginated direct-destinations table:
+
+![Explore tab: Arlanda's direct destinations](../../docs/images/route-explorer/explore.png)
+
+**Route search** — best itinerary with the points estimate, drawn on the inline world map:
+
+![Route search tab: ARN to HND with the itinerary on the inline map](../../docs/images/route-explorer/route-search.png)
+
+**Map** — the zoomable network map: Natural Earth coastlines, hub-sized airport dots, and city
+labels that densify as you zoom:
+
+![Map tab: zoomed into Europe with city labels and hub dots](../../docs/images/route-explorer/map.png)
+
+Refresh these against a running stack with
+[`tools/capture-screenshots.mjs`](tools/capture-screenshots.mjs).
+
+## Architecture
+
 It talks only to the gateway over GraphQL, with codegen against the checked-in schema — `npm run
 codegen` regenerates `src/gql/` from `services/gateway/schema.graphql`, same as the member portal.
 Unlike the member portal there is no TanStack Query equivalent: every view here is read-only, so
