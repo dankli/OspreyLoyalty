@@ -8,7 +8,9 @@ import type { TransactionsPage } from "./features/member/transactionsClient.js";
 import type { Partner } from "./features/partner/partnersClient.js";
 import type { Reward } from "./features/reward/rewardsClient.js";
 import type { RedemptionOutcome } from "./features/reward/redeemClient.js";
+import type { TripRedemptionOutcome } from "./features/trip/bookTripClient.js";
 import type { Airport, Destination, MapAirport, RouteOptimize, RoutePath } from "./features/routes/routesClient.js";
+import { t } from "./i18n.js";
 
 export type Deps = {
   fetchMember: (baseUrl: string, id: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Member | null>;
@@ -21,6 +23,7 @@ export type Deps = {
   fetchDestinations: (baseUrl: string, iata: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Destination[]>;
   fetchAllAirports: (baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<MapAirport[]>;
   searchRoute: (baseUrl: string, from: string, to: string, optimize: RouteOptimize, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<RoutePath | null>;
+  postTripRedemption: (baseUrl: string, memberId: string, fromIata: string, toIata: string, points: number, idempotencyKey: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<TripRedemptionOutcome>;
 };
 
 const typeDefs = readFileSync(new URL("../schema.graphql", import.meta.url), "utf8");
@@ -83,6 +86,29 @@ export function schema(deps: Deps): GraphQLSchemaWithContext<YogaInitialContext>
           if (outcome.ok) return outcome.result;
           // Expected refusal (unknown member / insufficient / unknown reward) → the GraphQL error
           // edge, carrying members' already-localized message. Genuine faults threw upstream.
+          throw new GraphQLError(outcome.message);
+        },
+        bookTrip: async (
+          _parent: unknown,
+          args: { memberId: string; from: string; to: string; optimize: "KM" | "MIN" | "HOPS"; idempotencyKey: string },
+          context: RequestContext,
+        ) => {
+          const correlationId = correlationIdOf(context);
+          const authorization = authorizationOf(context);
+          const acceptLanguage = acceptLanguageOf(context);
+
+          // Price server-side: re-run the search and take ITS estimate — the browser only
+          // names the route, never the cost.
+          const itinerary = await deps.searchRoute(
+            env.ROUTES_URL, args.from, args.to, args.optimize.toLowerCase() as RouteOptimize,
+            correlationId, authorization, acceptLanguage);
+          if (itinerary === null) throw new GraphQLError(t("trip_no_route", acceptLanguage));
+          if (itinerary.estimatedPoints == null) throw new GraphQLError(t("trip_no_estimate", acceptLanguage));
+
+          const outcome = await deps.postTripRedemption(
+            env.MEMBERS_URL, args.memberId, args.from, args.to, itinerary.estimatedPoints,
+            args.idempotencyKey, correlationId, authorization, acceptLanguage);
+          if (outcome.ok) return { ...outcome.result, itinerary };
           throw new GraphQLError(outcome.message);
         },
       },

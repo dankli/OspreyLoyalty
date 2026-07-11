@@ -2,16 +2,32 @@
 // through one sessionStorage key. This remote only reads it — it never signs in or out.
 const SESSION_KEY = "osprey.auth.session";
 
-type Session = { accessToken: string; expiresAt: number };
+type Session = { accessToken: string; expiresAt: number; sub?: string };
 
-export function getAccessToken(): string | undefined {
+const authEnabled = (): boolean => import.meta.env.VITE_AUTH_ENABLED === "true";
+
+function readSession(): Partial<Session> | null {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
-    if (!raw) return undefined;
+    if (!raw) return null;
     const session = JSON.parse(raw) as Partial<Session>;
-    if (!session.accessToken || (session.expiresAt ?? 0) <= Date.now()) return undefined;
-    return session.accessToken;
+    if (!session.accessToken || (session.expiresAt ?? 0) <= Date.now()) return null;
+    return session;
   } catch {
-    return undefined; // a malformed session must never break the page
+    return null; // a malformed session must never break the page
   }
+}
+
+export function getAccessToken(): string | undefined {
+  return readSession()?.accessToken;
+}
+
+/**
+ * Who books a trip: with auth on the token's sub (never spoofable), otherwise the same
+ * `?as=` dev override + demo fallback the member portal uses.
+ */
+export function getMemberId(fallback = "demo-ada"): string {
+  if (authEnabled()) return readSession()?.sub ?? fallback;
+  const override = new URLSearchParams(window.location.search).get("as");
+  return override?.trim() || fallback;
 }

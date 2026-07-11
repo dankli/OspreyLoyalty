@@ -41,5 +41,11 @@
   "sortBy": "Ordenar por {column}",
   "optimizePoints": "Más puntos",
   "planWithAgent": "Planificar con Travel Agent",
-  "baseEarnNote": "Acumulación base: los bonos de nivel se aplican al reservar"
+  "baseEarnNote": "Acumulación base: los bonos de nivel se aplican al reservar",
+  "bookWithPoints": "Reservar con puntos",
+  "bookingConfirmed": "¡Viaje reservado!",
+  "bookingSpent": "Puntos gastados: {points}",
+  "bookingBalance": "Saldo restante: {points}",
+  "bookingAlready": "Esta reserva ya se había aplicado.",
+  "bookingFailed": "La reserva falló: {message}"
 }

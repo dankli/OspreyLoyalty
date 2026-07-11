@@ -41,5 +41,11 @@
   "sortBy": "Sort by {column}",
   "optimizePoints": "Most points",
   "planWithAgent": "Plan with Travel Agent",
-  "baseEarnNote": "Base earn — tier bonuses apply at booking"
+  "baseEarnNote": "Base earn — tier bonuses apply at booking",
+  "bookWithPoints": "Book with points",
+  "bookingConfirmed": "Trip booked!",
+  "bookingSpent": "Points spent: {points}",
+  "bookingBalance": "Remaining balance: {points}",
+  "bookingAlready": "This booking was already applied.",
+  "bookingFailed": "Booking failed: {message}"
 }

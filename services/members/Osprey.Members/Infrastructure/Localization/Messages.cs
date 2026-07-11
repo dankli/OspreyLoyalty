@@ -33,6 +33,8 @@ public static class Messages
             ["earn_amount"] = "Amount must be positive and at most {0}.",
             ["earn_rate"] = "Rate must be positive and at most {0}.",
             ["list_page"] = "Page must be between 0 and {0}.",
+            ["trip_airport_invalid"] = "Airport codes must be three uppercase letters (IATA).",
+            ["trip_points_invalid"] = "Trip points must be positive and at most {0}.",
         },
         ["sv"] = new()
         {
@@ -50,6 +52,8 @@ public static class Messages
             ["earn_amount"] = "Beloppet måste vara positivt och högst {0}.",
             ["earn_rate"] = "Kursen måste vara positiv och högst {0}.",
             ["list_page"] = "Sidan måste vara mellan 0 och {0}.",
+            ["trip_airport_invalid"] = "Flygplatskoder måste vara tre versaler (IATA).",
+            ["trip_points_invalid"] = "Resans poäng måste vara positiva och högst {0}.",
         },
         ["es"] = new()
         {
@@ -67,6 +71,8 @@ public static class Messages
             ["earn_amount"] = "El importe debe ser positivo y como máximo {0}.",
             ["earn_rate"] = "La tasa debe ser positiva y como máximo {0}.",
             ["list_page"] = "La página debe estar entre 0 y {0}.",
+            ["trip_airport_invalid"] = "Los códigos de aeropuerto deben ser tres letras mayúsculas (IATA).",
+            ["trip_points_invalid"] = "Los puntos del viaje deben ser positivos y como máximo {0}.",
         },
         ["de"] = new()
         {
@@ -84,6 +90,8 @@ public static class Messages
             ["earn_amount"] = "Der Betrag muss positiv sein und höchstens {0} betragen.",
             ["earn_rate"] = "Die Rate muss positiv sein und höchstens {0} betragen.",
             ["list_page"] = "Die Seite muss zwischen 0 und {0} liegen.",
+            ["trip_airport_invalid"] = "Flughafencodes müssen aus drei Großbuchstaben bestehen (IATA).",
+            ["trip_points_invalid"] = "Die Reisepunkte müssen positiv sein und höchstens {0} betragen.",
         },
         ["it"] = new()
         {
@@ -101,6 +109,8 @@ public static class Messages
             ["earn_amount"] = "L'importo deve essere positivo e al massimo {0}.",
             ["earn_rate"] = "Il tasso deve essere positivo e al massimo {0}.",
             ["list_page"] = "La pagina deve essere compresa tra 0 e {0}.",
+            ["trip_airport_invalid"] = "I codici aeroportuali devono essere tre lettere maiuscole (IATA).",
+            ["trip_points_invalid"] = "I punti del viaggio devono essere positivi e al massimo {0}.",
         },
     };
 

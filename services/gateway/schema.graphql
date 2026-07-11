@@ -127,3 +127,16 @@ extend type Query {
   mapAirports: [MapAirport!]!
   routeSearch(from: ID!, to: ID!, optimize: RouteOptimize! = KM): RoutePath
 }
+
+type TripBookingResult {
+  fromIata: String!
+  toIata: String!
+  pointsSpent: Int!
+  spendablePoints: Int!
+  alreadyApplied: Boolean!
+  itinerary: RoutePath!
+}
+
+extend type Mutation {
+  bookTrip(memberId: ID!, from: ID!, to: ID!, optimize: RouteOptimize! = KM, idempotencyKey: String!): TripBookingResult!
+}

@@ -11,16 +11,21 @@
     type RoutePathResult,
     type UiOptimize,
   } from "./routeSearchData";
+  import { bookTrip as gatewayBookTrip, type TripBooking } from "./bookTrip";
+  import { getMemberId } from "../../auth";
 
   let {
     search = gatewaySearch,
     routeSearch = gatewayRouteSearch,
+    book = gatewayBookTrip,
     onresult,
     mapProps = {},
     seed = null,
   }: {
     search?: (query: string) => Promise<AirportHit[]>;
     routeSearch?: (from: string, to: string, optimize: RouteOptimize) => Promise<RoutePathResult | null>;
+    /** Books the shown route with points (tests inject a fake). */
+    book?: (memberId: string, from: string, to: string, optimize: RouteOptimize, idempotencyKey: string) => Promise<TripBooking>;
     /** Reports the found itinerary's iata sequence upward (the map tab draws it). */
     onresult?: (iatas: string[]) => void;
     /** Overrides forwarded to the inline result map (tests inject a fake island). */
@@ -48,6 +53,11 @@
   let noRoute = $state(false);
   let loading = $state(false);
   let failed = $state(false);
+  // The booking rail: idle → pending → done | failed. Reset by every new search AND
+  // every chip click — a booking belongs to the exact route that was shown.
+  let bookingState = $state<"idle" | "pending" | "done" | "failed">("idle");
+  let bookingResult = $state.raw<TripBooking | null>(null);
+  let bookingError = $state("");
 
   function pathToIatas(path: RoutePathResult): string[] {
     return [...path.legs.map((leg) => leg.from.iata), path.legs.at(-1)?.to.iata ?? ""].filter(Boolean);
@@ -65,6 +75,9 @@
   function display(strategy: RouteOptimize, path: RoutePathResult, updateHash = true) {
     shown = strategy;
     result = path;
+    bookingState = "idle";
+    bookingResult = null;
+    bookingError = "";
     onresult?.(pathToIatas(path));
     // Chip clicks share the displayed strategy; the initial display keeps the
     // searched mode (a PTS deep link should re-run the comparison, not pin a winner).
@@ -134,6 +147,21 @@
       return;
     }
     display(chosen.strategy, chosen.path, false);
+  }
+
+  async function bookShownRoute() {
+    if (!from || !to || bookingState === "pending") return;
+    bookingState = "pending";
+    bookingError = "";
+    try {
+      // A fresh UUID per click; the gateway/members idempotency key means a retried
+      // REQUEST (not a re-click) can never double-spend.
+      bookingResult = await book(getMemberId(), from.iata, to.iata, shown, crypto.randomUUID());
+      bookingState = "done";
+    } catch (error) {
+      bookingError = error instanceof Error ? error.message : String(error);
+      bookingState = "failed";
+    }
   }
 
   function openTravelAgent() {
@@ -241,7 +269,25 @@
         <span class="points-badge" title={strings.baseEarnNote}>{strings.pointsBadge.replace("{points}", formatNumber(result.estimatedPoints))}</span>
       {/if}
       <button type="button" class="agent" onclick={openTravelAgent}>{strings.planWithAgent}</button>
+      {#if result.estimatedPoints !== null && bookingState !== "done"}
+        <button type="button" class="book" disabled={bookingState === "pending"} onclick={() => void bookShownRoute()}>
+          {strings.bookWithPoints}
+        </button>
+      {/if}
     </p>
+    {#if bookingState === "done" && bookingResult}
+      <div class="booking-confirmed" role="status">
+        <strong>{strings.bookingConfirmed}</strong>
+        {#if bookingResult.alreadyApplied}
+          <span>{strings.bookingAlready}</span>
+        {:else}
+          <span>{strings.bookingSpent.replace("{points}", formatNumber(bookingResult.pointsSpent))}</span>
+        {/if}
+        <span>{strings.bookingBalance.replace("{points}", formatNumber(bookingResult.spendablePoints))}</span>
+      </div>
+    {:else if bookingState === "failed"}
+      <p role="alert" class="error">{strings.bookingFailed.replace("{message}", bookingError)}</p>
+    {/if}
     <table>
       <thead>
         <tr>
@@ -383,6 +429,51 @@
 
   .agent:hover {
     border-color: var(--re-accent, #e3ae36);
+    color: var(--re-accent, #e3ae36);
+  }
+
+  /* Booking is the money action on this page — same amber pill family as .go, scaled down. */
+  .book {
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-left: 0.6rem;
+    padding: 0.25rem 0.9rem;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--re-accent, #e3ae36), var(--re-accent-deep, #c8901f));
+    color: var(--re-on-accent, #140d06);
+    cursor: pointer;
+    box-shadow: 0 4px 12px -6px rgba(227, 174, 54, 0.6);
+    transition: transform 0.12s ease, filter 0.15s ease;
+  }
+
+  .book:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+  }
+
+  .book:disabled {
+    opacity: 0.32;
+    cursor: wait;
+    box-shadow: none;
+  }
+
+  .booking-confirmed {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+    align-items: baseline;
+    margin: 0;
+    padding: 0.6rem 0.85rem;
+    border-radius: 10px;
+    background: rgba(227, 174, 54, 0.12);
+    border: 1px solid var(--re-line, rgba(227, 174, 54, 0.22));
+    color: var(--re-text, #efe6d3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .booking-confirmed strong {
     color: var(--re-accent, #e3ae36);
   }
 

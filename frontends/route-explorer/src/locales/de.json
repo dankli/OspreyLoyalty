@@ -41,5 +41,11 @@
   "sortBy": "Sortieren nach {column}",
   "optimizePoints": "Meiste Punkte",
   "planWithAgent": "Mit dem Travel Agent planen",
-  "baseEarnNote": "Basis-Punkte — Statusboni gelten bei der Buchung"
+  "baseEarnNote": "Basis-Punkte — Statusboni gelten bei der Buchung",
+  "bookWithPoints": "Mit Punkten buchen",
+  "bookingConfirmed": "Reise gebucht!",
+  "bookingSpent": "Ausgegebene Punkte: {points}",
+  "bookingBalance": "Verbleibendes Guthaben: {points}",
+  "bookingAlready": "Diese Buchung wurde bereits durchgeführt.",
+  "bookingFailed": "Buchung fehlgeschlagen: {message}"
 }

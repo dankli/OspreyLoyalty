@@ -41,5 +41,11 @@
   "sortBy": "Sortera på {column}",
   "optimizePoints": "Flest poäng",
   "planWithAgent": "Planera med Travel Agent",
-  "baseEarnNote": "Basintjäning — tier-bonus tillkommer vid bokning"
+  "baseEarnNote": "Basintjäning — tier-bonus tillkommer vid bokning",
+  "bookWithPoints": "Boka med poäng",
+  "bookingConfirmed": "Resan bokad!",
+  "bookingSpent": "Spenderade poäng: {points}",
+  "bookingBalance": "Kvarvarande saldo: {points}",
+  "bookingAlready": "Den här bokningen var redan genomförd.",
+  "bookingFailed": "Bokningen misslyckades: {message}"
 }

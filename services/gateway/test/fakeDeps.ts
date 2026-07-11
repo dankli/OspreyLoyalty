@@ -19,6 +19,9 @@ export function fakeDeps(overrides: Partial<Deps> = {}): Deps {
     fetchDestinations: async () => [],
     fetchAllAirports: async () => [],
     searchRoute: async () => null,
+    postTripRedemption: async (): Promise<never> => {
+      throw new Error("not used");
+    },
     ...overrides,
   };
 }

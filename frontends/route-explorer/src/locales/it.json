@@ -41,5 +41,11 @@
   "sortBy": "Ordina per {column}",
   "optimizePoints": "Più punti",
   "planWithAgent": "Pianifica con il Travel Agent",
-  "baseEarnNote": "Accumulo base: i bonus di livello si applicano alla prenotazione"
+  "baseEarnNote": "Accumulo base: i bonus di livello si applicano alla prenotazione",
+  "bookWithPoints": "Prenota con punti",
+  "bookingConfirmed": "Viaggio prenotato!",
+  "bookingSpent": "Punti spesi: {points}",
+  "bookingBalance": "Saldo rimanente: {points}",
+  "bookingAlready": "Questa prenotazione era già stata applicata.",
+  "bookingFailed": "Prenotazione non riuscita: {message}"
 }
