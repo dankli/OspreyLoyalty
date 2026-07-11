@@ -33,5 +33,7 @@
   "colCarriers": "Compagnie",
   "noCarriers": "—",
   "loadFailed": "Qualcosa è andato storto nel contatto con il gateway. Riprova.",
-  "loading": "Caricamento…"
+  "loading": "Caricamento…",
+  "tooltipDestinations": "{count} destinazioni",
+  "mapAriaLabel": "Mappa mondiale interattiva della rete aerea"
 }

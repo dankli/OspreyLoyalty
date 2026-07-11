@@ -11,6 +11,7 @@ declare module "*/wasm/pkg/wasm_map.js" {
       degrees: Uint32Array,
       labels: string[],
       onPick: (index: number) => void,
+      onHover: (index: number) => void,
     );
     draw_base(): void;
     highlight_destinations(from: number, dests: Uint32Array): void;

@@ -135,6 +135,44 @@ impl View {
         .clamped(width, height)
     }
 
+    /// Frame a set of base-space points with `padding` logical px around them,
+    /// zooming in no further than `max_zoom`. None when there is nothing to frame.
+    pub fn around(points: &[(f32, f32)], padding: f32, width: f32, height: f32, max_zoom: f32) -> Option<View> {
+        let (mut min_x, mut min_y) = (f32::INFINITY, f32::INFINITY);
+        let (mut max_x, mut max_y) = (f32::NEG_INFINITY, f32::NEG_INFINITY);
+        for &(x, y) in points {
+            min_x = min_x.min(x);
+            min_y = min_y.min(y);
+            max_x = max_x.max(x);
+            max_y = max_y.max(y);
+        }
+        if !min_x.is_finite() {
+            return None;
+        }
+        let box_w = (max_x - min_x).max(1.0) + padding * 2.0;
+        let box_h = (max_y - min_y).max(1.0) + padding * 2.0;
+        let zoom = (width / box_w).min(height / box_h).clamp(MIN_ZOOM, max_zoom);
+        let (cx, cy) = ((min_x + max_x) / 2.0, (min_y + max_y) / 2.0);
+        Some(
+            View {
+                zoom,
+                offset_x: cx * zoom - width / 2.0,
+                offset_y: cy * zoom - height / 2.0,
+            }
+            .clamped(width, height),
+        )
+    }
+
+    /// Rebuild a persisted view, clamping whatever the storage held back into bounds.
+    pub fn restore(zoom: f32, offset_x: f32, offset_y: f32, width: f32, height: f32) -> View {
+        View {
+            zoom: if zoom.is_finite() { zoom.clamp(MIN_ZOOM, MAX_ZOOM) } else { 1.0 },
+            offset_x: if offset_x.is_finite() { offset_x } else { 0.0 },
+            offset_y: if offset_y.is_finite() { offset_y } else { 0.0 },
+        }
+        .clamped(width, height)
+    }
+
     fn clamped(mut self, width: f32, height: f32) -> View {
         self.offset_x = self.offset_x.clamp(0.0, width * self.zoom - width);
         self.offset_y = self.offset_y.clamp(0.0, height * self.zoom - height);
@@ -151,6 +189,50 @@ pub fn dot_class(degree: u32) -> u8 {
         d if d >= 10 => 1,
         _ => 0,
     }
+}
+
+/// The zoom below which a dot class stays hidden: the whole-world view shows the
+/// network's shape (hubs and mid-size fields), not four thousand specks.
+pub fn dot_visible_floor(class: u8) -> f32 {
+    match class {
+        0 => 2.5,
+        1 => 1.6,
+        _ => MIN_ZOOM,
+    }
+}
+
+/// Great-circle arc between two (lat, lon) points, projected and split at the
+/// antimeridian — the shared geometry behind both drawing and arc hit-testing.
+pub fn arc_segments(
+    projection: Projection,
+    from: (f32, f32),
+    to: (f32, f32),
+    samples: usize,
+) -> Vec<Vec<(f32, f32)>> {
+    let projected: Vec<(f32, f32)> = great_circle_arc(from.0, from.1, to.0, to.1, samples)
+        .into_iter()
+        .map(|(lat, lon)| projection.project(lat, lon))
+        .collect();
+    split_on_wrap(&projected, projection.width)
+}
+
+fn point_segment_dist_sq(px: f32, py: f32, a: (f32, f32), b: (f32, f32)) -> f32 {
+    let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+    let len_sq = dx * dx + dy * dy;
+    let t = if len_sq <= f32::EPSILON {
+        0.0
+    } else {
+        (((px - a.0) * dx + (py - a.1) * dy) / len_sq).clamp(0.0, 1.0)
+    };
+    let (cx, cy) = (a.0 + t * dx, a.1 + t * dy);
+    (px - cx) * (px - cx) + (py - cy) * (py - cy)
+}
+
+/// True when (x, y) lies within `radius` of any segment of the polyline.
+pub fn polyline_hit(points: &[(f32, f32)], x: f32, y: f32, radius: f32) -> bool {
+    points
+        .windows(2)
+        .any(|pair| point_segment_dist_sq(x, y, pair[0], pair[1]) <= radius * radius)
 }
 
 /// The zoom at which an airport's IATA code starts labelling, per dot class:
@@ -261,6 +343,43 @@ mod tests {
         assert_eq!(pick(&points, 101.0, 101.0, 6.0), Some(0));
         assert_eq!(pick(&points, 104.0, 100.0, 6.0), Some(1));
         assert_eq!(pick(&points, 200.0, 200.0, 6.0), None);
+    }
+
+    #[test]
+    fn small_dots_hide_until_zoomed_in() {
+        assert!(dot_visible_floor(0) > dot_visible_floor(1));
+        assert_eq!(dot_visible_floor(2), MIN_ZOOM); // mid-size and hubs always show
+        assert_eq!(dot_visible_floor(3), MIN_ZOOM);
+    }
+
+    #[test]
+    fn around_frames_points_centred_and_clamped() {
+        let view = View::around(&[(100.0, 100.0), (300.0, 200.0)], 50.0, W, H, 8.0).unwrap();
+        // Both points end up on screen with the padding honoured.
+        for &(x, y) in &[(100.0f32, 100.0f32), (300.0, 200.0)] {
+            let sx = x * view.zoom - view.offset_x;
+            let sy = y * view.zoom - view.offset_y;
+            assert!((0.0..=W).contains(&sx), "x {sx} off screen");
+            assert!((0.0..=H).contains(&sy), "y {sy} off screen");
+        }
+        assert!(view.zoom > 1.0 && view.zoom <= 8.0);
+        assert!(View::around(&[], 50.0, W, H, 8.0).is_none());
+    }
+
+    #[test]
+    fn restore_clamps_garbage_from_storage() {
+        let view = View::restore(9999.0, -5000.0, f32::NAN, W, H);
+        assert_eq!(view.zoom, MAX_ZOOM);
+        assert_eq!(view.offset_x, 0.0);
+        assert_eq!(view.offset_y, 0.0);
+    }
+
+    #[test]
+    fn polylines_hit_near_segments_only() {
+        let line = [(0.0, 0.0), (100.0, 0.0), (100.0, 100.0)];
+        assert!(polyline_hit(&line, 50.0, 3.0, 5.0)); // near the first segment
+        assert!(polyline_hit(&line, 97.0, 50.0, 5.0)); // near the second
+        assert!(!polyline_hit(&line, 50.0, 50.0, 5.0)); // inside the corner, far from both
     }
 
     #[test]

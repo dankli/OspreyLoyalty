@@ -33,5 +33,7 @@
   "colCarriers": "Flygbolag",
   "noCarriers": "—",
   "loadFailed": "Något gick fel i kontakten med gatewayen. Försök igen.",
-  "loading": "Laddar…"
+  "loading": "Laddar…",
+  "tooltipDestinations": "{count} destinationer",
+  "mapAriaLabel": "Interaktiv världskarta över flygnätverket"
 }

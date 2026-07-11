@@ -5,6 +5,9 @@
 //   land.bin    ← ne_110m_land: coastline polygons
 //                 u32 polygonCount; per polygon: u32 ringCount;
 //                 per ring: u32 pointCount, then pointCount × (f32 lon, f32 lat)
+//   borders.bin ← ne_110m_admin_0_boundary_lines_land: country border polylines
+//                 u32 lineCount; per line: u32 pointCount, then
+//                 pointCount × (f32 lon, f32 lat)
 //   places.bin  ← ne_50m_populated_places_simple: city labels, sorted by
 //                 scalerank ascending (most important first) so the island's
 //                 greedy label decluttering can just walk the list
@@ -59,6 +62,27 @@ for (const rings of polygons) {
 }
 writeFileSync(join(here, "../src/land.bin"), landBuf);
 
+// ── borders ─────────────────────────────────────────────────────────────────
+const borders = await load("ne_110m_admin_0_boundary_lines_land.geojson");
+const lines = [];
+for (const feature of borders.features) {
+  const geom = feature.geometry;
+  const parts = geom.type === "LineString" ? [geom.coordinates] : geom.coordinates;
+  for (const part of parts) lines.push(part);
+}
+let bordersSize = 4;
+for (const line of lines) bordersSize += 4 + line.length * 8;
+const bordersBuf = Buffer.alloc(bordersSize);
+o = bordersBuf.writeUInt32LE(lines.length, 0);
+for (const line of lines) {
+  o = bordersBuf.writeUInt32LE(line.length, o);
+  for (const [lon, lat] of line) {
+    o = bordersBuf.writeFloatLE(lon, o);
+    o = bordersBuf.writeFloatLE(lat, o);
+  }
+}
+writeFileSync(join(here, "../src/borders.bin"), bordersBuf);
+
 // ── places ──────────────────────────────────────────────────────────────────
 const placesJson = await load("ne_50m_populated_places_simple.geojson");
 const places = placesJson.features
@@ -87,4 +111,5 @@ writeFileSync(join(here, "../src/places.bin"), placesBuf);
 
 const pts = polygons.flat().reduce((n, r) => n + r.length, 0);
 console.log(`land.bin: ${polygons.length} polygons, ${pts} points, ${landBuf.length} bytes`);
+console.log(`borders.bin: ${lines.length} lines, ${bordersBuf.length} bytes`);
 console.log(`places.bin: ${places.length} places, ${placesBuf.length} bytes`);

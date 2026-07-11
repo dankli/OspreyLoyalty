@@ -6,6 +6,7 @@
 //! indexes straight into the slices and panics rather than degrades.
 
 static LAND: &[u8] = include_bytes!("land.bin");
+static BORDERS: &[u8] = include_bytes!("borders.bin");
 static PLACES: &[u8] = include_bytes!("places.bin");
 
 pub struct Place {
@@ -51,6 +52,24 @@ pub fn land_polygons() -> Vec<Vec<Vec<(f32, f32)>>> {
     polygons
 }
 
+/// Country borders as polylines of (lat, lon).
+pub fn border_lines() -> Vec<Vec<(f32, f32)>> {
+    let mut at = 0;
+    let line_count = read_u32(BORDERS, &mut at) as usize;
+    let mut lines = Vec::with_capacity(line_count);
+    for _ in 0..line_count {
+        let point_count = read_u32(BORDERS, &mut at) as usize;
+        let mut line = Vec::with_capacity(point_count);
+        for _ in 0..point_count {
+            let lon = read_f32(BORDERS, &mut at);
+            let lat = read_f32(BORDERS, &mut at);
+            line.push((lat, lon));
+        }
+        lines.push(line);
+    }
+    lines
+}
+
 /// City labels, sorted most-important-first (ascending Natural Earth scalerank),
 /// so greedy label decluttering can simply walk the list.
 pub fn places() -> Vec<Place> {
@@ -85,6 +104,16 @@ mod tests {
         for &(lat, lon) in polygons.iter().flatten().flatten() {
             assert!((-90.0..=90.0).contains(&lat), "lat {lat} out of range");
             assert!((-180.0..=180.0001).contains(&lon), "lon {lon} out of range");
+        }
+    }
+
+    #[test]
+    fn borders_decode_within_coordinate_bounds() {
+        let lines = border_lines();
+        assert!(lines.len() > 200, "expected the 110m boundary set");
+        for &(lat, lon) in lines.iter().flatten() {
+            assert!((-90.0..=90.0).contains(&lat));
+            assert!((-180.0..=180.0001).contains(&lon));
         }
     }
 

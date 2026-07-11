@@ -67,6 +67,7 @@ export type IslandModule = {
     degrees: Uint32Array, // out-degree per airport — the island sizes hub dots by it
     labels: string[], // IATA code per airport — drawn on the canvas at deep zoom
     onPick: (index: number) => void,
+    onHover: (index: number) => void, // hovered airport index, or -1 on leave
   ) => RouteMapHandle;
 };
 

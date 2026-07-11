@@ -30,6 +30,8 @@
 
   let host = $state<HTMLElement | null>(null);
   let failed = $state(false);
+  let hovered = $state.raw<{ iata: string; degree: number } | null>(null);
+  let pointer = $state({ x: 0, y: 0 });
   let unavailable = $state(false);
   let airportCount = $state(0);
 
@@ -38,6 +40,7 @@
   let pathDrawn = $state(false);
 
   let map: RouteMapHandle | null = null;
+  let mapRows: MapAirportRow[] = [];
   let iatas: string[] = [];
   let indexByIata = new Map<string, number>();
   let pickGeneration = 0; // stale pick responses must not repaint a newer scene
@@ -105,6 +108,7 @@
       try {
         const rows = await airports();
         if (cancelled) return;
+        mapRows = rows;
         iatas = rows.map((row) => row.iata);
         indexByIata = new Map(iatas.map((iata, index) => [iata, index]));
         map = new island.RouteMap(
@@ -114,6 +118,10 @@
           Uint32Array.from(rows.map((row) => row.degree)),
           rows.map((row) => row.iata),
           (index) => void pickAirport(index),
+          (index) => {
+            const row = index >= 0 ? mapRows[index] : undefined;
+            hovered = row ? { iata: row.iata, degree: row.degree } : null;
+          },
         );
         map.draw_base();
         airportCount = rows.length;
@@ -165,7 +173,23 @@
     {#if failed}
       <p role="alert" class="error">{strings.loadFailed}</p>
     {/if}
-    <div class="map-host" bind:this={host}></div>
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div
+      class="map-host"
+      role="img"
+      aria-label={strings.mapAriaLabel}
+      bind:this={host}
+      onmousemove={(event) => {
+        const rect = event.currentTarget.getBoundingClientRect();
+        pointer = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      }}
+    ></div>
+    {#if hovered}
+      <div class="tooltip" style:left="{pointer.x}px" style:top="{pointer.y}px" aria-hidden="true">
+        <strong>{hovered.iata}</strong>
+        {strings.tooltipDestinations.replace("{count}", formatNumber(hovered.degree))}
+      </div>
+    {/if}
   {/if}
 </section>
 
@@ -222,6 +246,30 @@
     border-radius: var(--re-radius, 14px);
     overflow: hidden;
     box-shadow: var(--re-shadow, 0 18px 40px -24px rgba(0, 0, 0, 0.85));
+  }
+
+  .map-panel {
+    position: relative; /* anchors the hover tooltip */
+  }
+
+  .tooltip {
+    position: absolute;
+    transform: translate(14px, 6px);
+    padding: 0.25rem 0.6rem;
+    border-radius: 8px;
+    background: var(--re-surface-2, #241a10);
+    border: 1px solid var(--re-line, rgba(227, 174, 54, 0.22));
+    color: var(--re-text, #efe6d3);
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: var(--re-shadow, 0 18px 40px -24px rgba(0, 0, 0, 0.85));
+    z-index: 2;
+  }
+
+  .tooltip strong {
+    color: var(--re-accent, #e3ae36);
   }
 
   .error {

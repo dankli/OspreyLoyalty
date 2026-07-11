@@ -24,6 +24,12 @@ features = [
   "MouseEvent",
   "WheelEvent",
   "CanvasWindingRule",
+  "TouchEvent",
+  "TouchList",
+  "Touch",
+  "Window",
+  "Storage",
+  "CssStyleDeclaration",
 ]
 
 [profile.release]

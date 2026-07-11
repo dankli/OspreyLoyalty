@@ -23,6 +23,7 @@ function fakeIsland() {
     degrees: undefined as Uint32Array | undefined,
     labels: undefined as string[] | undefined,
     onPick: undefined as ((index: number) => void) | undefined,
+    onHover: undefined as ((index: number) => void) | undefined,
     drawBase: vi.fn(),
     highlight: vi.fn(),
     showPath: vi.fn(),
@@ -38,12 +39,14 @@ function fakeIsland() {
       degrees: Uint32Array,
       labels: string[],
       onPick: (index: number) => void,
+      onHover: (index: number) => void,
     ) {
       calls.lats = lats;
       calls.lons = lons;
       calls.degrees = degrees;
       calls.labels = labels;
       calls.onPick = onPick;
+      calls.onHover = onHover;
     }
     draw_base = calls.drawBase;
     highlight_destinations = calls.highlight;
@@ -121,6 +124,19 @@ test("a searched itinerary passed as pathIatas is drawn as a path of indices", a
   await waitFor(() => expect(calls.showPath).toHaveBeenCalled());
   expect(Array.from(calls.showPath.mock.calls[0]![0] as Uint32Array)).toEqual([0, 1, 2]);
   await screen.findByText(/Itinerary with 2 leg\(s\)/);
+});
+
+test("hovering a dot shows a tooltip with the iata and destination count", async () => {
+  const { calls, loadIsland } = fakeIsland();
+  render(MapPanel, { props: { loadIsland, airports: async () => airports } });
+  await waitFor(() => expect(calls.onHover).toBeDefined());
+
+  calls.onHover!(2); // LHR, degree 250
+  await screen.findByText(/250 destinations/);
+  expect(screen.getByText("LHR")).toBeInTheDocument();
+
+  calls.onHover!(-1); // pointer left the dot
+  await waitFor(() => expect(screen.queryByText(/250 destinations/)).not.toBeInTheDocument());
 });
 
 test("the toolbar buttons drive the island's zoom", async () => {

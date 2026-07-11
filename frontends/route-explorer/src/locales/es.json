@@ -33,5 +33,7 @@
   "colCarriers": "Aerolíneas",
   "noCarriers": "—",
   "loadFailed": "Algo salió mal al contactar con la pasarela. Inténtalo de nuevo.",
-  "loading": "Cargando…"
+  "loading": "Cargando…",
+  "tooltipDestinations": "{count} destinos",
+  "mapAriaLabel": "Mapa mundial interactivo de la red aérea"
 }

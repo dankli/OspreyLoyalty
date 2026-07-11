@@ -33,5 +33,7 @@
   "colCarriers": "Fluggesellschaften",
   "noCarriers": "—",
   "loadFailed": "Beim Kontakt mit dem Gateway ist etwas schiefgelaufen. Bitte erneut versuchen.",
-  "loading": "Lädt…"
+  "loading": "Lädt…",
+  "tooltipDestinations": "{count} Ziele",
+  "mapAriaLabel": "Interaktive Weltkarte des Streckennetzes"
 }

@@ -1,6 +1,6 @@
 //! Canvas 2D rendering — the thin web-sys edge around the pure geometry.
 
-use crate::geometry::{great_circle_arc, split_on_wrap, Projection, View};
+use crate::geometry::{arc_segments, dot_visible_floor, Projection, View};
 use web_sys::{CanvasRenderingContext2d, CanvasWindingRule};
 
 /// Dot radius + colour per [`crate::geometry::dot_class`] bucket: bigger and warmer
@@ -24,29 +24,31 @@ impl Palette {
     pub const BACKGROUND: &'static str = "#140d06";
     pub const LAND: &'static str = "#241a10";
     pub const COAST: &'static str = "#43331d";
+    pub const BORDER: &'static str = "rgba(122, 99, 64, 0.35)";
     pub const LABEL: &'static str = "rgba(193, 162, 116, 0.85)";
     pub const HIGHLIGHT: &'static str = "#e3ae36";
     pub const ARC: &'static str = "rgba(227, 174, 54, 0.45)";
     pub const PATH: &'static str = "#efe6d3";
 }
 
-pub fn clear(ctx: &CanvasRenderingContext2d, projection: Projection) {
+pub fn clear(ctx: &CanvasRenderingContext2d, projection: Projection, dpr: f64) {
     let _ = ctx.set_transform(1.0, 0.0, 0.0, 1.0, 0.0, 0.0);
     ctx.set_fill_style_str(Palette::BACKGROUND);
-    ctx.fill_rect(0.0, 0.0, projection.width as f64, projection.height as f64);
+    ctx.fill_rect(0.0, 0.0, projection.width as f64 * dpr, projection.height as f64 * dpr);
 }
 
 /// Everything after this draws in base map coordinates; the canvas transform applies
 /// the zoom/pan window. Dot radii and stroke widths are divided by the zoom in the
 /// draw fns below so they keep their on-screen size.
-pub fn apply_view(ctx: &CanvasRenderingContext2d, view: View) {
+pub fn apply_view(ctx: &CanvasRenderingContext2d, view: View, dpr: f64) {
+    let scale = view.zoom as f64 * dpr;
     let _ = ctx.set_transform(
-        view.zoom as f64,
+        scale,
         0.0,
         0.0,
-        view.zoom as f64,
-        -view.offset_x as f64,
-        -view.offset_y as f64,
+        scale,
+        -view.offset_x as f64 * dpr,
+        -view.offset_y as f64 * dpr,
     );
 }
 
@@ -95,7 +97,24 @@ pub fn draw_label(ctx: &CanvasRenderingContext2d, x: f32, y: f32, name: &str, zo
     let _ = ctx.fill_text(name, x as f64, baseline_y);
 }
 
-/// One pass per style bucket keeps canvas state changes to four, not thousands.
+/// Country borders as hairline polylines — only meaningful once zoomed past the
+/// whole-world view, where they would just add noise.
+pub fn draw_borders(ctx: &CanvasRenderingContext2d, lines: &[Vec<(f32, f32)>], zoom: f32) {
+    ctx.set_stroke_style_str(Palette::BORDER);
+    ctx.set_line_width(0.6 / zoom as f64);
+    for line in lines {
+        if line.len() < 2 {
+            continue;
+        }
+        ctx.begin_path();
+        ctx.move_to(line[0].0 as f64, line[0].1 as f64);
+        for &(x, y) in &line[1..] {
+            ctx.line_to(x as f64, y as f64);
+        }
+        ctx.stroke();
+    }
+}
+
 /// An airport's IATA code, set below its dot in amber so it reads as airline
 /// content, not geography; haloed and screen-size-constant like the city labels.
 pub fn draw_airport_label(ctx: &CanvasRenderingContext2d, x: f32, y: f32, code: &str, zoom: f32) {
@@ -114,8 +133,13 @@ pub fn draw_airport_label(ctx: &CanvasRenderingContext2d, x: f32, y: f32, code: 
     let _ = ctx.fill_text(code, x as f64, baseline_y);
 }
 
+/// One pass per style bucket keeps canvas state changes to four, not thousands.
+/// Classes below their visibility floor for this zoom are skipped entirely.
 pub fn draw_dots(ctx: &CanvasRenderingContext2d, points: &[(f32, f32)], classes: &[u8], zoom: f32) {
     for (class, &(radius, color)) in DOT_STYLES.iter().enumerate() {
+        if zoom < dot_visible_floor(class as u8) {
+            continue;
+        }
         ctx.set_fill_style_str(color);
         let r = radius / zoom as f64;
         for (i, &(x, y)) in points.iter().enumerate() {
@@ -152,15 +176,9 @@ pub fn draw_arc(
     line_width: f64,
     zoom: f32,
 ) {
-    let arc = great_circle_arc(from.0, from.1, to.0, to.1, ARC_SAMPLES);
-    let projected: Vec<(f32, f32)> = arc
-        .into_iter()
-        .map(|(lat, lon)| projection.project(lat, lon))
-        .collect();
-
     ctx.set_stroke_style_str(style);
     ctx.set_line_width(line_width / zoom as f64);
-    for segment in split_on_wrap(&projected, projection.width) {
+    for segment in arc_segments(projection, from, to, ARC_SAMPLES) {
         if segment.len() < 2 {
             continue;
         }
