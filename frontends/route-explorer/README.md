@@ -1,8 +1,12 @@
 # Route explorer
 
-The airline network explorer, in three tabs: **Explore** (airport typeahead plus a direct-destinations
-table), **Route search** (best itinerary A→B by distance, time, or hops, with an estimated-points
-badge), and **Map** (the network and searched itineraries on a Canvas 2D world map). Svelte 5, because
+The airline network explorer, in three tabs: **Explore** (keyboard-driven airport typeahead with
+destination-count badges, plus a filterable, sortable, paginated destinations table that can hand any
+row to the route search), **Route search** (all three strategies — distance, time, hops — fetched per
+search and compared as chips with points side by side, a "most points" mode, shareable
+`#route?…` deep links, the itinerary drawn inline on the map, and a Travel Agent hand-off), and
+**Map** (the network and searched itineraries on a zoomable, touch-capable, hidpi Canvas 2D world
+map with an embedded Natural Earth basemap, zoom-gated dots and labels, and hover tooltips). Svelte 5, because
 the repo exists to show more than one frontend stack — this is the third module-federation remote
 beside the React member portal and the Vue admin portal
 ([ADR-0022](../../docs/decisions/0022-svelte-mfe-leptos-wasm-island.md), building on
