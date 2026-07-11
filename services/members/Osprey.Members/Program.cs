@@ -215,7 +215,9 @@ await Migrations.RunAsync(app.Services.GetRequiredService<IMongoClient>().GetDat
 await Rewards.EnsureDefaultsAsync(app.Services.GetRequiredService<IMongoCollection<RewardDocument>>());
 
 if (app.Configuration.GetValue<bool>("SeedDemoData", false))
-    await SeedDemoData.SeedAsync(app.Services.GetRequiredService<IMongoCollection<MemberDocument>>());
+    await SeedDemoData.SeedAsync(
+        app.Services.GetRequiredService<IMongoCollection<MemberDocument>>(),
+        app.Services.GetRequiredService<IMongoCollection<PointsTransactionDocument>>());
 
 app.Run();
 
