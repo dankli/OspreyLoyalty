@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { graphql } from "../../gql";
 import { gatewayClient } from "../../gatewayClient";
 import { TierProgress } from "./TierProgress";
+import { formatPoints } from "../../format";
 
 const memberDashboardQuery = graphql(`
   query MemberDashboard($id: ID!) {
@@ -34,7 +35,7 @@ export function Dashboard({ memberId }: { memberId: string }) {
       <h1>{t("dashboard.welcome", { name: member.name })}</h1>
       <section className="balance-card">
         <span className="label">{t("points.spendable")}</span>
-        <span className="balance">{member.spendablePoints.toLocaleString("sv-SE")}</span>
+        <span className="balance">{formatPoints(member.spendablePoints)}</span>
       </section>
       <TierProgress
         tier={member.tier}

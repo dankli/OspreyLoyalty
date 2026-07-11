@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { graphql } from "../../gql";
 import { gatewayClient } from "../../gatewayClient";
 import { filterTransactions, type TransactionFilter } from "./filterTransactions";
+import { formatPoints, formatDate } from "../../format";
 
 const transactionsQuery = graphql(`
   query MemberTransactions($memberId: ID!, $page: Int!) {
@@ -67,13 +68,13 @@ export function TransactionsPage({ memberId }: { memberId: string }) {
         <tbody>
           {visible.map((tx) => (
             <tr key={tx.id}>
-              <td>{new Date(tx.occurredAtUtc).toLocaleDateString("sv-SE")}</td>
+              <td>{formatDate(tx.occurredAtUtc)}</td>
               <td>
                 <span className={`type-badge type-${tx.type}`}>{tx.type}</span>
               </td>
               <td>{tx.source}</td>
               <td className={tx.points < 0 ? "negative" : "positive"}>
-                {tx.points.toLocaleString("sv-SE")}
+                {formatPoints(tx.points)}
               </td>
             </tr>
           ))}

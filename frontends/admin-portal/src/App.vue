@@ -4,7 +4,6 @@
 import MemberPanel from "./features/members/MemberPanel.vue";
 import RatesPanel from "./features/partners/RatesPanel.vue";
 import HelpButton from "./HelpButton.vue";
-import { SUPPORTED_LANGUAGES, changeLanguage } from "./i18n";
 import { isAdmin } from "./auth";
 
 // Read once at load — auth state changes only across a login/logout redirect (a full reload).
@@ -26,10 +25,6 @@ const canAdminister = isAdmin();
       <span class="eyebrow">{{ $t("app.brand") }}</span>
       <h1>{{ $t("app.admin") }} <em>{{ $t("app.console") }}</em></h1>
     </div>
-    <select class="lang-switch" :aria-label="$t('app.language')" :value="$i18n.locale"
-      @change="(e) => changeLanguage((e.target as HTMLSelectElement).value)">
-      <option v-for="l in SUPPORTED_LANGUAGES" :key="l.code" :value="l.code">{{ l.label }}</option>
-    </select>
     <HelpButton />
   </header>
   <main class="admin-main">

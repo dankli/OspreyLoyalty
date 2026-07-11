@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { savingsPercent } from "./savingsPercent";
 import { useTravelAgentStream } from "./useTravelAgentStream";
+import { formatPoints } from "../../format";
 
 export function TravelAgentPage({ memberId }: { memberId: string }) {
   const { t } = useTranslation();
@@ -27,7 +28,7 @@ export function TravelAgentPage({ memberId }: { memberId: string }) {
       {state.spendablePoints !== null && (
         <section className="balance-card">
           <span className="label">{t("points.spendable")}</span>
-          <span className="balance">{state.spendablePoints.toLocaleString("sv-SE")}</span>
+          <span className="balance">{formatPoints(state.spendablePoints)}</span>
         </section>
       )}
 
@@ -38,11 +39,11 @@ export function TravelAgentPage({ memberId }: { memberId: string }) {
           {state.suggestions.map((s) => {
             // Only the goal card has a gap and a progress bar; affordable cards show the go-badge.
             const percent = s.affordable ? 0 : savingsPercent(state.spendablePoints ?? 0, s.cost);
-            const goalLabel = t("travelAgent.saveMore", { points: (s.gap ?? 0).toLocaleString("sv-SE") });
+            const goalLabel = t("travelAgent.saveMore", { points: formatPoints(s.gap ?? 0) });
             return (
               <li key={s.destination} className={s.affordable ? "reward-card suggestion-card" : "reward-card suggestion-card goal-card"}>
                 <span className="reward-name">{s.emoji} {s.destination}</span>
-                <span className="reward-cost">{t("rewards.cost", { cost: s.cost.toLocaleString("sv-SE") })}</span>
+                <span className="reward-cost">{t("rewards.cost", { cost: formatPoints(s.cost) })}</span>
                 {s.affordable ? (
                   <span className="go-badge">{t("travelAgent.canGo")}</span>
                 ) : (

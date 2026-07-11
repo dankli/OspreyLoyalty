@@ -29,9 +29,15 @@ void i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 });
 
-export function changeLanguage(code: string): void {
-  void i18n.changeLanguage(code);
-  if (typeof localStorage !== "undefined") localStorage.setItem("lang", code);
+// The shell owns the language switcher and persists the choice (ADR-0023);
+// the portal follows its broadcast. The init read above keeps standalone dev working.
+if (typeof window !== "undefined") {
+  window.addEventListener("osprey:locale-changed", (event) => {
+    const locale = (event as CustomEvent<{ locale?: string }>).detail?.locale;
+    if (locale && SUPPORTED_LANGUAGES.some((l) => l.code === locale)) {
+      void i18n.changeLanguage(locale);
+    }
+  });
 }
 
 export default i18n;

@@ -5,6 +5,7 @@ import { ClientError } from "graphql-request";
 import { graphql } from "../../gql";
 import type { MemberBalanceQuery } from "../../gql/graphql";
 import { gatewayClient } from "../../gatewayClient";
+import { formatPoints } from "../../format";
 
 const rewardsCatalogQuery = graphql(`
   query RewardsCatalog {
@@ -107,7 +108,7 @@ export function RewardsPage({ memberId }: { memberId: string }) {
       <h1>{t("rewards.title")}</h1>
       <section className="balance-card">
         <span className="label">{t("points.spendable")}</span>
-        <span className="balance">{spendable.toLocaleString("sv-SE")}</span>
+        <span className="balance">{formatPoints(spendable)}</span>
       </section>
       {error && (
         <p role="alert" className="redeem-error">
@@ -122,7 +123,7 @@ export function RewardsPage({ memberId }: { memberId: string }) {
           <li key={reward.id} className="reward-card">
             <span className="reward-name">{reward.name}</span>
             <span className="reward-cost">
-              {t("rewards.cost", { cost: reward.cost.toLocaleString("sv-SE") })}
+              {t("rewards.cost", { cost: formatPoints(reward.cost) })}
             </span>
             <button
               aria-label={t("rewards.redeemAria", { name: reward.name })}

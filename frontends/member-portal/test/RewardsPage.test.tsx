@@ -55,7 +55,7 @@ test("renders the catalog and the balance", async () => {
   primeQueries({ redeem: "succeed" });
   renderPage();
   expect(await screen.findByText("Lounge day pass")).toBeInTheDocument();
-  expect(screen.getByText(/14\s?500/)).toBeInTheDocument();
+  expect(screen.getByText(/14[\s, ]?500/)).toBeInTheDocument();
 });
 
 test("unaffordable rewards are disabled", async () => {
@@ -71,7 +71,7 @@ test("successful redeem settles to the server balance", async () => {
   renderPage();
   await screen.findByText("Lounge day pass");
   await userEvent.click(screen.getByRole("button", { name: /redeem cardco gift card/i }));
-  await waitFor(() => expect(screen.getByText(/9\s?500/)).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByText(/9[\s, ]?500/)).toBeInTheDocument());
 });
 
 test("failed redeem rolls the optimistic balance back and shows the error", async () => {
@@ -84,5 +84,5 @@ test("failed redeem rolls the optimistic balance back and shows the error", asyn
   // Only the human message — no leaked response/request JSON from ClientError.message.
   expect(alert.textContent).not.toContain("{");
   // The rollback is the point: the pre-click balance must be back.
-  expect(screen.getByText(/14\s?500/)).toBeInTheDocument();
+  expect(screen.getByText(/14[\s, ]?500/)).toBeInTheDocument();
 });

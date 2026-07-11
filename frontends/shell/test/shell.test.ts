@@ -81,6 +81,54 @@ describe("shell", () => {
   });
 });
 
+describe("shell language switcher (ADR-0023)", () => {
+  it("renders a select with all five locales, seeded from localStorage", async () => {
+    localStorage.setItem("lang", "de");
+    const { member, admin, explorer } = fakeRemotes();
+    const root = document.createElement("div");
+
+    const shell = createShell(root, {
+      memberPortal: member.loader,
+      adminPortal: admin.loader,
+      routeExplorer: explorer.loader,
+    });
+    await shell.ready;
+
+    const select = root.querySelector<HTMLSelectElement>("select.shell-lang")!;
+    expect(select).not.toBeNull();
+    expect([...select.options].map((o) => o.value)).toEqual(["en", "sv", "es", "de", "it"]);
+    expect(select.value).toBe("de");
+    localStorage.removeItem("lang");
+  });
+
+  it("changing the select persists, broadcasts, and relabels the nav in place", async () => {
+    const { member, admin, explorer } = fakeRemotes();
+    const root = document.createElement("div");
+
+    const shell = createShell(root, {
+      memberPortal: member.loader,
+      adminPortal: admin.loader,
+      routeExplorer: explorer.loader,
+    });
+    await shell.ready;
+
+    const heard = vi.fn();
+    window.addEventListener("osprey:locale-changed", heard, { once: true });
+    const select = root.querySelector<HTMLSelectElement>("select.shell-lang")!;
+    select.value = "sv";
+    select.dispatchEvent(new Event("change"));
+
+    expect(localStorage.getItem("lang")).toBe("sv");
+    expect(heard).toHaveBeenCalledOnce();
+    const labels = [...root.querySelectorAll("button")].map((b) => b.textContent);
+    expect(labels).toEqual(["Medlemsportal", "Adminportal", "Ruttutforskare"]);
+    // Relabeling must not remount the active remote.
+    expect(member.mount).toHaveBeenCalledOnce();
+    expect(member.unmount).not.toHaveBeenCalled();
+    localStorage.removeItem("lang");
+  });
+});
+
 it("an osprey:navigate event from a remote swaps the mounted portal", async () => {
   const host = document.createElement("div");
   document.body.appendChild(host);

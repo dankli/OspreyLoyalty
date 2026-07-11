@@ -132,7 +132,7 @@ async function toggleOsprey() {
         </div>
         <p class="muted">
           {{ profile.email }} · {{ $t("member.joined") }}
-          {{ new Date(profile.joinedAtUtc).toLocaleDateString() }}
+          {{ new Date(profile.joinedAtUtc).toLocaleDateString($i18n.locale) }}
         </p>
         <dl class="balances">
           <div><dt>{{ $t("member.spendable") }}</dt><dd>{{ profile.spendablePoints }}</dd></div>
@@ -155,7 +155,7 @@ async function toggleOsprey() {
         </thead>
         <tbody>
           <tr v-for="tx in transactions" :key="tx.id">
-            <td>{{ new Date(tx.occurredAtUtc).toLocaleDateString() }}</td>
+            <td>{{ new Date(tx.occurredAtUtc).toLocaleDateString($i18n.locale) }}</td>
             <td><span class="type-badge">{{ tx.type }}</span></td>
             <td :class="tx.points >= 0 ? 'positive' : 'negative'">{{ tx.points }}</td>
             <td>{{ tx.source }}</td>

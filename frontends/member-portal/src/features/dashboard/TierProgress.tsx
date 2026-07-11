@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { progressPercent } from "./progress";
+import { formatPoints } from "../../format";
 
 type Props = { tier: string; qualifyingPoints: number; pointsToNextTier: number | null };
 
@@ -17,10 +18,10 @@ export function TierProgress({ tier, qualifyingPoints, pointsToNextTier }: Props
       ) : pointsToNextTier === null ? (
         <p>{t("tier.diamond")}</p>
       ) : (
-        <p>{t("tier.toNext", { points: pointsToNextTier.toLocaleString("sv-SE") })}</p>
+        <p>{t("tier.toNext", { points: formatPoints(pointsToNextTier) })}</p>
       )}
       <p className="muted qualifying-note">
-        {t("tier.qualifyingNote", { points: qualifyingPoints.toLocaleString("sv-SE") })}
+        {t("tier.qualifyingNote", { points: formatPoints(qualifyingPoints) })}
       </p>
     </section>
   );

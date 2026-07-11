@@ -7,7 +7,7 @@
  * fakes without touching module federation.
  */
 
-import { t } from "./i18n";
+import { LOCALE_LABELS, SUPPORTED_LOCALES, currentLocale, setLocale, t, type Locale } from "./i18n";
 import { authEnabled, isAdmin, signOut } from "./auth";
 
 export type MountFn = (el: HTMLElement) => () => void;
@@ -104,10 +104,27 @@ export function createShell(root: HTMLElement, remotes: Record<RemoteName, Remot
     }
   });
 
+  // The shell owns the language switcher (ADR-0023). Changing it persists the choice and
+  // broadcasts "osprey:locale-changed"; the portals subscribe and switch their own i18n,
+  // so the mounted remote is never remounted for a language change.
+  const langSelect = document.createElement("select");
+  langSelect.className = "shell-lang";
+  langSelect.dataset.action = "lang";
+  for (const locale of SUPPORTED_LOCALES) {
+    const option = document.createElement("option");
+    option.value = locale;
+    option.textContent = LOCALE_LABELS[locale];
+    langSelect.appendChild(option);
+  }
+  langSelect.value = currentLocale();
+  langSelect.addEventListener("change", () => setLocale(langSelect.value as Locale));
+  header.appendChild(langSelect);
+
   // Sign-out lives in the shell (it owns the shared session); only shown when auth is enabled,
   // so the default build and the shell tests see exactly the two nav buttons.
+  let signOutButton: HTMLButtonElement | null = null;
   if (authEnabled()) {
-    const signOutButton = document.createElement("button");
+    signOutButton = document.createElement("button");
     signOutButton.type = "button";
     signOutButton.className = "shell-signout";
     signOutButton.dataset.action = "sign-out";
@@ -115,6 +132,17 @@ export function createShell(root: HTMLElement, remotes: Record<RemoteName, Remot
     signOutButton.addEventListener("click", () => void signOut());
     header.appendChild(signOutButton);
   }
+
+  // Relabel the shell's own chrome when the language changes — in place, no remount.
+  function refreshLabels(): void {
+    brand.textContent = t("brand");
+    for (const [key, button] of buttons) button.textContent = t(key);
+    if (signOutButton) signOutButton.textContent = t("signOut");
+    langSelect.setAttribute("aria-label", t("language"));
+    langSelect.value = currentLocale();
+  }
+  langSelect.setAttribute("aria-label", t("language"));
+  window.addEventListener("osprey:locale-changed", refreshLabels);
 
   root.replaceChildren(header, outlet);
 

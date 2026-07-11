@@ -5,7 +5,7 @@ import { TierProgress } from "../src/features/dashboard/TierProgress";
 test("shows tier and points remaining to the next one", () => {
   render(<TierProgress tier="SILVER" qualifyingPoints={32000} pointsToNextTier={13000} />);
   expect(screen.getByText("SILVER")).toBeInTheDocument();
-  expect(screen.getByText(/13\s?000/)).toBeInTheDocument();
+  expect(screen.getByText(/13[\s, ]?000/)).toBeInTheDocument();
   expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "71");
 });
 

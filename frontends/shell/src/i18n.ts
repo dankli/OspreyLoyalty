@@ -1,7 +1,18 @@
-// Tiny framework-less i18n for the shell. The portals own the language switcher and
-// persist the choice in localStorage("lang"); the shell reads it on load so its nav
-// labels match. English stays the default (and the exact test-asserted output).
-type Locale = "en" | "sv" | "es" | "de" | "it";
+// Tiny framework-less i18n for the shell. The shell owns the language switcher
+// (ADR-0023): setLocale persists to localStorage("lang") and broadcasts
+// "osprey:locale-changed" so mounted portals can follow along live. English stays
+// the default (and the exact test-asserted output).
+export type Locale = "en" | "sv" | "es" | "de" | "it";
+
+export const SUPPORTED_LOCALES: Locale[] = ["en", "sv", "es", "de", "it"];
+
+export const LOCALE_LABELS: Record<Locale, string> = {
+  en: "English",
+  sv: "Svenska",
+  es: "Español",
+  de: "Deutsch",
+  it: "Italiano",
+};
 
 const MESSAGES: Record<Locale, Record<string, string>> = {
   en: {
@@ -10,6 +21,7 @@ const MESSAGES: Record<Locale, Record<string, string>> = {
     adminPortal: "Admin portal",
     routeExplorer: "Route explorer",
     signOut: "Sign out",
+    language: "Language",
     loadFailedRunning: "Failed to load {label}. Is its server running?",
     loadFailed: "Failed to load {label}.",
   },
@@ -19,6 +31,7 @@ const MESSAGES: Record<Locale, Record<string, string>> = {
     adminPortal: "Adminportal",
     routeExplorer: "Ruttutforskare",
     signOut: "Logga ut",
+    language: "Språk",
     loadFailedRunning: "Kunde inte ladda {label}. Körs dess server?",
     loadFailed: "Kunde inte ladda {label}.",
   },
@@ -28,6 +41,7 @@ const MESSAGES: Record<Locale, Record<string, string>> = {
     adminPortal: "Portal de administración",
     routeExplorer: "Explorador de rutas",
     signOut: "Cerrar sesión",
+    language: "Idioma",
     loadFailedRunning: "No se pudo cargar {label}. ¿Está su servidor en marcha?",
     loadFailed: "No se pudo cargar {label}.",
   },
@@ -37,6 +51,7 @@ const MESSAGES: Record<Locale, Record<string, string>> = {
     adminPortal: "Admin-Portal",
     routeExplorer: "Routen-Explorer",
     signOut: "Abmelden",
+    language: "Sprache",
     loadFailedRunning: "{label} konnte nicht geladen werden. Läuft der Server?",
     loadFailed: "{label} konnte nicht geladen werden.",
   },
@@ -46,14 +61,22 @@ const MESSAGES: Record<Locale, Record<string, string>> = {
     adminPortal: "Portale admin",
     routeExplorer: "Esplora rotte",
     signOut: "Esci",
+    language: "Lingua",
     loadFailedRunning: "Impossibile caricare {label}. Il suo server è in esecuzione?",
     loadFailed: "Impossibile caricare {label}.",
   },
 };
 
-function currentLocale(): Locale {
+export function currentLocale(): Locale {
   const stored = typeof localStorage !== "undefined" ? localStorage.getItem("lang") : null;
   return stored && stored in MESSAGES ? (stored as Locale) : "en";
+}
+
+/** Shell-owned language choice (ADR-0023): persist, then broadcast to mounted remotes. */
+export function setLocale(locale: Locale): void {
+  if (!SUPPORTED_LOCALES.includes(locale)) return;
+  localStorage.setItem("lang", locale);
+  window.dispatchEvent(new CustomEvent("osprey:locale-changed", { detail: { locale } }));
 }
 
 export function t(key: string, params?: Record<string, string>): string {

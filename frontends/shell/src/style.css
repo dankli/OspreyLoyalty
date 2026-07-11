@@ -83,6 +83,29 @@ body {
   font-weight: 700;
 }
 
+.shell-lang {
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.78rem;
+  margin-left: auto;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--tan-400);
+  cursor: pointer;
+}
+
+.shell-lang:hover {
+  background: rgba(227, 174, 54, 0.1);
+  color: var(--cream-50);
+}
+
+.shell-lang option {
+  background: var(--talon-950);
+  color: var(--cream-50);
+}
+
 .shell-outlet {
   min-height: calc(100vh - 61px);
 }
@@ -92,4 +115,5 @@ body {
   .shell-nav { gap: 0.4rem; padding: 0.7rem 1rem; }
   .shell-brand { font-size: 1rem; }
   .shell-nav button { padding: 0.4rem 0.75rem; font-size: 0.72rem; }
+  .shell-lang { padding: 0.35rem 0.4rem; font-size: 0.7rem; }
 }

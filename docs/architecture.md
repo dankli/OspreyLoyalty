@@ -79,7 +79,7 @@ flowchart TD
 
 ## Containers
 
-**shell** — a thin TypeScript host served by Nginx that composes the three remotes via Vite module federation. It owns navigation only; it has no knowledge of any remote's internals. See ADR-0004 for the trade-off analysis and an honest account of when not to use this pattern.
+**shell** — a thin TypeScript host served by Nginx that composes the three remotes via Vite module federation. It owns navigation and the fleet-wide language switcher — the choice persists to `localStorage("lang")` and broadcasts to the mounted remotes via the `osprey:locale-changed` event (ADR-0023); it has no knowledge of any remote's internals. See ADR-0004 for the trade-off analysis and an honest account of when not to use this pattern.
 
 **member-portal** — the main user-facing app, built in React 19 with TanStack Query and GraphQL codegen against the gateway schema. The showpiece frontend: dashboard with tier progress, paginated transactions, rewards with optimistic UI, a tier overview, and a Travel Agent page that streams a simulated, points-first trip planner over SSE (its own feature slice under `src/features/travel-agent`).
 
@@ -143,6 +143,7 @@ flowchart TD
 | [ADR-0020](decisions/0020-progressive-delivery-argo-rollouts.md) | Canary progressive delivery via Argo Rollouts with Prometheus analysis that reuses the SLO/RED metrics and auto-rolls-back on breach |
 | [ADR-0021](decisions/0021-neo4j-route-graph.md) | Neo4j for the airline route graph — variable-length traversal and shortest-path are graph-shaped queries Mongo answers badly; carriers as relationship arrays, idempotent marker-gated seeding |
 | [ADR-0022](decisions/0022-svelte-mfe-leptos-wasm-island.md) | A Svelte route-explorer remote with a Rust/Leptos WASM map island — typed-array JS boundary, Canvas 2D, graceful fallback when the wasm pkg is absent |
+| [ADR-0023](decisions/0023-shell-owned-language.md) | Shell-owned language switching — one switcher in the shell chrome, persisted to `localStorage("lang")`, broadcast to mounted remotes via `osprey:locale-changed`; portals follow in their own i18n idiom |
 
 ---
 

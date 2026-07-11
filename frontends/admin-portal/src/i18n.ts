@@ -23,9 +23,15 @@ const i18n = createI18n({
   messages: { en, sv, es, de, it },
 });
 
-export function changeLanguage(code: string): void {
-  i18n.global.locale.value = code as "en" | "sv" | "es" | "de" | "it";
-  if (typeof localStorage !== "undefined") localStorage.setItem("lang", code);
+// The shell owns the language switcher and persists the choice (ADR-0023);
+// the portal follows its broadcast. The init read above keeps standalone dev working.
+if (typeof window !== "undefined") {
+  window.addEventListener("osprey:locale-changed", (event) => {
+    const locale = (event as CustomEvent<{ locale?: string }>).detail?.locale;
+    if (locale && SUPPORTED_LANGUAGES.some((l) => l.code === locale)) {
+      i18n.global.locale.value = locale as "en" | "sv" | "es" | "de" | "it";
+    }
+  });
 }
 
 export default i18n;
