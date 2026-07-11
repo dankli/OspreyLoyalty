@@ -136,6 +136,17 @@
     display(chosen.strategy, chosen.path, false);
   }
 
+  function openTravelAgent() {
+    // The member portal routes on real paths, so the URL carries the target page;
+    // the shell listens for this event and swaps the mounted remote (no-op standalone).
+    try {
+      history.replaceState(null, "", "/travel-agent");
+    } catch {
+      // sandboxed contexts may refuse; the navigation event still fires
+    }
+    window.dispatchEvent(new CustomEvent("osprey:navigate", { detail: { remote: "memberPortal" } }));
+  }
+
   function strategyLabel(strategy: RouteOptimize): string {
     return strategy === "KM"
       ? strings.optimizeKm
@@ -227,8 +238,9 @@
     <p class="summary">
       {summary}
       {#if result.estimatedPoints !== null}
-        <span class="points-badge">{strings.pointsBadge.replace("{points}", formatNumber(result.estimatedPoints))}</span>
+        <span class="points-badge" title={strings.baseEarnNote}>{strings.pointsBadge.replace("{points}", formatNumber(result.estimatedPoints))}</span>
       {/if}
+      <button type="button" class="agent" onclick={openTravelAgent}>{strings.planWithAgent}</button>
     </p>
     <table>
       <thead>
@@ -354,6 +366,24 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+  }
+
+  .agent {
+    font: inherit;
+    font-size: 0.85rem;
+    margin-left: 0.6rem;
+    padding: 0.2rem 0.75rem;
+    border: 1px solid var(--re-line, rgba(227, 174, 54, 0.22));
+    border-radius: 999px;
+    background: none;
+    color: var(--re-muted, #c1a274);
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .agent:hover {
+    border-color: var(--re-accent, #e3ae36);
+    color: var(--re-accent, #e3ae36);
   }
 
   .chip {

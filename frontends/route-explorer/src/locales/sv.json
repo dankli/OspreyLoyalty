@@ -39,5 +39,7 @@
   "searchThisRoute": "Sök denna rutt",
   "allCountries": "Alla länder",
   "sortBy": "Sortera på {column}",
-  "optimizePoints": "Flest poäng"
+  "optimizePoints": "Flest poäng",
+  "planWithAgent": "Planera med Travel Agent",
+  "baseEarnNote": "Basintjäning — tier-bonus tillkommer vid bokning"
 }

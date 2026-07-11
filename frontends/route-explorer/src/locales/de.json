@@ -39,5 +39,7 @@
   "searchThisRoute": "Diese Route suchen",
   "allCountries": "Alle Länder",
   "sortBy": "Sortieren nach {column}",
-  "optimizePoints": "Meiste Punkte"
+  "optimizePoints": "Meiste Punkte",
+  "planWithAgent": "Mit dem Travel Agent planen",
+  "baseEarnNote": "Basis-Punkte — Statusboni gelten bei der Buchung"
 }

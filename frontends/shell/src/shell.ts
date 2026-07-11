@@ -93,6 +93,17 @@ export function createShell(root: HTMLElement, remotes: Record<RemoteName, Remot
     header.appendChild(button);
   }
 
+  // Remotes can ask the shell to switch portals (e.g. the route explorer's "plan with
+  // Travel Agent" hand-off). The event carries only a remote name; anything deeper —
+  // like which page inside the portal — travels in the URL, which the portals already
+  // own via their routers. Unknown or role-hidden remotes are ignored.
+  window.addEventListener("osprey:navigate", (event) => {
+    const remote = (event as CustomEvent<{ remote?: string }>).detail?.remote;
+    if (remote && buttons.has(remote as RemoteName)) {
+      void navigate(remote as RemoteName);
+    }
+  });
+
   // Sign-out lives in the shell (it owns the shared session); only shown when auth is enabled,
   // so the default build and the shell tests see exactly the two nav buttons.
   if (authEnabled()) {

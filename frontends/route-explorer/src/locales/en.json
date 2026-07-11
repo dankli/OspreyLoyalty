@@ -39,5 +39,7 @@
   "searchThisRoute": "Search this route",
   "allCountries": "All countries",
   "sortBy": "Sort by {column}",
-  "optimizePoints": "Most points"
+  "optimizePoints": "Most points",
+  "planWithAgent": "Plan with Travel Agent",
+  "baseEarnNote": "Base earn — tier bonuses apply at booking"
 }

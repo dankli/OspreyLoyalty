@@ -80,3 +80,29 @@ describe("shell", () => {
     await vi.waitFor(() => expect(explorer.unmount).toHaveBeenCalledOnce());
   });
 });
+
+it("an osprey:navigate event from a remote swaps the mounted portal", async () => {
+  const host = document.createElement("div");
+  document.body.appendChild(host);
+  const mounted: string[] = [];
+  const loader = (name: string) => async () => ({
+    mount: (el: HTMLElement) => {
+      mounted.push(name);
+      el.textContent = name;
+      return () => {};
+    },
+  });
+  const shell = createShell(host, {
+    memberPortal: loader("member"),
+    adminPortal: loader("admin"),
+    routeExplorer: loader("explorer"),
+  });
+  await shell.navigate("routeExplorer");
+
+  window.dispatchEvent(new CustomEvent("osprey:navigate", { detail: { remote: "memberPortal" } }));
+  await vi.waitFor(() => expect(mounted).toContain("member"));
+
+  // Unknown remotes are ignored rather than crashing the shell.
+  window.dispatchEvent(new CustomEvent("osprey:navigate", { detail: { remote: "nope" } }));
+  host.remove();
+});

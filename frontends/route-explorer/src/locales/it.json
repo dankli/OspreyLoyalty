@@ -39,5 +39,7 @@
   "searchThisRoute": "Cerca questa rotta",
   "allCountries": "Tutti i paesi",
   "sortBy": "Ordina per {column}",
-  "optimizePoints": "Più punti"
+  "optimizePoints": "Più punti",
+  "planWithAgent": "Pianifica con il Travel Agent",
+  "baseEarnNote": "Accumulo base: i bonus di livello si applicano alla prenotazione"
 }
