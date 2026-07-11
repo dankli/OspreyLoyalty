@@ -35,5 +35,8 @@
   "loadFailed": "Something went wrong talking to the gateway. Try again.",
   "loading": "Loading…",
   "tooltipDestinations": "{count} destinations",
-  "mapAriaLabel": "Interactive world map of the airline network"
+  "mapAriaLabel": "Interactive world map of the airline network",
+  "searchThisRoute": "Search this route",
+  "allCountries": "All countries",
+  "sortBy": "Sort by {column}"
 }

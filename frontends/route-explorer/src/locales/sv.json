@@ -35,5 +35,8 @@
   "loadFailed": "Något gick fel i kontakten med gatewayen. Försök igen.",
   "loading": "Laddar…",
   "tooltipDestinations": "{count} destinationer",
-  "mapAriaLabel": "Interaktiv världskarta över flygnätverket"
+  "mapAriaLabel": "Interaktiv världskarta över flygnätverket",
+  "searchThisRoute": "Sök denna rutt",
+  "allCountries": "Alla länder",
+  "sortBy": "Sortera på {column}"
 }

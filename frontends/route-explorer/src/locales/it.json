@@ -35,5 +35,8 @@
   "loadFailed": "Qualcosa è andato storto nel contatto con il gateway. Riprova.",
   "loading": "Caricamento…",
   "tooltipDestinations": "{count} destinazioni",
-  "mapAriaLabel": "Mappa mondiale interattiva della rete aerea"
+  "mapAriaLabel": "Mappa mondiale interattiva della rete aerea",
+  "searchThisRoute": "Cerca questa rotta",
+  "allCountries": "Tutti i paesi",
+  "sortBy": "Ordina per {column}"
 }

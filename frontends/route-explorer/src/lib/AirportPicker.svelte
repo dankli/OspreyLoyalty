@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { strings } from "../strings";
+  import { strings, formatNumber } from "../strings";
   import { searchAirports as gatewaySearch, type AirportHit } from "../features/explore/exploreData";
 
   // Reusable debounced typeahead. The search function is a prop with a real default so
@@ -8,20 +8,37 @@
     label,
     search = gatewaySearch,
     onpick,
+    preset = null,
   }: {
     label: string;
     search?: (query: string) => Promise<AirportHit[]>;
     onpick: (hit: AirportHit) => void;
+    /** Externally chosen airport (deep link / explore hand-off) — fills the field. */
+    preset?: AirportHit | null;
   } = $props();
 
   let query = $state("");
   let hits = $state.raw<AirportHit[]>([]);
   let searched = $state(false);
   let failed = $state(false);
+  let active = $state(-1); // the keyboard-highlighted hit
 
   const DEBOUNCE_MS = 200; // one gateway call per pause, not per keystroke
   let debounce: ReturnType<typeof setTimeout> | undefined;
   let generation = 0; // stale responses lose the race and are dropped
+
+  function displayLabel(hit: AirportHit): string {
+    return hit.name && hit.name !== hit.iata ? `${hit.name} (${hit.iata})` : hit.iata;
+  }
+
+  $effect(() => {
+    if (preset) {
+      query = displayLabel(preset);
+      hits = [];
+      searched = false;
+      active = -1;
+    }
+  });
 
   function onInput() {
     clearTimeout(debounce);
@@ -29,6 +46,7 @@
     if (q.length < 2) {
       hits = [];
       searched = false;
+      active = -1;
       return;
     }
     debounce = setTimeout(() => void runSearch(q), DEBOUNCE_MS);
@@ -42,6 +60,7 @@
       if (mine !== generation) return;
       hits = result;
       searched = true;
+      active = -1;
     } catch {
       if (mine === generation) failed = true;
     }
@@ -51,8 +70,30 @@
     generation += 1; // cancel any in-flight search so its results don't reopen the list
     hits = [];
     searched = false;
-    query = `${hit.name} (${hit.iata})`;
+    active = -1;
+    query = displayLabel(hit);
     onpick(hit);
+  }
+
+  function onKeydown(event: KeyboardEvent) {
+    if (hits.length === 0) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      active = (active + 1) % hits.length;
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      active = active <= 0 ? hits.length - 1 : active - 1;
+    } else if (event.key === "Enter") {
+      const hit = hits[active];
+      if (hit) {
+        event.preventDefault();
+        pick(hit);
+      }
+    } else if (event.key === "Escape") {
+      hits = [];
+      searched = false;
+      active = -1;
+    }
   }
 </script>
 
@@ -64,16 +105,21 @@
       placeholder={strings.searchPlaceholder}
       bind:value={query}
       oninput={onInput}
+      onkeydown={onKeydown}
+      aria-expanded={hits.length > 0}
     />
   </label>
 
   {#if hits.length > 0}
     <ul class="hits">
-      {#each hits as hit (hit.iata)}
+      {#each hits as hit, index (hit.iata)}
         <li>
-          <button type="button" onclick={() => pick(hit)}>
+          <button type="button" class={{ active: index === active }} onclick={() => pick(hit)}>
             <strong>{hit.iata}</strong>
             {hit.name} — {hit.city}, {hit.country}
+            {#if hit.degree != null}
+              <span class="degree">{strings.tooltipDestinations.replace("{count}", formatNumber(hit.degree))}</span>
+            {/if}
           </button>
         </li>
       {/each}
@@ -163,7 +209,8 @@
     border-bottom: none;
   }
 
-  .hits button:hover {
+  .hits button:hover,
+  .hits button.active {
     background: var(--re-raised, #382a17);
   }
 
@@ -172,6 +219,17 @@
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     margin-right: 0.15rem;
+  }
+
+  .degree {
+    float: right;
+    margin-left: 0.6rem;
+    padding: 0.05rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    background: var(--re-raised, #382a17);
+    color: var(--re-muted, #c1a274);
   }
 
   .error {

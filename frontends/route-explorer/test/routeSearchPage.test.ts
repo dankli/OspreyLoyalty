@@ -51,6 +51,23 @@ test("picking both airports enables search; the result renders legs and totals",
   expect(table).toHaveTextContent("Qatar Airways");
 });
 
+test("a seed prefills both ends and auto-runs the search", async () => {
+  const search = vi.fn();
+  const routeSearch = vi.fn(async () => path);
+  render(RouteSearchPage, {
+    props: {
+      search,
+      routeSearch,
+      seed: { from: arlanda, to: sydney, optimize: "HOPS", auto: true },
+    },
+  });
+
+  await screen.findByRole("heading", { name: "Itinerary" });
+  expect(routeSearch).toHaveBeenCalledWith("ARN", "SYD", "HOPS");
+  // The search wrote a shareable deep link.
+  expect(location.hash).toBe("#route?from=ARN&to=SYD&optimize=HOPS");
+});
+
 test("a found route is drawn on the inline world map below the itinerary", async () => {
   const search = vi.fn();
   const routeSearch = vi.fn(async () => path);

@@ -18,6 +18,9 @@ export type Airport = {
 
 export type Destination = { airport: Airport; km: number; min: number; carriers: Carrier[] };
 
+/** A typeahead hit: the airport plus the out-degree the ordering used — the UI badges it. */
+export type SearchHit = Airport & { degree: number };
+
 export type MapAirport = { iata: string; latitude: number; longitude: number; degree: number };
 
 /** Zip the ROUTE relationship's parallel primitive arrays back into carrier objects (ADR-0021). */

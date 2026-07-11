@@ -35,5 +35,8 @@
   "loadFailed": "Algo salió mal al contactar con la pasarela. Inténtalo de nuevo.",
   "loading": "Cargando…",
   "tooltipDestinations": "{count} destinos",
-  "mapAriaLabel": "Mapa mundial interactivo de la red aérea"
+  "mapAriaLabel": "Mapa mundial interactivo de la red aérea",
+  "searchThisRoute": "Buscar esta ruta",
+  "allCountries": "Todos los países",
+  "sortBy": "Ordenar por {column}"
 }

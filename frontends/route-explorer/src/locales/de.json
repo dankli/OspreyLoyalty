@@ -35,5 +35,8 @@
   "loadFailed": "Beim Kontakt mit dem Gateway ist etwas schiefgelaufen. Bitte erneut versuchen.",
   "loading": "Lädt…",
   "tooltipDestinations": "{count} Ziele",
-  "mapAriaLabel": "Interaktive Weltkarte des Streckennetzes"
+  "mapAriaLabel": "Interaktive Weltkarte des Streckennetzes",
+  "searchThisRoute": "Diese Route suchen",
+  "allCountries": "Alle Länder",
+  "sortBy": "Sortieren nach {column}"
 }

@@ -64,6 +64,43 @@ test("long destination lists page at 25 with a show-more button", async () => {
   expect(screen.queryByRole("button", { name: /more/i })).not.toBeInTheDocument();
 });
 
+test("the destinations table filters by country and sorts by column", async () => {
+  const search = vi.fn(async () => [arlanda]);
+  render(ExplorePage, { props: { search, destinations: vi.fn(async () => destinations) } });
+
+  await userEvent.type(screen.getByPlaceholderText(/search airports/i), "arlanda");
+  await userEvent.click(await screen.findByRole("button", { name: /ARN.*Stockholm/i }));
+  await screen.findByText(/Direct destinations from/);
+
+  // Sort by distance descending: Visby (222) before Mariehamn (122).
+  await userEvent.click(screen.getByRole("button", { name: /^Distance/ }));
+  let cells = screen.getAllByRole("row").map((row) => row.textContent ?? "");
+  expect(cells[1]).toContain("VBY");
+
+  // Filter to Aland: only Mariehamn remains.
+  await userEvent.selectOptions(screen.getByRole("combobox"), "Aland");
+  cells = screen.getAllByRole("row").map((row) => row.textContent ?? "");
+  expect(cells).toHaveLength(2); // header + one row
+  expect(cells[1]).toContain("MHQ");
+});
+
+test("the row action hands a from-to pair to the route search", async () => {
+  const search = vi.fn(async () => [arlanda]);
+  const onroute = vi.fn();
+  render(ExplorePage, { props: { search, destinations: vi.fn(async () => destinations), onroute } });
+
+  await userEvent.type(screen.getByPlaceholderText(/search airports/i), "arlanda");
+  await userEvent.click(await screen.findByRole("button", { name: /ARN.*Stockholm/i }));
+  await screen.findByText(/Direct destinations from/);
+
+  const rowButtons = screen.getAllByRole("button", { name: /search this route/i });
+  await userEvent.click(rowButtons[0]!);
+  expect(onroute).toHaveBeenCalledWith({
+    from: expect.objectContaining({ iata: "ARN" }),
+    to: expect.objectContaining({ iata: "MHQ" }),
+  });
+});
+
 test("a failing gateway shows one visible error, not a blank page", async () => {
   const search = vi.fn(async () => {
     throw new Error("gateway down");

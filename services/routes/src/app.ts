@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import pino from "pino";
 import { CORRELATION_HEADER, resolveCorrelationId } from "./correlation.js";
 import { httpRequestDuration, metricsRegistry } from "./metrics.js";
-import type { Airport, Destination, MapAirport } from "./features/airports/mapRecords.js";
+import type { Airport, Destination, MapAirport, SearchHit } from "./features/airports/mapRecords.js";
 import type { RoutePath } from "./features/route-search/cypher.js";
 import type { Optimize } from "./features/route-search/searchRoute.js";
 import type { Authorizer } from "./auth.js";
@@ -15,7 +15,7 @@ const logger = pino();
 // The data-access seam: the pure middle of each feature is tested directly; the app is
 // tested against fakes of this surface; only the integration tests bind it to Neo4j.
 export type AppDeps = {
-  searchAirports(q: string, limit: number): Promise<Airport[]>;
+  searchAirports(q: string, limit: number): Promise<SearchHit[]>;
   getAirport(iata: string): Promise<Airport | null>;
   getDestinations(iata: string): Promise<Destination[]>;
   allAirports(): Promise<MapAirport[]>;

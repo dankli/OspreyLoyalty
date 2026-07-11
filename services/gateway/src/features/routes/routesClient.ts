@@ -12,6 +12,8 @@ export const AirportSchema = z.object({
   country: z.string(),
   countryCode: z.string(),
   continent: z.string().nullable(), // 45 dataset airports genuinely lack one
+  // only the search endpoint sends it (the hit badge); other airport payloads omit it
+  degree: z.number().int().nonnegative().optional(),
   latitude: z.number(),
   longitude: z.number(),
   timezone: z.string().nullable(),

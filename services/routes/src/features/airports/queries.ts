@@ -2,13 +2,13 @@ import type { Driver } from "neo4j-driver";
 import neo4j from "neo4j-driver";
 import { readQuery } from "../../neo4j.js";
 import { luceneQuery } from "./luceneQuery.js";
-import { zipCarriers, type Airport, type Destination, type MapAirport } from "./mapRecords.js";
+import { zipCarriers, type Airport, type Destination, type MapAirport, type SearchHit } from "./mapRecords.js";
 
 const AIRPORT_PROJECTION = `{ .iata, .icao, .name, .city, .country, .countryCode, .continent, .latitude, .longitude, .timezone }`;
 
 export const SEARCH_LIMIT_MAX = 25; // typeahead never needs more; clamps caller input
 
-export async function searchAirports(driver: Driver, q: string, limit: number): Promise<Airport[]> {
+export async function searchAirports(driver: Driver, q: string, limit: number): Promise<SearchHit[]> {
   const query = luceneQuery(q);
   if (query === "") return [];
   // Relevance gates the candidates (top 50 by lucene score, bounded); hubs order
@@ -21,12 +21,12 @@ export async function searchAirports(driver: Driver, q: string, limit: number): 
      ORDER BY score DESC
      LIMIT 50
      WITH node, COUNT { (node)-[:ROUTE]->() } AS degree
-     RETURN node ${AIRPORT_PROJECTION} AS airport
+     RETURN node ${AIRPORT_PROJECTION} AS airport, degree
      ORDER BY degree DESC, node.name ASC
      LIMIT $limit`,
     { query, limit: neo4j.int(Math.min(limit, SEARCH_LIMIT_MAX)) },
   );
-  return rows.map((row) => row.airport as Airport);
+  return rows.map((row) => ({ ...(row.airport as Airport), degree: row.degree as number }));
 }
 
 export async function getAirport(driver: Driver, iata: string): Promise<Airport | null> {

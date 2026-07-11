@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ComponentProps } from "svelte";
+  import { untrack, type ComponentProps } from "svelte";
   import { strings, formatNumber } from "../../strings";
   import AirportPicker from "../../lib/AirportPicker.svelte";
   import MapPanel from "../map/MapPanel.svelte";
@@ -16,6 +16,7 @@
     routeSearch = gatewayRouteSearch,
     onresult,
     mapProps = {},
+    seed = null,
   }: {
     search?: (query: string) => Promise<AirportHit[]>;
     routeSearch?: (from: string, to: string, optimize: RouteOptimize) => Promise<RoutePathResult | null>;
@@ -23,6 +24,8 @@
     onresult?: (iatas: string[]) => void;
     /** Overrides forwarded to the inline result map (tests inject a fake island). */
     mapProps?: Partial<ComponentProps<typeof MapPanel>>;
+    /** Prefill from a deep link or the explore tab; auto runs the search when both ends are set. */
+    seed?: { from: AirportHit | null; to: AirportHit | null; optimize?: RouteOptimize; auto?: boolean } | null;
   } = $props();
 
   const OPTIMIZE_OPTIONS: { value: RouteOptimize; label: string }[] = [
@@ -43,14 +46,20 @@
     return [...path.legs.map((leg) => leg.from.iata), path.legs.at(-1)?.to.iata ?? ""].filter(Boolean);
   }
 
-  async function run() {
-    if (!from || !to) return;
+  async function run(fromHit: AirportHit | null, toHit: AirportHit | null, opt: RouteOptimize) {
+    if (!fromHit || !toHit) return;
     loading = true;
     failed = false;
     noRoute = false;
     result = null;
+    // A shareable deep link for this exact search (replace: no history spam).
     try {
-      const path = await routeSearch(from.iata, to.iata, optimize);
+      history.replaceState(null, "", `#route?from=${fromHit.iata}&to=${toHit.iata}&optimize=${opt}`);
+    } catch {
+      // sandboxed contexts may refuse; the search itself is unaffected
+    }
+    try {
+      const path = await routeSearch(fromHit.iata, toHit.iata, opt);
       if (path) {
         result = path;
         onresult?.(pathToIatas(path));
@@ -63,6 +72,19 @@
       loading = false;
     }
   }
+
+  $effect(() => {
+    if (!seed) return;
+    const incoming = seed;
+    untrack(() => {
+      if (incoming.from) from = incoming.from;
+      if (incoming.to) to = incoming.to;
+      if (incoming.optimize) optimize = incoming.optimize;
+      if (incoming.auto && incoming.from && incoming.to) {
+        void run(incoming.from, incoming.to, incoming.optimize ?? optimize);
+      }
+    });
+  });
 
   function formatDuration(min: number): string {
     const hours = Math.floor(min / 60);
@@ -84,8 +106,8 @@
 
 <section class="route-search">
   <div class="pickers">
-    <AirportPicker label={strings.fromLabel} {search} onpick={(hit) => (from = hit)} />
-    <AirportPicker label={strings.toLabel} {search} onpick={(hit) => (to = hit)} />
+    <AirportPicker label={strings.fromLabel} {search} preset={from} onpick={(hit) => (from = hit)} />
+    <AirportPicker label={strings.toLabel} {search} preset={to} onpick={(hit) => (to = hit)} />
   </div>
 
   <fieldset>
@@ -98,7 +120,7 @@
     {/each}
   </fieldset>
 
-  <button type="button" class="go" disabled={!from || !to || loading} onclick={() => void run()}>
+  <button type="button" class="go" disabled={!from || !to || loading} onclick={() => void run(from, to, optimize)}>
     {strings.searchButton}
   </button>
 

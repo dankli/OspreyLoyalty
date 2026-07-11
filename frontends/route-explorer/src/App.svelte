@@ -3,6 +3,8 @@
   import ExplorePage from "./features/explore/ExplorePage.svelte";
   import RouteSearchPage from "./features/route-search/RouteSearchPage.svelte";
   import MapPanel from "./features/map/MapPanel.svelte";
+  import type { AirportHit } from "./features/explore/exploreData";
+  import type { RouteOptimize } from "./features/route-search/routeSearchData";
 
   const TABS = [
     { id: "explore", label: strings.tabExplore },
@@ -23,6 +25,41 @@
 
   // The latest searched itinerary, shared with the map so "find route" → "Map" draws it.
   let lastPathIatas = $state.raw<string[] | null>(null);
+
+  type RouteSeed = { from: AirportHit | null; to: AirportHit | null; optimize?: RouteOptimize; auto?: boolean };
+  let routeSeed = $state.raw<RouteSeed | null>(null);
+
+  function openRoute(seed: RouteSeed) {
+    routeSeed = seed;
+    open("route-search");
+  }
+
+  // Deep link: #route?from=ARN&to=HND&optimize=KM opens the search prefilled and runs it.
+  // Only the iatas travel in the URL, so the stub hits display as bare codes until picked over.
+  const OPTIMIZE_VALUES = ["KM", "MIN", "HOPS"] as const;
+  {
+    const match = location.hash.match(/^#route\?(.*)$/);
+    if (match) {
+      const params = new URLSearchParams(match[1]);
+      const stub = (iata: string | null): AirportHit | null =>
+        iata ? { iata: iata.toUpperCase(), name: iata.toUpperCase(), city: "", country: "" } : null;
+      const from = stub(params.get("from"));
+      const to = stub(params.get("to"));
+      if (from || to) {
+        const rawOptimize = (params.get("optimize") ?? "").toUpperCase();
+        routeSeed = {
+          from,
+          to,
+          optimize: (OPTIMIZE_VALUES as readonly string[]).includes(rawOptimize)
+            ? (rawOptimize as RouteOptimize)
+            : undefined,
+          auto: Boolean(from && to),
+        };
+        tab = "route-search";
+        visited["route-search"] = true;
+      }
+    }
+  }
 </script>
 
 <div class="route-explorer">
@@ -41,12 +78,12 @@
 
   {#if visited.explore}
     <div class="panel" hidden={tab !== "explore"}>
-      <ExplorePage />
+      <ExplorePage onroute={(pair) => openRoute({ ...pair, auto: true })} />
     </div>
   {/if}
   {#if visited["route-search"]}
     <div class="panel" hidden={tab !== "route-search"}>
-      <RouteSearchPage onresult={(iatas) => (lastPathIatas = iatas)} />
+      <RouteSearchPage seed={routeSeed} onresult={(iatas) => (lastPathIatas = iatas)} />
     </div>
   {/if}
   {#if visited.map}

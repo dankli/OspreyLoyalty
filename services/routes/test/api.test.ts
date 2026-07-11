@@ -13,6 +13,7 @@ const arlanda = {
   latitude: 59.651944,
   longitude: 17.918611,
   timezone: "Europe/Stockholm",
+  degree: 120,
 };
 
 function fakeDeps(overrides: Partial<AppDeps> = {}): AppDeps {

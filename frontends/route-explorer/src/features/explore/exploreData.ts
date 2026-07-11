@@ -9,6 +9,7 @@ const AirportSearchDocument = graphql(`
       name
       city
       country
+      degree
     }
   }
 `);
@@ -31,7 +32,14 @@ const DestinationsDocument = graphql(`
   }
 `);
 
-export type AirportHit = { iata: string; name: string; city: string; country: string };
+export type AirportHit = {
+  iata: string;
+  name: string;
+  city: string;
+  country: string;
+  /** Destinations served — only the search endpoint provides it (the hit badge). */
+  degree?: number | null;
+};
 export type DestinationRow = {
   airport: AirportHit;
   km: number;
