@@ -2,13 +2,12 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { graphql } from "../../gql";
-import { gatewayClient } from "../../gatewayClient";
-import { filterTransactions, type TransactionFilter } from "./filterTransactions";
+import { gatewayClient, gatewayBaseUrl } from "../../gatewayClient";
 import { formatPoints, formatDate } from "../../format";
 
 const transactionsQuery = graphql(`
-  query MemberTransactions($memberId: ID!, $page: Int!) {
-    transactions(memberId: $memberId, page: $page) {
+  query MemberTransactions($memberId: ID!, $page: Int!, $type: String) {
+    transactions(memberId: $memberId, page: $page, type: $type) {
       items {
         id
         type
@@ -22,40 +21,63 @@ const transactionsQuery = graphql(`
   }
 `);
 
+export type TransactionFilter = "all" | "earn" | "burn" | "expiry" | "adjustment";
 const filters: TransactionFilter[] = ["all", "earn", "burn", "expiry", "adjustment"];
 
 export function TransactionsPage({ memberId }: { memberId: string }) {
   const { t } = useTranslation();
   const [page, setPage] = useState(0);
   const [filter, setFilter] = useState<TransactionFilter>("all");
+  // The filter is a query variable: members filters server-side, so a filtered view spans
+  // the whole ledger instead of just the rows that happened to be on the current page.
+  const type = filter === "all" ? null : filter;
   const { data, isPending, isError } = useQuery({
-    queryKey: ["transactions", memberId, page],
-    queryFn: () => gatewayClient.request(transactionsQuery, { memberId, page }),
+    queryKey: ["transactions", memberId, page, type],
+    queryFn: () => gatewayClient.request(transactionsQuery, { memberId, page, type }),
   });
+
+  async function exportCsv() {
+    const response = await fetch(`${gatewayBaseUrl}/export/transactions?memberId=${encodeURIComponent(memberId)}`);
+    if (!response.ok) return;
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `osprey-transactions-${memberId}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
 
   if (isPending) return <p className="muted">{t("tx.loading")}</p>;
   if (isError || !data.transactions) return <p role="alert">{t("tx.error")}</p>;
 
   const { items, hasMore } = data.transactions;
-  const visible = filterTransactions(items, filter);
 
   return (
     <main className="dashboard">
       <h1>{t("tx.title")}</h1>
-      <label htmlFor="tx-filter">
-        {t("tx.type")}{" "}
-        <select
-          id="tx-filter"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as TransactionFilter)}
-        >
-          {filters.map((f) => (
-            <option key={f} value={f}>
-              {t(`tx.filter.${f}`)}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="tx-toolbar">
+        <label htmlFor="tx-filter">
+          {t("tx.type")}{" "}
+          <select
+            id="tx-filter"
+            value={filter}
+            onChange={(e) => {
+              setFilter(e.target.value as TransactionFilter);
+              setPage(0); // a new filter is a new list — never land mid-way into it
+            }}
+          >
+            {filters.map((f) => (
+              <option key={f} value={f}>
+                {t(`tx.filter.${f}`)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="button" className="tx-export" onClick={() => void exportCsv()}>
+          {t("tx.export")}
+        </button>
+      </div>
       <table className="transactions">
         <thead>
           <tr>
@@ -66,7 +88,7 @@ export function TransactionsPage({ memberId }: { memberId: string }) {
           </tr>
         </thead>
         <tbody>
-          {visible.map((tx) => (
+          {items.map((tx) => (
             <tr key={tx.id}>
               <td>{formatDate(tx.occurredAtUtc)}</td>
               <td>

@@ -71,5 +71,31 @@
     "empty": "Nessuna campagna.",
     "created": "Campagna creata.",
     "colWindow": "Periodo attivo"
+  },
+  "audit": {
+    "title": "Registro di audit",
+    "when": "Quando",
+    "actor": "Attore",
+    "action": "Azione",
+    "member": "Membro",
+    "details": "Dettagli",
+    "empty": "Ancora nessuna voce di audit.",
+    "previous": "Precedente",
+    "next": "Successivo"
+  },
+  "rewardsAdmin": {
+    "title": "Premi",
+    "id": "Id",
+    "idPlaceholder": "giorno-spa",
+    "name": "Nome",
+    "namePlaceholder": "Giornata spa",
+    "nameFor": "Nome per {id}",
+    "cost": "Costo",
+    "costFor": "Costo per {id}",
+    "save": "Salva",
+    "saved": "Salvato",
+    "delete": "Elimina",
+    "deletePrompt": "Eliminare il premio {name}?",
+    "create": "Aggiungi premio"
   }
 }

@@ -1,12 +1,20 @@
 {
-  "nav": { "dashboard": "Pannello", "transactions": "Transazioni", "rewards": "Premi", "travelAgent": "Agente di viaggio", "language": "Lingua" },
+  "nav": {
+    "dashboard": "Pannello",
+    "transactions": "Transazioni",
+    "rewards": "Premi",
+    "travelAgent": "Agente di viaggio",
+    "language": "Lingua"
+  },
   "dashboard": {
     "loading": "Caricamento del tuo account…",
     "error": "Impossibile caricare il membro.",
     "welcome": "Bentornato, {{name}}",
     "benefits": "I tuoi vantaggi"
   },
-  "points": { "spendable": "Punti spendibili" },
+  "points": {
+    "spendable": "Punti spendibili"
+  },
   "tier": {
     "osprey": "OSPREY, su invito.",
     "diamond": "DIAMOND è il livello guadagnato più alto. OSPREY è solo su invito.",
@@ -18,11 +26,23 @@
     "error": "Impossibile caricare le transazioni.",
     "title": "Transazioni",
     "type": "Tipo",
-    "filter": { "all": "Tutte", "earn": "Accumulo", "burn": "Riscatto", "expiry": "Scadenza", "adjustment": "Rettifica" },
-    "col": { "when": "Quando", "type": "Tipo", "source": "Origine", "points": "Punti" },
+    "filter": {
+      "all": "Tutte",
+      "earn": "Accumulo",
+      "burn": "Riscatto",
+      "expiry": "Scadenza",
+      "adjustment": "Rettifica"
+    },
+    "col": {
+      "when": "Quando",
+      "type": "Tipo",
+      "source": "Origine",
+      "points": "Punti"
+    },
     "previous": "Precedente",
     "next": "Successivo",
-    "page": "Pagina {{page}}"
+    "page": "Pagina {{page}}",
+    "export": "Esporta CSV"
   },
   "rewards": {
     "loading": "Caricamento premi…",

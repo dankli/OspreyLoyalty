@@ -14,7 +14,7 @@ import { t } from "./i18n.js";
 
 export type Deps = {
   fetchMember: (baseUrl: string, id: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Member | null>;
-  fetchTransactions: (baseUrl: string, memberId: string, page: number, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<TransactionsPage>;
+  fetchTransactions: (baseUrl: string, memberId: string, page: number, type?: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<TransactionsPage>;
   fetchPartners: (baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Partner[]>;
   fetchRewards: (baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<Reward[]>;
   postRedemption: (baseUrl: string, memberId: string, rewardId: string, idempotencyKey: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<RedemptionOutcome>;
@@ -48,8 +48,8 @@ export function schema(deps: Deps): GraphQLSchemaWithContext<YogaInitialContext>
       Query: {
         member: (_parent: unknown, args: { id: string }, context: RequestContext) =>
           deps.fetchMember(env.MEMBERS_URL, args.id, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
-        transactions: (_parent: unknown, args: { memberId: string; page: number }, context: RequestContext) =>
-          deps.fetchTransactions(env.MEMBERS_URL, args.memberId, args.page, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
+        transactions: (_parent: unknown, args: { memberId: string; page: number; type?: string | null }, context: RequestContext) =>
+          deps.fetchTransactions(env.MEMBERS_URL, args.memberId, args.page, args.type ?? undefined, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
         partners: (_parent: unknown, _args: unknown, context: RequestContext) =>
           deps.fetchPartners(env.PARTNERS_URL, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
         dashboard: async (_parent: unknown, args: { memberId: string }, context: RequestContext) => {

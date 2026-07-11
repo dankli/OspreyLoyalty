@@ -71,5 +71,31 @@
     "empty": "Inga kampanjer.",
     "created": "Kampanjen skapades.",
     "colWindow": "Aktiv period"
+  },
+  "audit": {
+    "title": "Granskningslogg",
+    "when": "När",
+    "actor": "Aktör",
+    "action": "Åtgärd",
+    "member": "Medlem",
+    "details": "Detaljer",
+    "empty": "Inga granskningsposter ännu.",
+    "previous": "Föregående",
+    "next": "Nästa"
+  },
+  "rewardsAdmin": {
+    "title": "Belöningar",
+    "id": "Id",
+    "idPlaceholder": "spa-dag",
+    "name": "Namn",
+    "namePlaceholder": "Spa-dag",
+    "nameFor": "Namn för {id}",
+    "cost": "Kostnad",
+    "costFor": "Kostnad för {id}",
+    "save": "Spara",
+    "saved": "Sparat",
+    "delete": "Ta bort",
+    "deletePrompt": "Ta bort belöningen {name}?",
+    "create": "Lägg till belöning"
   }
 }

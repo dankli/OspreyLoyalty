@@ -71,5 +71,31 @@
     "empty": "No hay campañas.",
     "created": "Campaña creada.",
     "colWindow": "Período activo"
+  },
+  "audit": {
+    "title": "Registro de auditoría",
+    "when": "Cuándo",
+    "actor": "Actor",
+    "action": "Acción",
+    "member": "Miembro",
+    "details": "Detalles",
+    "empty": "Aún no hay entradas de auditoría.",
+    "previous": "Anterior",
+    "next": "Siguiente"
+  },
+  "rewardsAdmin": {
+    "title": "Recompensas",
+    "id": "Id",
+    "idPlaceholder": "dia-spa",
+    "name": "Nombre",
+    "namePlaceholder": "Día de spa",
+    "nameFor": "Nombre de {id}",
+    "cost": "Coste",
+    "costFor": "Coste de {id}",
+    "save": "Guardar",
+    "saved": "Guardado",
+    "delete": "Eliminar",
+    "deletePrompt": "¿Eliminar la recompensa {name}?",
+    "create": "Añadir recompensa"
   }
 }

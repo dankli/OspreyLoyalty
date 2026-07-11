@@ -1,12 +1,20 @@
 {
-  "nav": { "dashboard": "Översikt", "transactions": "Transaktioner", "rewards": "Förmåner", "travelAgent": "Reseagent", "language": "Språk" },
+  "nav": {
+    "dashboard": "Översikt",
+    "transactions": "Transaktioner",
+    "rewards": "Förmåner",
+    "travelAgent": "Reseagent",
+    "language": "Språk"
+  },
   "dashboard": {
     "loading": "Laddar ditt konto…",
     "error": "Kunde inte ladda medlem.",
     "welcome": "Välkommen tillbaka, {{name}}",
     "benefits": "Dina förmåner"
   },
-  "points": { "spendable": "Spenderbara poäng" },
+  "points": {
+    "spendable": "Spenderbara poäng"
+  },
   "tier": {
     "osprey": "OSPREY, via inbjudan.",
     "diamond": "DIAMOND är den högsta intjänade nivån. OSPREY är endast via inbjudan.",
@@ -18,11 +26,23 @@
     "error": "Kunde inte ladda transaktioner.",
     "title": "Transaktioner",
     "type": "Typ",
-    "filter": { "all": "Alla", "earn": "Intjäning", "burn": "Uttag", "expiry": "Utgång", "adjustment": "Justering" },
-    "col": { "when": "När", "type": "Typ", "source": "Källa", "points": "Poäng" },
+    "filter": {
+      "all": "Alla",
+      "earn": "Intjäning",
+      "burn": "Uttag",
+      "expiry": "Utgång",
+      "adjustment": "Justering"
+    },
+    "col": {
+      "when": "När",
+      "type": "Typ",
+      "source": "Källa",
+      "points": "Poäng"
+    },
     "previous": "Föregående",
     "next": "Nästa",
-    "page": "Sida {{page}}"
+    "page": "Sida {{page}}",
+    "export": "Exportera CSV"
   },
   "rewards": {
     "loading": "Laddar förmåner…",

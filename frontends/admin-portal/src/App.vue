@@ -4,6 +4,8 @@
 import MemberPanel from "./features/members/MemberPanel.vue";
 import RatesPanel from "./features/partners/RatesPanel.vue";
 import CampaignsPanel from "./features/campaigns/CampaignsPanel.vue";
+import RewardsPanel from "./features/rewards/RewardsPanel.vue";
+import AuditPanel from "./features/audit/AuditPanel.vue";
 import HelpButton from "./HelpButton.vue";
 import { isAdmin } from "./auth";
 
@@ -33,6 +35,8 @@ const canAdminister = isAdmin();
       <MemberPanel />
       <RatesPanel />
       <CampaignsPanel />
+      <RewardsPanel />
+      <AuditPanel />
     </template>
     <p v-else class="admin-only">{{ $t("app.adminOnly") }}</p>
   </main>

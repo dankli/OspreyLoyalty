@@ -18,6 +18,7 @@ public sealed class RedeemConcurrencyTests : IAsyncLifetime
     private readonly MongoDbContainer mongo = new MongoDbBuilder().WithImage("mongo:7").Build();
     private IMongoCollection<MemberDocument> members = null!;
     private IMongoCollection<PointsTransactionDocument> transactions = null!;
+    private IMongoCollection<RewardDocument> rewards = null!;
 
     public async Task InitializeAsync()
     {
@@ -25,7 +26,9 @@ public sealed class RedeemConcurrencyTests : IAsyncLifetime
         IMongoDatabase db = new MongoClient(mongo.GetConnectionString()).GetDatabase("osprey");
         members = db.GetCollection<MemberDocument>("members");
         transactions = db.GetCollection<PointsTransactionDocument>("transactions");
+        rewards = db.GetCollection<RewardDocument>("rewards");
         await MongoIndexes.EnsureAsync(transactions);
+        await Rewards.EnsureDefaultsAsync(rewards);
         await members.InsertOneAsync(new MemberDocument(
             "m-1", "Test Member", "t@example.com", DateTime.UtcNow, 0, SpendablePoints: 20_000));
     }
@@ -35,7 +38,7 @@ public sealed class RedeemConcurrencyTests : IAsyncLifetime
     [Fact]
     public async Task Concurrent_redemptions_never_overdraw()
     {
-        var handler = new Redeem.Handler(members, transactions);
+        var handler = new Redeem.Handler(members, transactions, rewards);
 
         Task<Redeem.Outcome>[] attempts = Enumerable.Range(0, 10)
             .Select(i => handler.Handle("m-1", new Redeem.Request("lounge-pass", $"concurrent-key-{i:D4}")))
@@ -55,7 +58,7 @@ public sealed class RedeemConcurrencyTests : IAsyncLifetime
     [Fact]
     public async Task Concurrent_same_key_redemptions_burn_once_and_compensate_losers()
     {
-        var handler = new Redeem.Handler(members, transactions);
+        var handler = new Redeem.Handler(members, transactions, rewards);
         // Ample balance: every attempt passes the conditional decrement; the unique
         // index picks one winner and every loser must give its decrement back.
         var request = new Redeem.Request("cardco-giftcard", "same-key-00000001"); // 5 000 cost vs 20 000 balance
@@ -72,7 +75,7 @@ public sealed class RedeemConcurrencyTests : IAsyncLifetime
     [Fact]
     public async Task Exact_balance_redeems_to_zero()
     {
-        var handler = new Redeem.Handler(members, transactions);
+        var handler = new Redeem.Handler(members, transactions, rewards);
 
         // 20 000 - 15 000 leaves a balance that exactly equals the gift card cost.
         Redeem.Outcome lounge = await handler.Handle("m-1", new Redeem.Request("lounge-pass", "exact-key-0001"));
@@ -95,7 +98,7 @@ public sealed class RedeemConcurrencyTests : IAsyncLifetime
     [Fact]
     public async Task Retried_redemption_spends_once()
     {
-        var handler = new Redeem.Handler(members, transactions);
+        var handler = new Redeem.Handler(members, transactions, rewards);
         var request = new Redeem.Request("lounge-pass", "retry-key-0001");
 
         Redeem.Outcome first = await handler.Handle("m-1", request);
@@ -114,7 +117,7 @@ public sealed class RedeemConcurrencyTests : IAsyncLifetime
     [Fact]
     public async Task Unknown_member_is_reported_and_writes_nothing()
     {
-        var handler = new Redeem.Handler(members, transactions);
+        var handler = new Redeem.Handler(members, transactions, rewards);
         Redeem.Outcome outcome = await handler.Handle("ghost", new Redeem.Request("lounge-pass", "ghost-key-0001"));
         Assert.Equal(Redeem.Status.UnknownMember, outcome.Status);
         Assert.Null(outcome.Response);
@@ -124,7 +127,7 @@ public sealed class RedeemConcurrencyTests : IAsyncLifetime
     [Fact]
     public async Task Unknown_reward_is_reported()
     {
-        var handler = new Redeem.Handler(members, transactions);
+        var handler = new Redeem.Handler(members, transactions, rewards);
         Redeem.Outcome outcome = await handler.Handle("m-1", new Redeem.Request("no-such-reward", "reward-key-0001"));
         Assert.Equal(Redeem.Status.UnknownReward, outcome.Status);
     }

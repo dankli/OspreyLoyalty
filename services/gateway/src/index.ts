@@ -26,6 +26,7 @@ function routeLabel(url: string | undefined): string {
   const pathname = (url ?? "").split("?")[0] ?? "";
   if (pathname === "/graphql" || pathname === "/health" || pathname === "/metrics") return pathname;
   if (pathname === "/travel-agent/stream") return pathname;
+  if (pathname === "/export/transactions") return pathname;
   if (/^\/api\/member\/[^/]+$/.test(pathname)) return "/api/member/:id";
   return "other";
 }
@@ -125,6 +126,41 @@ const server = createServer((req, res) => {
       return;
     }
     void handleTravelAgentStream(req, res, { fetchMember, membersUrl: env.MEMBERS_URL });
+    return;
+  }
+
+  // CSV statement passthrough: the member portal talks only to the gateway, so the
+  // members download surfaces here (headers stream through untouched).
+  const exportMatch = req.url?.match(/^\/export\/transactions\?memberId=([^&]+)$/);
+  if (exportMatch) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "authorization, x-correlation-id");
+    if (req.method === "OPTIONS") {
+      res.writeHead(204).end();
+      return;
+    }
+    void (async () => {
+      try {
+        const authorization = typeof req.headers.authorization === "string" ? req.headers.authorization : undefined;
+        const upstream = await fetch(
+          `${env.MEMBERS_URL}/api/members/${exportMatch[1]!}/transactions/export`,
+          {
+            headers: { "x-correlation-id": correlationId, ...(authorization ? { authorization } : {}) },
+            signal: AbortSignal.timeout(5000),
+          },
+        );
+        const body = Buffer.from(await upstream.arrayBuffer());
+        res.writeHead(upstream.status, {
+          "content-type": upstream.headers.get("content-type") ?? "text/csv",
+          "content-disposition": upstream.headers.get("content-disposition") ?? "attachment",
+        });
+        res.end(body);
+      } catch {
+        res.writeHead(502, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "members service unavailable" }));
+      }
+    })();
     return;
   }
 

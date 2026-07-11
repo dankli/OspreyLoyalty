@@ -39,7 +39,7 @@ type Dashboard {
 }
 
 extend type Query {
-  transactions(memberId: ID!, page: Int! = 0): TransactionsPage!
+  transactions(memberId: ID!, page: Int! = 0, type: String): TransactionsPage!
   partners: [Partner!]!
   dashboard(memberId: ID!): Dashboard!
 }

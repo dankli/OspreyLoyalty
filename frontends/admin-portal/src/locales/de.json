@@ -71,5 +71,31 @@
     "empty": "Keine Kampagnen.",
     "created": "Kampagne erstellt.",
     "colWindow": "Aktiver Zeitraum"
+  },
+  "audit": {
+    "title": "Audit-Protokoll",
+    "when": "Wann",
+    "actor": "Akteur",
+    "action": "Aktion",
+    "member": "Mitglied",
+    "details": "Details",
+    "empty": "Noch keine Audit-Einträge.",
+    "previous": "Zurück",
+    "next": "Weiter"
+  },
+  "rewardsAdmin": {
+    "title": "Prämien",
+    "id": "Id",
+    "idPlaceholder": "spa-tag",
+    "name": "Name",
+    "namePlaceholder": "Spa-Tag",
+    "nameFor": "Name für {id}",
+    "cost": "Kosten",
+    "costFor": "Kosten für {id}",
+    "save": "Speichern",
+    "saved": "Gespeichert",
+    "delete": "Löschen",
+    "deletePrompt": "Die Prämie {name} löschen?",
+    "create": "Prämie hinzufügen"
   }
 }

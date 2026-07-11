@@ -1,12 +1,20 @@
 {
-  "nav": { "dashboard": "Panel", "transactions": "Transacciones", "rewards": "Recompensas", "travelAgent": "Agente de viajes", "language": "Idioma" },
+  "nav": {
+    "dashboard": "Panel",
+    "transactions": "Transacciones",
+    "rewards": "Recompensas",
+    "travelAgent": "Agente de viajes",
+    "language": "Idioma"
+  },
   "dashboard": {
     "loading": "Cargando tu cuenta…",
     "error": "No se pudo cargar el miembro.",
     "welcome": "Bienvenido de nuevo, {{name}}",
     "benefits": "Tus beneficios"
   },
-  "points": { "spendable": "Puntos disponibles" },
+  "points": {
+    "spendable": "Puntos disponibles"
+  },
   "tier": {
     "osprey": "OSPREY, por invitación.",
     "diamond": "DIAMOND es el nivel ganado más alto. OSPREY es solo por invitación.",
@@ -18,11 +26,23 @@
     "error": "No se pudieron cargar las transacciones.",
     "title": "Transacciones",
     "type": "Tipo",
-    "filter": { "all": "Todas", "earn": "Ganancia", "burn": "Canje", "expiry": "Caducidad", "adjustment": "Ajuste" },
-    "col": { "when": "Cuándo", "type": "Tipo", "source": "Origen", "points": "Puntos" },
+    "filter": {
+      "all": "Todas",
+      "earn": "Ganancia",
+      "burn": "Canje",
+      "expiry": "Caducidad",
+      "adjustment": "Ajuste"
+    },
+    "col": {
+      "when": "Cuándo",
+      "type": "Tipo",
+      "source": "Origen",
+      "points": "Puntos"
+    },
     "previous": "Anterior",
     "next": "Siguiente",
-    "page": "Página {{page}}"
+    "page": "Página {{page}}",
+    "export": "Exportar CSV"
   },
   "rewards": {
     "loading": "Cargando recompensas…",

@@ -23,12 +23,14 @@ export async function fetchTransactions(
   baseUrl: string,
   memberId: string,
   page: number,
+  type?: string,
   correlationId?: string,
   authorization?: string,
   acceptLanguage?: string,
 ): Promise<TransactionsPage> {
+  const typeParam = type ? `&type=${encodeURIComponent(type)}` : "";
   const response = await fetch(
-    `${baseUrl}/api/members/${encodeURIComponent(memberId)}/transactions?page=${encodeURIComponent(page)}`,
+    `${baseUrl}/api/members/${encodeURIComponent(memberId)}/transactions?page=${encodeURIComponent(page)}${typeParam}`,
     {
       headers: { ...(correlationId ? { "x-correlation-id": correlationId } : {}), ...(authorization ? { authorization } : {}), ...(acceptLanguage ? { "accept-language": acceptLanguage } : {}) },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),

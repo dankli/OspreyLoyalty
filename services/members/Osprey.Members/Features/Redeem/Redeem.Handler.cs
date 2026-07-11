@@ -9,20 +9,23 @@ public static partial class Redeem
 {
     public sealed class Handler(
         IMongoCollection<MemberDocument> members,
-        IMongoCollection<PointsTransactionDocument> transactions)
+        IMongoCollection<PointsTransactionDocument> transactions,
+        IMongoCollection<RewardDocument> rewards)
     {
         private const int MongoTimeoutSeconds = 5;
 
         public async Task<Outcome> Handle(string memberId, Request request, CancellationToken ct = default)
         {
-            // Happy path: format already validated by the endpoint pipeline. Reward existence is a
-            // precondition — resolve it and step onto the UnknownReward rail if it isn't in the catalogue.
-            Rewards.Reward? reward = Rewards.ById(request.RewardId);
-            if (reward is null)
-                return Outcome.UnknownReward;
-
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(MongoTimeoutSeconds)); // bound every hop below
+
+            // Happy path: format already validated by the endpoint pipeline. Reward existence is a
+            // precondition — resolve it and step onto the UnknownReward rail if it isn't in the catalogue.
+            RewardDocument? rewardDocument = await rewards
+                .Find(r => r.Id == request.RewardId).FirstOrDefaultAsync(cts.Token);
+            if (rewardDocument is null)
+                return Outcome.UnknownReward;
+            Rewards.Reward reward = Rewards.ToReward(rewardDocument);
 
             // Retry fast-path: this key already burned once — succeed without spending again.
             if (await transactions.Find(t => t.IdempotencyKey == request.IdempotencyKey).AnyAsync(cts.Token))

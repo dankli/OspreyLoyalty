@@ -68,6 +68,8 @@ builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<IMongoClient>().GetDatabase("osprey").GetCollection<AuditLogDocument>("audit"));
 builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<IMongoClient>().GetDatabase("osprey").GetCollection<OutboxDocument>("outbox"));
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IMongoClient>().GetDatabase("osprey").GetCollection<RewardDocument>("rewards"));
 builder.Services.AddScoped<EnrollMember.Handler>();
 builder.Services.AddScoped<GetMemberProfile.Handler>();
 builder.Services.AddScoped<ApplyEarn.Handler>();
@@ -78,6 +80,7 @@ builder.Services.AddScoped<FindMemberByEmail.Handler>();
 builder.Services.AddScoped<AdjustPoints.Handler>();
 builder.Services.AddScoped<SetOspreyInvitation.Handler>();
 builder.Services.AddScoped<EraseMember.Handler>();
+builder.Services.AddScoped<ListAuditLog.Handler>();
 builder.Services.AddScoped<Audit.Writer>();
 builder.Services.AddScoped<Outbox.Writer>();
 builder.Services.AddCors();
@@ -173,6 +176,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 EnrollMember.MapEndpoints(app);
 GetMemberProfile.MapEndpoints(app);
 ListTransactions.MapEndpoints(app);
+ListTransactions.MapExportEndpoint(app);
 Rewards.MapEndpoints(app);
 Redeem.MapEndpoints(app);
 RedeemTrip.MapEndpoints(app);
@@ -180,6 +184,8 @@ var findByEmail = FindMemberByEmail.MapEndpoints(app);
 var adjust = AdjustPoints.MapEndpoints(app);
 var osprey = SetOspreyInvitation.MapEndpoints(app);
 var erasure = EraseMember.MapEndpoints(app);
+var auditLog = ListAuditLog.MapEndpoints(app);
+var rewardAdmin = AdminRewards.MapEndpoints(app);
 if (authEnabled)
 {
     // Admin surfaces require the admin role; the member endpoints above just need a
@@ -188,6 +194,8 @@ if (authEnabled)
     adjust.RequireAuthorization("admin");
     osprey.RequireAuthorization("admin");
     erasure.RequireAuthorization("admin");
+    auditLog.RequireAuthorization("admin");
+    foreach (var endpoint in rewardAdmin) endpoint.RequireAuthorization("admin");
 }
 app.MapMetrics().AllowAnonymous(); // Prometheus scrape endpoint at /metrics
 
@@ -197,6 +205,9 @@ await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<
 
 // Versioned run-once migrations (idempotent bodies; markers in the `migrations` collection).
 await Migrations.RunAsync(app.Services.GetRequiredService<IMongoClient>().GetDatabase("osprey"), app.Logger);
+
+// The managed reward catalog: an EMPTY collection gets the three classic rewards.
+await Rewards.EnsureDefaultsAsync(app.Services.GetRequiredService<IMongoCollection<RewardDocument>>());
 
 if (app.Configuration.GetValue<bool>("SeedDemoData", false))
     await SeedDemoData.SeedAsync(app.Services.GetRequiredService<IMongoCollection<MemberDocument>>());

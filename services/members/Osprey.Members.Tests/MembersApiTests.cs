@@ -20,6 +20,8 @@ public sealed class MembersApiTests : IAsyncLifetime
             b.UseSetting("ConnectionStrings:Mongo", mongo.GetConnectionString());
             b.UseSetting("ConsumeEarnEvents", "false"); // these tests never touch a broker
             b.UseSetting("ExpirySweep", "false"); // a background sweep would make assertions racy
+            b.UseSetting("RequalificationSweep", "false");
+            b.UseSetting("OutboxRelay", "false"); // the relay would retry a broker that is not there
         });
     }
 

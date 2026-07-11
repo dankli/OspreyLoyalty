@@ -1,12 +1,20 @@
 {
-  "nav": { "dashboard": "Dashboard", "transactions": "Transactions", "rewards": "Rewards", "travelAgent": "Travel Agent", "language": "Language" },
+  "nav": {
+    "dashboard": "Dashboard",
+    "transactions": "Transactions",
+    "rewards": "Rewards",
+    "travelAgent": "Travel Agent",
+    "language": "Language"
+  },
   "dashboard": {
     "loading": "Loading your account…",
     "error": "Could not load member.",
     "welcome": "Welcome back, {{name}}",
     "benefits": "Your benefits"
   },
-  "points": { "spendable": "Spendable points" },
+  "points": {
+    "spendable": "Spendable points"
+  },
   "tier": {
     "osprey": "OSPREY, by invitation.",
     "diamond": "DIAMOND is the highest earned tier. OSPREY is by invitation only.",
@@ -18,11 +26,23 @@
     "error": "Could not load transactions.",
     "title": "Transactions",
     "type": "Type",
-    "filter": { "all": "All", "earn": "Earn", "burn": "Burn", "expiry": "Expiry", "adjustment": "Adjustment" },
-    "col": { "when": "When", "type": "Type", "source": "Source", "points": "Points" },
+    "filter": {
+      "all": "All",
+      "earn": "Earn",
+      "burn": "Burn",
+      "expiry": "Expiry",
+      "adjustment": "Adjustment"
+    },
+    "col": {
+      "when": "When",
+      "type": "Type",
+      "source": "Source",
+      "points": "Points"
+    },
     "previous": "Previous",
     "next": "Next",
-    "page": "Page {{page}}"
+    "page": "Page {{page}}",
+    "export": "Export CSV"
   },
   "rewards": {
     "loading": "Loading rewards…",

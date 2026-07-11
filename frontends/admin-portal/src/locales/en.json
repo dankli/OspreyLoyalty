@@ -71,5 +71,31 @@
     "empty": "No campaigns.",
     "created": "Campaign created.",
     "colWindow": "Active period"
+  },
+  "audit": {
+    "title": "Audit log",
+    "when": "When",
+    "actor": "Actor",
+    "action": "Action",
+    "member": "Member",
+    "details": "Details",
+    "empty": "No audit entries yet.",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "rewardsAdmin": {
+    "title": "Rewards",
+    "id": "Id",
+    "idPlaceholder": "spa-day",
+    "name": "Name",
+    "namePlaceholder": "Spa day",
+    "nameFor": "Name for {id}",
+    "cost": "Cost",
+    "costFor": "Cost for {id}",
+    "save": "Save",
+    "saved": "Saved",
+    "delete": "Delete",
+    "deletePrompt": "Delete the reward {name}?",
+    "create": "Add reward"
   }
 }

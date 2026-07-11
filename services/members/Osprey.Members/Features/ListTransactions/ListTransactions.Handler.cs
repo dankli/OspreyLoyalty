@@ -12,15 +12,17 @@ public static partial class ListTransactions
         private const int MongoTimeoutSeconds = 5;
         internal const int PageSize = 20; // bounded page size per spec §4.1 — no caller-chosen sizes
 
-        public async Task<Response> Handle(string memberId, int page, CancellationToken ct = default)
+        public async Task<Response> Handle(string memberId, int page, string? type = null, CancellationToken ct = default)
         {
-            // Happy path: the endpoint pipeline (Validation.Check) has already rejected a bad id/page.
+            // Happy path: the endpoint pipeline (Validation.Check) has already rejected a bad
+            // id/page/type. The type filter runs server-side so a filtered view spans the whole
+            // ledger, not just the rows of the current page.
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             cts.CancelAfter(TimeSpan.FromSeconds(MongoTimeoutSeconds)); // bound the read
 
             // Fetch one extra row: cheaper than a count for a HasMore flag.
             List<PointsTransactionDocument> rows = await transactions
-                .Find(t => t.MemberId == memberId)
+                .Find(t => t.MemberId == memberId && (type == null || t.Type == type))
                 .SortByDescending(t => t.OccurredAtUtc)
                 .Skip(page * PageSize)
                 .Limit(PageSize + 1)

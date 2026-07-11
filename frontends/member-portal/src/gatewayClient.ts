@@ -2,6 +2,9 @@ import { GraphQLClient } from "graphql-request";
 import { getAccessToken } from "./auth";
 import i18n from "./i18n";
 
+/** The gateway origin, for the few REST surfaces (SSE stream, CSV export) beside GraphQL. */
+export const gatewayBaseUrl = (import.meta.env.VITE_GATEWAY_URL ?? "http://localhost:4000/graphql").replace(/\/graphql$/, "");
+
 export const gatewayClient = new GraphQLClient(
   import.meta.env.VITE_GATEWAY_URL ?? "http://localhost:4000/graphql",
   {

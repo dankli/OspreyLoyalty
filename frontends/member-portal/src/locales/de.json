@@ -1,12 +1,20 @@
 {
-  "nav": { "dashboard": "Übersicht", "transactions": "Transaktionen", "rewards": "Prämien", "travelAgent": "Reiseberater", "language": "Sprache" },
+  "nav": {
+    "dashboard": "Übersicht",
+    "transactions": "Transaktionen",
+    "rewards": "Prämien",
+    "travelAgent": "Reiseberater",
+    "language": "Sprache"
+  },
   "dashboard": {
     "loading": "Konto wird geladen…",
     "error": "Mitglied konnte nicht geladen werden.",
     "welcome": "Willkommen zurück, {{name}}",
     "benefits": "Deine Vorteile"
   },
-  "points": { "spendable": "Verfügbare Punkte" },
+  "points": {
+    "spendable": "Verfügbare Punkte"
+  },
   "tier": {
     "osprey": "OSPREY, auf Einladung.",
     "diamond": "DIAMOND ist die höchste erreichbare Stufe. OSPREY gibt es nur auf Einladung.",
@@ -18,11 +26,23 @@
     "error": "Transaktionen konnten nicht geladen werden.",
     "title": "Transaktionen",
     "type": "Typ",
-    "filter": { "all": "Alle", "earn": "Sammeln", "burn": "Einlösen", "expiry": "Verfall", "adjustment": "Anpassung" },
-    "col": { "when": "Wann", "type": "Typ", "source": "Quelle", "points": "Punkte" },
+    "filter": {
+      "all": "Alle",
+      "earn": "Sammeln",
+      "burn": "Einlösen",
+      "expiry": "Verfall",
+      "adjustment": "Anpassung"
+    },
+    "col": {
+      "when": "Wann",
+      "type": "Typ",
+      "source": "Quelle",
+      "points": "Punkte"
+    },
     "previous": "Zurück",
     "next": "Weiter",
-    "page": "Seite {{page}}"
+    "page": "Seite {{page}}",
+    "export": "CSV exportieren"
   },
   "rewards": {
     "loading": "Prämien werden geladen…",
