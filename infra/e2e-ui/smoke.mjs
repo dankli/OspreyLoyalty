@@ -72,6 +72,70 @@ await step("map renders with a live status line", async () => {
   });
 });
 
+await step("member portal dashboard shows balance, tier and benefits", async () => {
+  await page.click('.shell-nav button:has-text("Member portal")');
+  await page.waitForSelector(".balance");
+  await page.waitForSelector("ul.benefits li");
+});
+
+await step("activating a benefit mints a code", async () => {
+  // Idempotent per run only in effect (a fresh key each click), but the panel flips to
+  // "Show code" afterwards, so re-runs exercise both branches.
+  const activate = page.locator("ul.benefits button", { hasText: /^(Activate)$/ }).first();
+  const showCode = page.locator("ul.benefits button", { hasText: /Show code/ }).first();
+  if (await activate.isVisible().catch(() => false)) {
+    await activate.click();
+  } else {
+    await showCode.click();
+  }
+  await page.waitForSelector(".benefit-code-card .benefit-code");
+  const code = await page.textContent(".benefit-code-card .benefit-code");
+  if (!/^[A-Z2-9]{8}$/.test((code ?? "").trim())) throw new Error(`unexpected code: ${code}`);
+  await page.click('.benefit-code-card button:has-text("Close")');
+});
+
+await step("transactions filter narrows server-side", async () => {
+  await page.click('nav a:has-text("Transactions")');
+  await page.waitForSelector("table.transactions tbody tr");
+  await page.selectOption("#tx-filter", "earn");
+  await page.waitForFunction(() => {
+    const badges = [...document.querySelectorAll("table.transactions .type-badge")];
+    return badges.length > 0 && badges.every((el) => el.classList.contains("type-earn"));
+  });
+});
+
+await step("rewards page lists the managed catalog", async () => {
+  await page.click('nav a:has-text("Rewards")');
+  await page.waitForFunction(() => /Lounge day pass/i.test(document.body.textContent ?? ""));
+});
+
+await step("admin portal mounts its five panels", async () => {
+  await page.click('.shell-nav button:has-text("Admin portal")');
+  for (const heading of ["Member lookup", "Partner earn rates", "Campaigns", "Rewards", "Audit log"]) {
+    await page.waitForSelector(`h2:has-text("${heading}")`);
+  }
+});
+
+await step("admin quick-pick lookup renders a profile and the audit trail answers", async () => {
+  await page.selectOption('select[aria-label="Quick pick member"]', { index: 1 });
+  await page.waitForSelector("table:visible");
+  // the audit panel either lists entries or says it is empty — both prove the reader answers
+  await page.waitForFunction(() => {
+    const body = document.body.textContent ?? "";
+    return /Audit log/.test(body) && (/adjust_points|set_osprey|erase_member/.test(body) || /No audit entries yet/.test(body));
+  });
+});
+
+await step("shell language switch relabels chrome and propagates to the portal", async () => {
+  await page.click('.shell-nav button:has-text("Member portal")');
+  await page.waitForSelector("ul.benefits li");
+  await page.selectOption("select.shell-lang", "sv");
+  await page.waitForSelector('.shell-nav button:has-text("Medlemsportal")');
+  await page.waitForSelector('nav a:has-text("Transaktioner")'); // the mounted remote followed live
+  await page.selectOption("select.shell-lang", "en");
+  await page.waitForSelector('.shell-nav button:has-text("Member portal")');
+});
+
 await browser.close();
 
 if (pageErrors.length > 0) {

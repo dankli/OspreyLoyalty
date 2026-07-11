@@ -27,9 +27,11 @@ spec:
             - containerPort: 8080
           env:
             - name: ConnectionStrings__Mongo
-              value: mongodb://mongo:27017
+              valueFrom:
+                secretKeyRef: { name: osprey-datastores, key: mongo-uri }
             - name: RabbitMq__Host
-              value: rabbitmq
+              valueFrom:
+                secretKeyRef: { name: osprey-datastores, key: rabbitmq-host }
             - name: SeedDemoData
               value: "true"
             - name: ASPNETCORE_URLS

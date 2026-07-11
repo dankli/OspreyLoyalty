@@ -15,6 +15,7 @@ that is where the tests live too.
 [![admin-portal](https://github.com/dankli/OspreyLoyalty/actions/workflows/admin-portal.yml/badge.svg)](https://github.com/dankli/OspreyLoyalty/actions/workflows/admin-portal.yml)
 [![shell](https://github.com/dankli/OspreyLoyalty/actions/workflows/shell.yml/badge.svg)](https://github.com/dankli/OspreyLoyalty/actions/workflows/shell.yml)
 [![points-engine](https://github.com/dankli/OspreyLoyalty/actions/workflows/points-engine.yml/badge.svg)](https://github.com/dankli/OspreyLoyalty/actions/workflows/points-engine.yml)
+[![notifications](https://github.com/dankli/OspreyLoyalty/actions/workflows/notifications.yml/badge.svg)](https://github.com/dankli/OspreyLoyalty/actions/workflows/notifications.yml)
 [![e2e](https://github.com/dankli/OspreyLoyalty/actions/workflows/e2e.yml/badge.svg)](https://github.com/dankli/OspreyLoyalty/actions/workflows/e2e.yml)
 [![infra](https://github.com/dankli/OspreyLoyalty/actions/workflows/infra.yml/badge.svg)](https://github.com/dankli/OspreyLoyalty/actions/workflows/infra.yml)
 
@@ -81,6 +82,7 @@ with a demo user (`demo-ada` / `demo-erik` / `demo-yusra`, or `admin`).
 | https://points-engine.osprey.localtest.me | Points engine (REST) |
 | https://grafana.osprey.localtest.me | Grafana — RED + cluster/node/pod dashboards |
 | https://jaeger.osprey.localtest.me | Jaeger — distributed traces |
+| https://mailpit.osprey.localtest.me | Mailpit — the demo inbox (tier changes, expiring-points warnings) |
 | https://traefik.osprey.localtest.me | Traefik dashboard |
 
 Two demos are open and answer plain `curl` against the ingress (the mkcert cert is trusted in the
@@ -369,7 +371,7 @@ All five original phases are done, and Phase 6 (enterprise) is largely in place:
   ([ADR-0007](docs/decisions/0007-zero-trust-auth.md)); OpenTelemetry tracing in Jaeger and logs in Loki
   ([ADR-0008](docs/decisions/0008-opentelemetry-observability.md)); a five-language UI with in-app help;
   a Traefik HTTPS ingress ([ADR-0011](docs/decisions/0011-traefik-ingress.md)); and cluster-metrics
-  dashboards. Still to land: the RabbitMQ auth hop and localized backend messages.
+  dashboards. Both later landed: the RabbitMQ auth hop and localized backend messages.
 
 - **Phase 7 (production hardening)** — resilience and data integrity (a transactional outbox for the earn
   publish, an append-only audit log, GDPR right-to-erasure); operability (SLOs with RED alerting and runbooks,
@@ -387,8 +389,18 @@ All five original phases are done, and Phase 6 (enterprise) is largely in place:
   and the shared field-guide look: zoomable world map (wheel, drag, toolbar), airport details on click,
   the found itinerary drawn inline under the search, and tab state that survives switching.
 
-A future phase would put promotions into the real earn path and run the stack highly available — each of
-which would first have to pay for itself.
+- **The improvement round** — a cross-cutting sweep on top of everything above: shell-owned language
+  switching broadcast to every remote ([ADR-0023](docs/decisions/0023-shell-owned-language.md)); tier
+  requalification with downgrades and versioned Mongo migrations; member domain events over a
+  transactional outbox feeding a new `notifications` service that emails via Mailpit
+  ([ADR-0024](docs/decisions/0024-member-events-and-notifications.md)); booking a searched trip with
+  points end to end; time-boxed promotion campaigns folded into the earn rate; an audit-log viewer, an
+  admin-managed reward catalog, CSV statements and server-side transaction filtering; activatable tier
+  benefits with codes and QR; gateway degradation + read retries; ingress rate limiting; business
+  metrics on a Grafana dashboard; lint gates for every language; secretRef-based datastore config and
+  datastore NetworkPolicies.
+
+A future phase would run the stack highly available — which would first have to pay for itself.
 
 ---
 

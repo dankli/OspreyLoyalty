@@ -1,0 +1,80 @@
+# Ingress-only NetworkPolicies for the stateful backends: each datastore accepts traffic
+# ONLY from the services that own a relationship with it. Everything else in the cluster
+# (a compromised frontend pod, a curious neighbour) is cut off at the network layer —
+# defence in depth on top of the auth story. Egress stays open (demo simplicity).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mongo-ingress
+  namespace: osprey
+spec:
+  podSelector:
+    matchLabels: { app: mongo }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: { app: members }
+        - podSelector:
+            matchLabels: { app: partners }
+      ports:
+        - port: 27017
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: neo4j-ingress
+  namespace: osprey
+spec:
+  podSelector:
+    matchLabels: { app: neo4j }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: { app: routes }
+      ports:
+        - port: 7687
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: rabbitmq-ingress
+  namespace: osprey
+spec:
+  podSelector:
+    matchLabels: { app: rabbitmq }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels: { app: members }
+        - podSelector:
+            matchLabels: { app: partners }
+        - podSelector:
+            matchLabels: { app: notifications }
+      ports:
+        - port: 5672
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mailpit-ingress
+  namespace: osprey
+spec:
+  podSelector:
+    matchLabels: { app: mailpit }
+  policyTypes: [Ingress]
+  ingress:
+    # SMTP: only the notifications sender.
+    - from:
+        - podSelector:
+            matchLabels: { app: notifications }
+      ports:
+        - port: 1025
+    # Web UI: only via the ingress controller.
+    - from:
+        - podSelector:
+            matchLabels: { app: traefik }
+      ports:
+        - port: 8025

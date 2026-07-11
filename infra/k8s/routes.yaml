@@ -27,7 +27,8 @@ spec:
             - containerPort: 8083
           env:
             - name: NEO4J_URL
-              value: bolt://neo4j:7687
+              valueFrom:
+                secretKeyRef: { name: osprey-datastores, key: neo4j-url }
             - name: SEED_ROUTES
               value: "true"
             - name: POINTS_ENGINE_URL

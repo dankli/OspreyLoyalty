@@ -29,6 +29,7 @@ const defaultDeps: Deps = {
   postBenefitActivation,
 };
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- graphql-yoga's own default generics are `{}`; keep the conventional signature
 export function buildYoga(deps: Deps = defaultDeps): YogaServerInstance<{}, {}> {
   // Demo stack: the portal is served from another local port, so CORS is wide open on purpose.
   // maskedErrors: false — demo BFF: members' validation messages ARE the user-facing errors

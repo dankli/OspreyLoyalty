@@ -27,7 +27,8 @@ spec:
             - containerPort: 8084
           env:
             - name: RABBITMQ_HOST
-              value: rabbitmq
+              valueFrom:
+                secretKeyRef: { name: osprey-datastores, key: rabbitmq-host }
             - name: MEMBERS_URL
               value: http://members:8080
             - name: SMTP_URL

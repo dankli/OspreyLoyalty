@@ -185,6 +185,7 @@
     {#if failed}
       <p role="alert" class="error">{strings.loadFailed}</p>
     {/if}
+    <!-- eslint-disable-next-line svelte/no-unused-svelte-ignore -- the compiler warning fires in `vite build`, which ESLint's parse-only pass cannot see -->
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       class="map-host"

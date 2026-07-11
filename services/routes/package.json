@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "build": "tsc",
+    "lint": "node -r ./eslint.typescript-shim.cjs node_modules/eslint/bin/eslint.js .",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "dev": "tsx watch src/index.ts",
@@ -12,6 +13,32 @@
   },
   "license": "MIT",
   "type": "module",
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "@typescript-eslint/parser": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "@typescript-eslint/eslint-plugin": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "@typescript-eslint/type-utils": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "@typescript-eslint/utils": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "@typescript-eslint/tsconfig-utils": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "@typescript-eslint/project-service": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "typescript-eslint": {
+      "typescript": ">=4.8.4 <8"
+    }
+  },
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/auto-instrumentations-node": "^0.78.0",
@@ -28,8 +55,11 @@
   "devDependencies": {
     "@testcontainers/neo4j": "^11.10.1",
     "@types/node": "^26.1.1",
+    "eslint": "^9.39.5",
     "tsx": "^4.23.0",
     "typescript": "^7.0.2",
+    "typescript-eslint": "^8.63.0",
+    "typescript5": "npm:typescript@~5.9.3",
     "vitest": "^4.1.10"
   }
 }

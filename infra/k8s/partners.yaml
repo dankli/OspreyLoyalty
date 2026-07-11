@@ -31,14 +31,16 @@ spec:
             - containerPort: 8080
           env:
             - name: RABBITMQ_HOST
-              value: rabbitmq
+              valueFrom:
+                secretKeyRef: { name: osprey-datastores, key: rabbitmq-host }
             - name: RABBITMQ_PORT
               value: "5672"
             # Durable transactional outbox on the shared Mongo (ADR-0016): the purchase API writes an
             # outbox row and returns success even while RabbitMQ is down; the relay drains it later.
             # Own database (osprey_partners) so it never collides with the members service's data.
             - name: SPRING_DATA_MONGODB_URI
-              value: mongodb://mongo:27017/osprey_partners
+              valueFrom:
+                secretKeyRef: { name: osprey-datastores, key: mongo-uri-partners }
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
               value: http://otel-collector:4318 # Java OTel defaults to OTLP/HTTP → the collector's HTTP receiver
             - name: OTEL_SERVICE_NAME

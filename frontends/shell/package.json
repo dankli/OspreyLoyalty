@@ -6,14 +6,44 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "lint": "node -r ./eslint.typescript-shim.cjs node_modules/eslint/bin/eslint.js .",
     "preview": "vite preview",
     "test": "vitest run"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "@typescript-eslint/parser": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "@typescript-eslint/eslint-plugin": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "@typescript-eslint/type-utils": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "@typescript-eslint/utils": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "@typescript-eslint/tsconfig-utils": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "@typescript-eslint/project-service": {
+      "typescript": ">=4.8.4 <8"
+    },
+    "typescript-eslint": {
+      "typescript": ">=4.8.4 <8"
+    }
   },
   "devDependencies": {
     "@originjs/vite-plugin-federation": "^1.4.1",
     "@types/node": "^26.1.1",
+    "eslint": "^9.39.5",
     "jsdom": "^29.1.1",
     "typescript": "~7.0.2",
+    "typescript-eslint": "^8.63.0",
+    "typescript5": "npm:typescript@~5.9.3",
     "vite": "^8.1.4",
     "vitest": "^4.1.10"
   },

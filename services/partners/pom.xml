@@ -113,6 +113,21 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>2.44.5</version>
+				<!-- Deliberately low-churn: no wholesale reformat (google-java-format would fight
+				     the hand-written style), just the hygiene rules a reviewer should never have
+				     to comment on. `mvn spotless:check` gates CI; `mvn spotless:apply` fixes. -->
+				<configuration>
+					<java>
+						<removeUnusedImports />
+						<trimTrailingWhitespace />
+						<endWithNewline />
+					</java>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

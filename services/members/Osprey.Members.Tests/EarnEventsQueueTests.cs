@@ -53,8 +53,12 @@ public sealed class EarnEventsQueueTests : IAsyncLifetime
 
         byte[] body = JsonSerializer.SerializeToUtf8Bytes(new
         {
-            memberId = "demo-erik", partnerId = "cardco", amount = 40_000m, rate = 0.5m,
-            idempotencyKey = "queue-dup-0001", occurredAtUtc = DateTime.UtcNow,
+            memberId = "demo-erik",
+            partnerId = "cardco",
+            amount = 40_000m,
+            rate = 0.5m,
+            idempotencyKey = "queue-dup-0001",
+            occurredAtUtc = DateTime.UtcNow,
         });
         await channel.BasicPublishAsync("", ConsumeEarnEvents.Queue, body);
         await channel.BasicPublishAsync("", ConsumeEarnEvents.Queue, body);
@@ -122,8 +126,12 @@ public sealed class EarnEventsQueueTests : IAsyncLifetime
         // handler never runs, so nothing reaches the ledger and the message dead-letters.
         byte[] body = JsonSerializer.SerializeToUtf8Bytes(new
         {
-            memberId = "demo-erik", partnerId = "cardco", amount = 0m, rate = 0.5m,
-            idempotencyKey = "queue-invalid-0001", occurredAtUtc = DateTime.UtcNow,
+            memberId = "demo-erik",
+            partnerId = "cardco",
+            amount = 0m,
+            rate = 0.5m,
+            idempotencyKey = "queue-invalid-0001",
+            occurredAtUtc = DateTime.UtcNow,
         });
         await channel.BasicPublishAsync("", ConsumeEarnEvents.Queue, body);
 

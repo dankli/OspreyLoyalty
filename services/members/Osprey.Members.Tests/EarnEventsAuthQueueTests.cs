@@ -90,8 +90,13 @@ public sealed class EarnEventsAuthQueueTests : IAsyncLifetime
         await using IChannel channel = await DeclaredChannelAsync();
         byte[] body = JsonSerializer.SerializeToUtf8Bytes(new
         {
-            memberId = "demo-erik", partnerId = "cardco", amount = 40_000m, rate = 0.5m,
-            idempotencyKey = "auth-earn-0001", occurredAtUtc = DateTime.UtcNow, authToken = ServiceToken(),
+            memberId = "demo-erik",
+            partnerId = "cardco",
+            amount = 40_000m,
+            rate = 0.5m,
+            idempotencyKey = "auth-earn-0001",
+            occurredAtUtc = DateTime.UtcNow,
+            authToken = ServiceToken(),
         });
         await channel.BasicPublishAsync("", ConsumeEarnEvents.Queue, body);
 
@@ -111,8 +116,12 @@ public sealed class EarnEventsAuthQueueTests : IAsyncLifetime
         await using IChannel channel = await DeclaredChannelAsync();
         byte[] body = JsonSerializer.SerializeToUtf8Bytes(new
         {
-            memberId = "demo-erik", partnerId = "cardco", amount = 40_000m, rate = 0.5m,
-            idempotencyKey = "noauth-earn-0001", occurredAtUtc = DateTime.UtcNow, // no authToken
+            memberId = "demo-erik",
+            partnerId = "cardco",
+            amount = 40_000m,
+            rate = 0.5m,
+            idempotencyKey = "noauth-earn-0001",
+            occurredAtUtc = DateTime.UtcNow, // no authToken
         });
         await channel.BasicPublishAsync("", ConsumeEarnEvents.Queue, body);
 
