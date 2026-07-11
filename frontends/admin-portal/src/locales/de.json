@@ -1,5 +1,12 @@
 {
-  "app": { "brand": "Osprey Loyalty", "admin": "Admin", "console": "Konsole", "language": "Sprache", "signOut": "Abmelden", "adminOnly": "Administratorzugriff erforderlich." },
+  "app": {
+    "brand": "Osprey Loyalty",
+    "admin": "Admin",
+    "console": "Konsole",
+    "language": "Sprache",
+    "signOut": "Abmelden",
+    "adminOnly": "Administratorzugriff erforderlich."
+  },
   "member": {
     "heading": "Mitglied suchen",
     "quickPick": "Schnellauswahl",
@@ -29,7 +36,12 @@
     "grantPrompt": "Eine OSPREY-Einladung an {name} gewähren?",
     "revokePrompt": "Die OSPREY-Einladung für {name} widerrufen?"
   },
-  "rates": { "title": "Partner-Punktesätze", "rateFor": "Satz für {name}", "save": "Speichern", "saved": "Gespeichert" },
+  "rates": {
+    "title": "Partner-Punktesätze",
+    "rateFor": "Satz für {name}",
+    "save": "Speichern",
+    "saved": "Gespeichert"
+  },
   "help": {
     "open": "Hilfe",
     "title": "Admin-Hilfe",
@@ -42,5 +54,22 @@
     "ospreyBody": "Gewähre oder widerrufe die Stufe OSPREY (nur auf Einladung). Die Einladung überschreibt die punktebasierte Stufe des Mitglieds.",
     "ratesHeading": "Partnersätze",
     "ratesBody": "Bearbeite den Punktesatz eines Partners und speichere. Neue Käufe verwenden sofort den aktualisierten Satz."
+  },
+  "campaigns": {
+    "title": "Kampagnen",
+    "create": "Kampagne erstellen",
+    "name": "Name",
+    "namePlaceholder": "Doppelte Punkte im Juli",
+    "partner": "Partner",
+    "partnerAria": "Kampagnenpartner",
+    "multiplier": "Multiplikator",
+    "multiplierAria": "Kampagnen-Multiplikator",
+    "starts": "Beginnt",
+    "ends": "Endet",
+    "delete": "Löschen",
+    "deletePrompt": "Die Kampagne {name} löschen?",
+    "empty": "Keine Kampagnen.",
+    "created": "Kampagne erstellt.",
+    "colWindow": "Aktiver Zeitraum"
   }
 }

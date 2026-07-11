@@ -1,8 +1,9 @@
 <script setup lang="ts">
-// Deliberately small: two panels stacked on one page, no router.
-// Admin flows here are member lookup/adjustments and partner rates.
+// Deliberately small: stacked panels on one page, no router.
+// Admin flows here are member lookup/adjustments, partner rates and campaigns.
 import MemberPanel from "./features/members/MemberPanel.vue";
 import RatesPanel from "./features/partners/RatesPanel.vue";
+import CampaignsPanel from "./features/campaigns/CampaignsPanel.vue";
 import HelpButton from "./HelpButton.vue";
 import { isAdmin } from "./auth";
 
@@ -31,6 +32,7 @@ const canAdminister = isAdmin();
     <template v-if="canAdminister">
       <MemberPanel />
       <RatesPanel />
+      <CampaignsPanel />
     </template>
     <p v-else class="admin-only">{{ $t("app.adminOnly") }}</p>
   </main>

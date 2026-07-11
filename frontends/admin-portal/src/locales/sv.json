@@ -1,5 +1,12 @@
 {
-  "app": { "brand": "Osprey Loyalty", "admin": "Admin", "console": "konsol", "language": "Språk", "signOut": "Logga ut", "adminOnly": "Administratörsbehörighet krävs." },
+  "app": {
+    "brand": "Osprey Loyalty",
+    "admin": "Admin",
+    "console": "konsol",
+    "language": "Språk",
+    "signOut": "Logga ut",
+    "adminOnly": "Administratörsbehörighet krävs."
+  },
   "member": {
     "heading": "Sök medlem",
     "quickPick": "Snabbval",
@@ -29,7 +36,12 @@
     "grantPrompt": "Ge en OSPREY-inbjudan till {name}?",
     "revokePrompt": "Återkalla OSPREY-inbjudan för {name}?"
   },
-  "rates": { "title": "Partners intjäningssatser", "rateFor": "Sats för {name}", "save": "Spara", "saved": "Sparat" },
+  "rates": {
+    "title": "Partners intjäningssatser",
+    "rateFor": "Sats för {name}",
+    "save": "Spara",
+    "saved": "Sparat"
+  },
   "help": {
     "open": "Hjälp",
     "title": "Admin-hjälp",
@@ -42,5 +54,22 @@
     "ospreyBody": "Ge eller återkalla den inbjudan-endast OSPREY-nivån. Inbjudan åsidosätter den poängbaserade nivån för medlemmen.",
     "ratesHeading": "Partnersatser",
     "ratesBody": "Redigera en partners intjäningssats och spara. Nya köp använder den uppdaterade satsen direkt."
+  },
+  "campaigns": {
+    "title": "Kampanjer",
+    "create": "Skapa kampanj",
+    "name": "Namn",
+    "namePlaceholder": "Dubbla poäng i juli",
+    "partner": "Partner",
+    "partnerAria": "Kampanjpartner",
+    "multiplier": "Multiplikator",
+    "multiplierAria": "Kampanjens multiplikator",
+    "starts": "Startar",
+    "ends": "Slutar",
+    "delete": "Ta bort",
+    "deletePrompt": "Ta bort kampanjen {name}?",
+    "empty": "Inga kampanjer.",
+    "created": "Kampanjen skapades.",
+    "colWindow": "Aktiv period"
   }
 }

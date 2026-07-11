@@ -1,5 +1,12 @@
 {
-  "app": { "brand": "Osprey Loyalty", "admin": "Admin", "console": "consola", "language": "Idioma", "signOut": "Cerrar sesión", "adminOnly": "Se requiere acceso de administrador." },
+  "app": {
+    "brand": "Osprey Loyalty",
+    "admin": "Admin",
+    "console": "consola",
+    "language": "Idioma",
+    "signOut": "Cerrar sesión",
+    "adminOnly": "Se requiere acceso de administrador."
+  },
   "member": {
     "heading": "Buscar miembro",
     "quickPick": "Selección rápida",
@@ -29,7 +36,12 @@
     "grantPrompt": "¿Conceder una invitación OSPREY a {name}?",
     "revokePrompt": "¿Revocar la invitación OSPREY de {name}?"
   },
-  "rates": { "title": "Tasas de puntos de socios", "rateFor": "Tasa para {name}", "save": "Guardar", "saved": "Guardado" },
+  "rates": {
+    "title": "Tasas de puntos de socios",
+    "rateFor": "Tasa para {name}",
+    "save": "Guardar",
+    "saved": "Guardado"
+  },
   "help": {
     "open": "Ayuda",
     "title": "Ayuda de administración",
@@ -42,5 +54,22 @@
     "ospreyBody": "Concede o revoca el nivel OSPREY, solo por invitación. La invitación anula el nivel basado en puntos de ese miembro.",
     "ratesHeading": "Tasas de socios",
     "ratesBody": "Edita la tasa de un socio y guarda. Las nuevas compras usan la tasa actualizada de inmediato."
+  },
+  "campaigns": {
+    "title": "Campañas",
+    "create": "Crear campaña",
+    "name": "Nombre",
+    "namePlaceholder": "Puntos dobles en julio",
+    "partner": "Socio",
+    "partnerAria": "Socio de la campaña",
+    "multiplier": "Multiplicador",
+    "multiplierAria": "Multiplicador de la campaña",
+    "starts": "Empieza",
+    "ends": "Termina",
+    "delete": "Eliminar",
+    "deletePrompt": "¿Eliminar la campaña {name}?",
+    "empty": "No hay campañas.",
+    "created": "Campaña creada.",
+    "colWindow": "Período activo"
   }
 }

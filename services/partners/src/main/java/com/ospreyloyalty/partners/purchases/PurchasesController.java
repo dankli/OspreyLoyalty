@@ -2,6 +2,7 @@ package com.ospreyloyalty.partners.purchases;
 
 import com.ospreyloyalty.partners.CorrelationIdFilter;
 import com.ospreyloyalty.partners.LocalizedBadRequest;
+import com.ospreyloyalty.partners.campaigns.CampaignStore;
 import com.ospreyloyalty.partners.catalogue.Partner;
 import com.ospreyloyalty.partners.catalogue.PartnerCatalogue;
 import java.math.BigDecimal;
@@ -59,9 +60,16 @@ public class PurchasesController {
         if (request.amount() == null || request.amount().signum() <= 0 || request.amount().compareTo(MAX_AMOUNT) > 0)
             throw new LocalizedBadRequest("amount.invalid",
                 "amount must be positive and at most " + MAX_AMOUNT + ".", MAX_AMOUNT.toString());
+        // An active campaign folds into the effective rate, so the earn-event contract (and
+        // members' validation) stays untouched. The contract caps rate at 10 — a campaign that
+        // would breach it refuses the purchase instead of silently clipping the multiplier.
+        double effectiveRate = partner.rate() * CampaignStore.activeMultiplier(partner.id(), Instant.now());
+        if (effectiveRate > 10)
+            throw new LocalizedBadRequest("rate.campaignTooHigh",
+                "The campaign-boosted rate exceeds the maximum of 10.");
         // Stamp the zero-trust service token (null when auth is off) so members can authenticate
         // this event off the queue — the async counterpart to forwarding the caller's bearer.
-        return new EarnEvent(request.memberId(), partner.id(), request.amount(), partner.rate(),
+        return new EarnEvent(request.memberId(), partner.id(), request.amount(), effectiveRate,
             UUID.randomUUID().toString(), Instant.now(), MDC.get(CorrelationIdFilter.MDC_KEY), tokenProvider.mint());
     }
 }

@@ -1,6 +1,9 @@
 package com.ospreyloyalty.partners.purchases;
 
+import com.ospreyloyalty.partners.campaigns.CampaignStore;
 import com.ospreyloyalty.partners.catalogue.PartnerCatalogue;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -28,6 +31,7 @@ class PurchasesControllerTest {
     @BeforeEach
     void resetRates() {
         PartnerCatalogue.reset();
+        CampaignStore.reset();
     }
 
     @Test
@@ -114,6 +118,33 @@ class PurchasesControllerTest {
         ArgumentCaptor<EarnEvent> event = ArgumentCaptor.forClass(EarnEvent.class);
         verify(outbox).write(event.capture());
         assertThat(event.getValue().correlationId()).isEqualTo("corr-earn-1");
+    }
+
+    @Test
+    void an_active_campaign_folds_its_multiplier_into_the_event_rate() throws Exception {
+        CampaignStore.create("cardco", "Double points", 2.0,
+            Instant.now().minus(1, ChronoUnit.DAYS), Instant.now().plus(1, ChronoUnit.DAYS));
+
+        mvc.perform(post("/partners/cardco/purchases").contentType(APPLICATION_JSON)
+                .content("{\"memberId\":\"demo-erik\",\"amount\":1000}"))
+            .andExpect(status().isAccepted());
+
+        ArgumentCaptor<EarnEvent> event = ArgumentCaptor.forClass(EarnEvent.class);
+        verify(outbox).write(event.capture());
+        assertThat(event.getValue().rate()).isEqualTo(1.0); // 0.5 base × 2.0 campaign
+    }
+
+    @Test
+    void a_campaign_that_would_breach_the_rate_cap_refuses_the_purchase() throws Exception {
+        PartnerCatalogue.updateRate("stayinn", 4.0);
+        CampaignStore.create("stayinn", "Way too generous", 3.0,
+            Instant.now().minus(1, ChronoUnit.DAYS), Instant.now().plus(1, ChronoUnit.DAYS));
+
+        mvc.perform(post("/partners/stayinn/purchases").contentType(APPLICATION_JSON)
+                .content("{\"memberId\":\"demo-erik\",\"amount\":1000}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.error").value("The campaign-boosted rate exceeds the maximum of 10."));
+        verify(outbox, never()).write(any());
     }
 
     @Test

@@ -1,5 +1,12 @@
 {
-  "app": { "brand": "Osprey Loyalty", "admin": "Admin", "console": "console", "language": "Language", "signOut": "Sign out", "adminOnly": "Administrator access required." },
+  "app": {
+    "brand": "Osprey Loyalty",
+    "admin": "Admin",
+    "console": "console",
+    "language": "Language",
+    "signOut": "Sign out",
+    "adminOnly": "Administrator access required."
+  },
   "member": {
     "heading": "Member lookup",
     "quickPick": "Quick pick",
@@ -29,7 +36,12 @@
     "grantPrompt": "Grant an OSPREY invitation to {name}?",
     "revokePrompt": "Revoke the OSPREY invitation for {name}?"
   },
-  "rates": { "title": "Partner earn rates", "rateFor": "Rate for {name}", "save": "Save", "saved": "Saved" },
+  "rates": {
+    "title": "Partner earn rates",
+    "rateFor": "Rate for {name}",
+    "save": "Save",
+    "saved": "Saved"
+  },
   "help": {
     "open": "Help",
     "title": "Admin help",
@@ -42,5 +54,22 @@
     "ospreyBody": "Grant or revoke the invitation-only OSPREY tier. The invitation overrides the points-based tier for that member.",
     "ratesHeading": "Partner rates",
     "ratesBody": "Edit a partner's earn rate and save. New purchases use the updated rate immediately."
+  },
+  "campaigns": {
+    "title": "Campaigns",
+    "create": "Create campaign",
+    "name": "Name",
+    "namePlaceholder": "Double points July",
+    "partner": "Partner",
+    "partnerAria": "Campaign partner",
+    "multiplier": "Multiplier",
+    "multiplierAria": "Campaign multiplier",
+    "starts": "Starts",
+    "ends": "Ends",
+    "delete": "Delete",
+    "deletePrompt": "Delete the campaign {name}?",
+    "empty": "No campaigns.",
+    "created": "Campaign created.",
+    "colWindow": "Active period"
   }
 }

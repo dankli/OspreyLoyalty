@@ -245,6 +245,29 @@ partners=$(curl -fsS http://localhost:8081/partners)
 echo "$partners" | grep -q '"rate":2.5' || fail "wheelsgo rate not updated to 2.5: $partners"
 echo "✓ wheelsgo earn rate updated to 2.5"
 
+# Campaigns fold into the effective rate at purchase time: a 2x CardCo campaign turns a
+# 1000 purchase at rate 0.5 into a 1000-point earn (floor(1000 x 0.5 x 2)).
+campaign=$(curl -fsS -X POST http://localhost:8081/campaigns \
+  -H "Content-Type: application/json" \
+  -d "{\"partnerId\":\"cardco\",\"name\":\"Smoke campaign\",\"multiplier\":2.0,\"startsAtUtc\":\"2020-01-01T00:00:00Z\",\"endsAtUtc\":\"2099-01-01T00:00:00Z\"}")
+campaign_id=$(echo "$campaign" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+[ -n "$campaign_id" ] || fail "campaign creation returned no id: $campaign"
+curl -fsS -X POST http://localhost:8081/partners/cardco/purchases \
+  -H "Content-Type: application/json" \
+  -d '{"memberId":"demo-ada","amount":1000}' >/dev/null
+boosted=""
+for attempt in $(seq 1 30); do
+  txs=$(curl -fsS "http://localhost:5080/api/members/demo-ada/transactions" || true)
+  if echo "$txs" | grep -q '"points":1000'; then
+    boosted=1
+    break
+  fi
+  sleep 2
+done
+[ -n "$boosted" ] || fail "campaign-boosted earn (1000 points) never appeared for demo-ada"
+curl -fsS -X DELETE "http://localhost:8081/campaigns/$campaign_id" >/dev/null
+echo "✓ campaign doubled the cardco earn and was cleaned up"
+
 echo ""
 echo "=== 14. Static frontends: admin portal, shell, federation contract ==="
 admin_html=$(curl -fsS http://localhost:5174/)
