@@ -135,6 +135,9 @@ if (builder.Configuration.GetValue<bool>("ConsumeEarnEvents", true))
 if (builder.Configuration.GetValue<bool>("ExpirySweep", true))
     builder.Services.AddHostedService<Expiry.HostedService>();
 
+if (builder.Configuration.GetValue<bool>("RequalificationSweep", true))
+    builder.Services.AddHostedService<Requalification.HostedService>();
+
 var app = builder.Build();
 
 Correlation.Use(app); // first — even error responses carry X-Correlation-Id
@@ -181,6 +184,9 @@ app.MapMetrics().AllowAnonymous(); // Prometheus scrape endpoint at /metrics
 await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<PointsTransactionDocument>>());
 await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<MemberDocument>>());
 await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<AuditLogDocument>>());
+
+// Versioned run-once migrations (idempotent bodies; markers in the `migrations` collection).
+await Migrations.RunAsync(app.Services.GetRequiredService<IMongoClient>().GetDatabase("osprey"), app.Logger);
 
 if (app.Configuration.GetValue<bool>("SeedDemoData", false))
     await SeedDemoData.SeedAsync(app.Services.GetRequiredService<IMongoCollection<MemberDocument>>());
