@@ -60,7 +60,7 @@ $domain = 'osprey.localtest.me'
 $auth = -not $NoAuth
 $ingress = -not $PortForward
 
-$backends = @('members', 'gateway', 'partners', 'security', 'points-engine', 'routes')
+$backends = @('members', 'gateway', 'partners', 'security', 'points-engine', 'routes', 'notifications')
 $apps = $backends + @('member-portal', 'admin-portal', 'route-explorer', 'shell')
 
 # URLs the frontends are baked with and the identity service issues for. Ingress mode uses the

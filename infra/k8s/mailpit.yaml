@@ -1,0 +1,82 @@
+# Demo mail sink (ADR-0024): notifications delivers over SMTP (1025); the UI (8025)
+# is exposed at mailpit.osprey.localtest.me. Ephemeral by design — messages live in
+# memory and vanish with the pod, which is exactly right for a demo inbox.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailpit
+  namespace: osprey
+  labels:
+    app: mailpit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailpit
+  template:
+    metadata:
+      labels:
+        app: mailpit
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mailpit
+          image: axllent/mailpit:v1.20
+          imagePullPolicy: IfNotPresent # public image, not built locally
+          ports:
+            - containerPort: 8025
+            - containerPort: 1025
+          readinessProbe:
+            tcpSocket:
+              port: 1025
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 1025
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100 # the image's non-root user
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailpit
+  namespace: osprey
+  labels:
+    app: mailpit
+spec:
+  type: ClusterIP
+  selector:
+    app: mailpit
+  ports:
+    - name: http
+      port: 8025
+      targetPort: 8025
+    - name: smtp
+      port: 1025
+      targetPort: 1025

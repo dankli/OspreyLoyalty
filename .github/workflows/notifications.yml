@@ -1,0 +1,21 @@
+name: notifications
+on:
+  push:
+    branches: [main]
+    paths: ["services/notifications/**", "contracts/member-events/**", ".github/workflows/notifications.yml"]
+  pull_request:
+    paths: ["services/notifications/**", "contracts/member-events/**", ".github/workflows/notifications.yml"]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: services/notifications }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npm test
+      - run: npm run build

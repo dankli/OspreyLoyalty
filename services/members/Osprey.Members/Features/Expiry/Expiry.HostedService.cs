@@ -39,9 +39,13 @@ public static partial class Expiry
                 using IServiceScope scope = services.CreateScope();
                 var members = scope.ServiceProvider.GetRequiredService<IMongoCollection<MemberDocument>>();
                 var transactions = scope.ServiceProvider.GetRequiredService<IMongoCollection<PointsTransactionDocument>>();
+                var outbox = scope.ServiceProvider.GetRequiredService<Outbox.Writer>();
 
                 int expired = await SweepAsync(members, transactions, DateTime.UtcNow, stoppingToken);
-                logger.LogInformation("Expiry sweep completed: {PointsExpired} points expired.", expired);
+                int warned = await WarnAsync(members, transactions, outbox, DateTime.UtcNow, stoppingToken);
+                logger.LogInformation(
+                    "Expiry sweep completed: {PointsExpired} points expired, {Warnings} expiry warnings written.",
+                    expired, warned);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

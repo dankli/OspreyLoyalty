@@ -1,0 +1,8 @@
+{
+  "eventId": "tier-m-1001-GOLD-9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c",
+  "memberId": "m-1001",
+  "previousTier": "SILVER",
+  "newTier": "GOLD",
+  "occurredAtUtc": "2026-07-11T09:30:00Z",
+  "correlationId": "b6c1f0aa-1111-4222-8333-944445555666"
+}

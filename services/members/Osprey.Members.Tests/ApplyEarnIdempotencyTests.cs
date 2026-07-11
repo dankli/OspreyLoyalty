@@ -16,6 +16,7 @@ public sealed class ApplyEarnIdempotencyTests : IAsyncLifetime
     private readonly MongoDbContainer mongo = new MongoDbBuilder().WithImage("mongo:7").Build();
     private IMongoCollection<MemberDocument> members = null!;
     private IMongoCollection<PointsTransactionDocument> transactions = null!;
+    private Outbox.Writer outbox = null!;
 
     public async Task InitializeAsync()
     {
@@ -23,6 +24,7 @@ public sealed class ApplyEarnIdempotencyTests : IAsyncLifetime
         IMongoDatabase db = new MongoClient(mongo.GetConnectionString()).GetDatabase("osprey");
         members = db.GetCollection<MemberDocument>("members");
         transactions = db.GetCollection<PointsTransactionDocument>("transactions");
+        outbox = new Outbox.Writer(db.GetCollection<OutboxDocument>("outbox"));
         await MongoIndexes.EnsureAsync(transactions);
         await members.InsertOneAsync(new MemberDocument(
             "m-1", "Test Member", "t@example.com", DateTime.UtcNow, 0, 0));
@@ -33,7 +35,7 @@ public sealed class ApplyEarnIdempotencyTests : IAsyncLifetime
     [Fact]
     public async Task Same_earn_event_delivered_twice_produces_exactly_one_transaction()
     {
-        var handler = new ApplyEarn.Handler(members, transactions);
+        var handler = new ApplyEarn.Handler(members, transactions, outbox);
         var earn = new ApplyEarn.EarnEvent("m-1", "cardco", 40_000m, 0.5m, "dup-key-0001", DateTime.UtcNow);
 
         ApplyEarn.Result first = await handler.Handle(earn);
@@ -55,7 +57,7 @@ public sealed class ApplyEarnIdempotencyTests : IAsyncLifetime
     [Fact]
     public async Task Earn_for_unknown_member_throws_and_writes_nothing()
     {
-        var handler = new ApplyEarn.Handler(members, transactions);
+        var handler = new ApplyEarn.Handler(members, transactions, outbox);
         var earn = new ApplyEarn.EarnEvent("ghost", "cardco", 100m, 0.5m, "ghost-key-0001", DateTime.UtcNow);
         await Assert.ThrowsAsync<ArgumentException>(() => handler.Handle(earn));
         Assert.Equal(0, await transactions.CountDocumentsAsync(t => t.IdempotencyKey == "ghost-key-0001"));

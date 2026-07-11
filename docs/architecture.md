@@ -144,6 +144,7 @@ flowchart TD
 | [ADR-0021](decisions/0021-neo4j-route-graph.md) | Neo4j for the airline route graph — variable-length traversal and shortest-path are graph-shaped queries Mongo answers badly; carriers as relationship arrays, idempotent marker-gated seeding |
 | [ADR-0022](decisions/0022-svelte-mfe-leptos-wasm-island.md) | A Svelte route-explorer remote with a Rust/Leptos WASM map island — typed-array JS boundary, Canvas 2D, graceful fallback when the wasm pkg is absent |
 | [ADR-0023](decisions/0023-shell-owned-language.md) | Shell-owned language switching — one switcher in the shell chrome, persisted to `localStorage("lang")`, broadcast to mounted remotes via `osprey:locale-changed`; portals follow in their own i18n idiom |
+| [ADR-0024](decisions/0024-member-events-and-notifications.md) | Member domain events (tier.changed, points.expiring) over a transactional outbox in members, consumed by a notifications service that emails via Mailpit; deterministic event ids, no PII on the wire |
 
 ---
 

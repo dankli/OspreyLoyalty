@@ -66,6 +66,8 @@ builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<IMongoClient>().GetDatabase("osprey").GetCollection<PointsTransactionDocument>("transactions"));
 builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<IMongoClient>().GetDatabase("osprey").GetCollection<AuditLogDocument>("audit"));
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IMongoClient>().GetDatabase("osprey").GetCollection<OutboxDocument>("outbox"));
 builder.Services.AddScoped<EnrollMember.Handler>();
 builder.Services.AddScoped<GetMemberProfile.Handler>();
 builder.Services.AddScoped<ApplyEarn.Handler>();
@@ -76,6 +78,7 @@ builder.Services.AddScoped<AdjustPoints.Handler>();
 builder.Services.AddScoped<SetOspreyInvitation.Handler>();
 builder.Services.AddScoped<EraseMember.Handler>();
 builder.Services.AddScoped<Audit.Writer>();
+builder.Services.AddScoped<Outbox.Writer>();
 builder.Services.AddCors();
 
 // Zero-trust JWT validation — opt-in via Auth:Enabled so tests and local dev stay
@@ -137,6 +140,11 @@ if (builder.Configuration.GetValue<bool>("ExpirySweep", true))
 
 if (builder.Configuration.GetValue<bool>("RequalificationSweep", true))
     builder.Services.AddHostedService<Requalification.HostedService>();
+
+// Kill switch mirrors the consumer's: tests and incident response can stop publishing
+// without touching code; events queue up in the outbox and drain when re-enabled.
+if (builder.Configuration.GetValue<bool>("OutboxRelay", true))
+    builder.Services.AddHostedService<Outbox.Relay>();
 
 var app = builder.Build();
 

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ospreyloyalty/contracts/points-expiring-soon.schema.json",
+  "title": "PointsExpiringSoon",
+  "description": "Wire contract for advance point-expiry warnings on the member-events exchange (routing key points.expiring). Producer: services/members (transactional outbox, ADR-0024) — emitted once per earn lot when it enters the warning horizon. Consumer: services/notifications. Carries no PII.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "memberId",
+    "points",
+    "expiresAtUtc",
+    "occurredAtUtc"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Deterministic dedup key (also the outbox document id): expiring-{earnLedgerEntryId} — one warning per lot, ever."
+    },
+    "memberId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Osprey member whose points are about to expire."
+    },
+    "points": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Unconsumed points of the lot that will expire."
+    },
+    "expiresAtUtc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 instant when the lot expires (earn date + 24 months)."
+    },
+    "occurredAtUtc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 instant the warning was produced."
+    },
+    "correlationId": {
+      "type": ["string", "null"],
+      "description": "Optional trailing field (ADR-0002 additive convention). Sweep-originated events omit it."
+    }
+  }
+}

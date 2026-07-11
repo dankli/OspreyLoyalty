@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ospreyloyalty/contracts/tier-changed.schema.json",
+  "title": "TierChanged",
+  "description": "Wire contract for tier-change events on the member-events exchange (routing key tier.changed). Producer: services/members (transactional outbox, ADR-0024). Consumer: services/notifications. Carries no PII — consumers resolve contact details themselves at send time.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eventId",
+    "memberId",
+    "previousTier",
+    "newTier",
+    "occurredAtUtc"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Deterministic dedup key (also the outbox document id). Earn-path changes use tier-{memberId}-{newTier}-{ledgerEntryId}; sweep changes use tier-{memberId}-{newTier}-{yyyyMMdd}."
+    },
+    "memberId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Osprey member whose tier changed."
+    },
+    "previousTier": {
+      "type": "string",
+      "enum": ["MEMBER", "SILVER", "GOLD", "DIAMOND", "OSPREY"],
+      "description": "Effective tier before the change, uppercase as rendered everywhere else."
+    },
+    "newTier": {
+      "type": "string",
+      "enum": ["MEMBER", "SILVER", "GOLD", "DIAMOND", "OSPREY"],
+      "description": "Effective tier after the change."
+    },
+    "occurredAtUtc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 instant of the change."
+    },
+    "correlationId": {
+      "type": ["string", "null"],
+      "description": "Optional trailing field (ADR-0002 additive convention). Sweep-originated events omit it."
+    }
+  }
+}

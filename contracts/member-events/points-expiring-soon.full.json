@@ -1,0 +1,8 @@
+{
+  "eventId": "expiring-9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c",
+  "memberId": "m-1001",
+  "points": 6000,
+  "expiresAtUtc": "2026-08-10T00:00:00Z",
+  "occurredAtUtc": "2026-07-11T02:00:00Z",
+  "correlationId": "b6c1f0aa-1111-4222-8333-944445555666"
+}

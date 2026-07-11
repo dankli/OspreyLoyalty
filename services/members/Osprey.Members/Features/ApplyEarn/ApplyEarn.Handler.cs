@@ -9,7 +9,8 @@ public static partial class ApplyEarn
 {
     public sealed class Handler(
         IMongoCollection<MemberDocument> members,
-        IMongoCollection<PointsTransactionDocument> transactions)
+        IMongoCollection<PointsTransactionDocument> transactions,
+        Outbox.Writer outbox)
     {
         private const int MongoTimeoutSeconds = 5;
         private const int MaxWindowTransactions = 10_000; // bound the recompute read; a demo member never gets near this
@@ -57,6 +58,23 @@ public static partial class ApplyEarn
                 options: null, cts.Token);
 
             Tiers.Tier tier = Tiers.Effective(qualifying, member.IsOspreyInvited);
+
+            // Tier movement becomes a domain event via the outbox (ADR-0024). The event id is
+            // derived from the ledger entry that caused the change, so a redelivered earn (which
+            // never gets this far — the duplicate rail returned above) or a crashed retry that
+            // DID insert the entry writes the same event id and dedups on the outbox primary key.
+            Tiers.Tier before = Tiers.Effective(member.QualifyingPoints, member.IsOspreyInvited);
+            if (before != tier)
+            {
+                await outbox.WriteAsync(new Outbox.TierChangedEvent(
+                    $"tier-{earn.MemberId}-{tier.ToString().ToUpperInvariant()}-{entry.Id}",
+                    earn.MemberId,
+                    before.ToString().ToUpperInvariant(),
+                    tier.ToString().ToUpperInvariant(),
+                    nowUtc,
+                    earn.CorrelationId), cts.Token);
+            }
+
             return new Result(AlreadyApplied: false, points, qualifying, tier.ToString().ToUpperInvariant());
         }
     }

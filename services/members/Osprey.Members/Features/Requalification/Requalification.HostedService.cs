@@ -38,8 +38,11 @@ public static partial class Requalification
                 using IServiceScope scope = services.CreateScope();
                 var members = scope.ServiceProvider.GetRequiredService<IMongoCollection<MemberDocument>>();
                 var transactions = scope.ServiceProvider.GetRequiredService<IMongoCollection<PointsTransactionDocument>>();
+                var outbox = scope.ServiceProvider.GetRequiredService<Outbox.Writer>();
 
-                IReadOnlyList<TierChange> changes = await SweepAsync(members, transactions, DateTime.UtcNow, stoppingToken);
+                DateTime nowUtc = DateTime.UtcNow;
+                IReadOnlyList<TierChange> changes = await SweepAsync(members, transactions, nowUtc, stoppingToken);
+                await EmitAsync(changes, outbox, nowUtc, stoppingToken);
                 logger.LogInformation("Requalification sweep completed: {TierChanges} tier changes.", changes.Count);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

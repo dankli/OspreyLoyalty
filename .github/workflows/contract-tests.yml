@@ -32,9 +32,9 @@ jobs:
       - run: npm ci
       - run: npx vitest run test/schemaContract.test.ts test/earnEventContract.test.ts
 
-  # EarnEvent consumer-side contract: members deserializes the shared fixtures with its
-  # real JsonSerializerDefaults.Web options. Filtered to the contract class so this job
-  # needs no Testcontainers (Mongo/RabbitMQ).
+  # EarnEvent consumer-side + member-events producer-side contracts: members deserializes
+  # the shared fixtures with its real JsonSerializerDefaults.Web options. Filtered to the
+  # contract classes so this job needs no Testcontainers (Mongo/RabbitMQ).
   members-contracts:
     runs-on: ubuntu-latest
     steps:
@@ -42,4 +42,18 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "10.0.x"
-      - run: dotnet test services/members --nologo --filter "FullyQualifiedName~EarnEventContractTests"
+      - run: dotnet test services/members --nologo --filter "FullyQualifiedName~EarnEventContractTests|FullyQualifiedName~MemberEventContractTests"
+
+  # member-events consumer-side contract: notifications validates the shared fixtures
+  # against the JSON Schemas with AJV and its runtime shape guards.
+  notifications-contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: services/notifications }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npx vitest run test/contract.test.ts

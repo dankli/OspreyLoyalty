@@ -31,7 +31,7 @@ NAMESPACE="osprey"
 COMPOSE="docker compose -f infra/docker-compose.yml"
 MANIFESTS="infra/k8s"
 DOMAIN="osprey.localtest.me"
-BACKENDS=(members gateway partners security points-engine routes)
+BACKENDS=(members gateway partners security points-engine routes notifications)
 
 BUILD=1
 INGRESS=1
@@ -204,7 +204,7 @@ if [ "$BUILD" -eq 1 ]; then
   # the Docker daemon — load them into the node (the `kind load` equivalent). Bash pipes are binary-safe.
   echo "=== Loading images into the cluster node ==="
   NODE=$(kubectl --context "$CONTEXT" get nodes -o jsonpath='{.items[0].metadata.name}')
-  for svc in members gateway partners security points-engine routes member-portal admin-portal route-explorer shell; do
+  for svc in members gateway partners security points-engine routes notifications member-portal admin-portal route-explorer shell; do
     docker save "osprey-loyalty-$svc:latest" | docker exec -i "$NODE" ctr -n k8s.io images import - >/dev/null 2>&1 \
       || echo "  ! could not load osprey-loyalty-$svc"
   done

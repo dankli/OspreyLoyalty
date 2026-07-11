@@ -129,6 +129,20 @@ echo "$erik" | grep -q '"tier":"SILVER"' || fail "demo-erik did not reach SILVER
 echo "$erik" | grep -q '"qualifyingPoints":20000' || fail "demo-erik qualifying points wrong: $erik"
 echo "✓ demo-erik is SILVER with 20000 qualifying points"
 
+# ADR-0024: the promotion should also reach the demo inbox — members outbox → RabbitMQ
+# member-events → notifications → Mailpit. The relay ticks every 2 s, so poll briefly.
+mailed=""
+for attempt in $(seq 1 30); do
+  mail=$(curl -fsS http://localhost:8025/api/v1/messages || true)
+  if echo "$mail" | grep -q 'SILVER'; then
+    mailed=1
+    break
+  fi
+  sleep 2
+done
+[ -n "$mailed" ] || fail "tier-change email never reached Mailpit"
+echo "✓ tier-change email for demo-erik landed in Mailpit"
+
 echo ""
 echo "=== 5. Idempotency: duplicate delivery, single ledger entry ==="
 curl -fsS -X POST http://localhost:8081/partners/stayinn/purchases/duplicate-demo \

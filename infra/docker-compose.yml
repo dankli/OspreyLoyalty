@@ -149,6 +149,30 @@ services:
       OTEL_SERVICE_NAME: points-engine
     ports: ["8082:8082"]
 
+  # Demo mail sink (ADR-0024): notifications delivers here over SMTP; the web UI at
+  # :8025 shows what a member would have received. Nothing ever leaves the machine.
+  mailpit:
+    image: axllent/mailpit:v1.20
+    ports: ["8025:8025", "1025:1025"]
+
+  # Consumes member-events (tier changes, expiring points) and mails via Mailpit.
+  # Events carry no PII — the member's email is resolved from members at send time.
+  notifications:
+    build: ../services/notifications
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      MEMBERS_URL: http://members:8080
+      SMTP_URL: smtp://mailpit:1025
+      PORT: "8084"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: notifications
+    ports: ["8084:8084"]
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
   # Route graph store (ADR-0021). Authless like the demo Mongo; never exposed via ingress.
   # Memory-bounded so the graph workload can't crowd the rest of the fleet on a laptop.
   neo4j:

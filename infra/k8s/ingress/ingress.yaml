@@ -37,6 +37,7 @@ spec:
         - points-engine.osprey.localtest.me
         - grafana.osprey.localtest.me
         - jaeger.osprey.localtest.me
+        - mailpit.osprey.localtest.me
         - traefik.osprey.localtest.me
   rules:
     - host: app.osprey.localtest.me
@@ -111,6 +112,12 @@ spec:
           - path: /
             pathType: Prefix
             backend: { service: { name: jaeger, port: { number: 16686 } } }
+    - host: mailpit.osprey.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: mailpit, port: { number: 8025 } } }
     - host: traefik.osprey.localtest.me
       http:
         paths:

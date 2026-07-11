@@ -19,12 +19,17 @@ public static class Migrations
     [
         // Phase-1 members carry all-time qualifying points; recompute everyone against the
         // rolling window once at deploy so stale tiers correct immediately instead of on
-        // the requalification sweep's first tick.
+        // the requalification sweep's first tick. Changes emit like any sweep's.
         ("001-recompute-qualifying-points", async (db, ct) =>
-            await Requalification.SweepAsync(
+        {
+            DateTime nowUtc = DateTime.UtcNow;
+            IReadOnlyList<Requalification.TierChange> changes = await Requalification.SweepAsync(
                 db.GetCollection<MemberDocument>("members"),
                 db.GetCollection<PointsTransactionDocument>("transactions"),
-                DateTime.UtcNow, ct)),
+                nowUtc, ct);
+            await Requalification.EmitAsync(
+                changes, new Outbox.Writer(db.GetCollection<OutboxDocument>("outbox")), nowUtc, ct);
+        }),
     ];
 
     public static async Task RunAsync(IMongoDatabase db, ILogger logger, CancellationToken ct = default)
