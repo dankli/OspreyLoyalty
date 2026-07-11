@@ -9,6 +9,7 @@ import type { Partner } from "./features/partner/partnersClient.js";
 import type { Reward } from "./features/reward/rewardsClient.js";
 import type { RedemptionOutcome } from "./features/reward/redeemClient.js";
 import type { TripRedemptionOutcome } from "./features/trip/bookTripClient.js";
+import type { BenefitActivation, BenefitActivationOutcome } from "./features/benefit/benefitsClient.js";
 import type { Airport, Destination, MapAirport, RouteOptimize, RoutePath } from "./features/routes/routesClient.js";
 import { t } from "./i18n.js";
 
@@ -24,6 +25,8 @@ export type Deps = {
   fetchAllAirports: (baseUrl: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<MapAirport[]>;
   searchRoute: (baseUrl: string, from: string, to: string, optimize: RouteOptimize, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<RoutePath | null>;
   postTripRedemption: (baseUrl: string, memberId: string, fromIata: string, toIata: string, points: number, idempotencyKey: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<TripRedemptionOutcome>;
+  fetchBenefitActivations: (baseUrl: string, memberId: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<BenefitActivation[]>;
+  postBenefitActivation: (baseUrl: string, memberId: string, benefit: string, idempotencyKey: string, correlationId?: string, authorization?: string, acceptLanguage?: string) => Promise<BenefitActivationOutcome>;
 };
 
 const typeDefs = readFileSync(new URL("../schema.graphql", import.meta.url), "utf8");
@@ -73,6 +76,8 @@ export function schema(deps: Deps): GraphQLSchemaWithContext<YogaInitialContext>
           deps.fetchDestinations(env.ROUTES_URL, args.iata, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
         mapAirports: (_parent: unknown, _args: unknown, context: RequestContext) =>
           deps.fetchAllAirports(env.ROUTES_URL, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
+        benefitActivations: (_parent: unknown, args: { memberId: string }, context: RequestContext) =>
+          deps.fetchBenefitActivations(env.MEMBERS_URL, args.memberId, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
         routeSearch: (_parent: unknown, args: { from: string; to: string; optimize: "KM" | "MIN" | "HOPS" }, context: RequestContext) =>
           deps.searchRoute(env.ROUTES_URL, args.from, args.to, args.optimize.toLowerCase() as RouteOptimize, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
       },
@@ -86,6 +91,15 @@ export function schema(deps: Deps): GraphQLSchemaWithContext<YogaInitialContext>
           if (outcome.ok) return outcome.result;
           // Expected refusal (unknown member / insufficient / unknown reward) → the GraphQL error
           // edge, carrying members' already-localized message. Genuine faults threw upstream.
+          throw new GraphQLError(outcome.message);
+        },
+        activateBenefit: async (
+          _parent: unknown,
+          args: { memberId: string; benefit: string; idempotencyKey: string },
+          context: RequestContext,
+        ) => {
+          const outcome = await deps.postBenefitActivation(env.MEMBERS_URL, args.memberId, args.benefit, args.idempotencyKey, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context));
+          if (outcome.ok) return outcome.result;
           throw new GraphQLError(outcome.message);
         },
         bookTrip: async (

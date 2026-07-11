@@ -74,5 +74,14 @@
     "tiersBody": "Sali da MEMBER attraverso SILVER, GOLD e DIAMOND accumulando punti qualificanti. OSPREY è il livello massimo solo su invito e non si raggiunge mai con i soli punti.",
     "rewardsHeading": "Premi",
     "rewardsBody": "Riscattare un premio attinge dal saldo spendibile. Ripetere lo stesso riscatto non ti addebita mai due volte."
+  },
+  "benefits": {
+    "activate": "Attiva",
+    "showCode": "Mostra codice",
+    "codeTitle": "Il tuo codice di attivazione",
+    "codeHint": "Mostra questo codice al banco.",
+    "qrAlt": "Codice QR per {{code}}",
+    "close": "Chiudi",
+    "error": "Attivazione non riuscita. Riprova."
   }
 }

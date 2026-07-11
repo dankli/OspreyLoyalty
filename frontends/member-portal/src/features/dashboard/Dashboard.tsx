@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { graphql } from "../../gql";
 import { gatewayClient } from "../../gatewayClient";
 import { TierProgress } from "./TierProgress";
+import { BenefitsList } from "./BenefitsList";
 import { formatPoints } from "../../format";
 
 const memberDashboardQuery = graphql(`
@@ -44,7 +45,7 @@ export function Dashboard({ memberId }: { memberId: string }) {
       />
       <section>
         <h2>{t("dashboard.benefits")}</h2>
-        <ul>{member.benefits.map((b) => <li key={b}>{b}</li>)}</ul>
+        <BenefitsList memberId={memberId} benefits={member.benefits} />
       </section>
     </main>
   );

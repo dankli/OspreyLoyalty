@@ -14,6 +14,8 @@ import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\n  query BenefitActivations($memberId: ID!) {\n    benefitActivations(memberId: $memberId) {\n      benefit\n      code\n      activatedAtUtc\n    }\n  }\n": typeof types.BenefitActivationsDocument,
+    "\n  mutation ActivateBenefit($memberId: ID!, $benefit: String!, $idempotencyKey: String!) {\n    activateBenefit(memberId: $memberId, benefit: $benefit, idempotencyKey: $idempotencyKey) {\n      benefit\n      code\n      activatedAtUtc\n      alreadyApplied\n    }\n  }\n": typeof types.ActivateBenefitDocument,
     "\n  query MemberDashboard($id: ID!) {\n    member(id: $id) {\n      id\n      name\n      tier\n      qualifyingPoints\n      spendablePoints\n      pointsToNextTier\n      benefits\n    }\n  }\n": typeof types.MemberDashboardDocument,
     "\n  query RewardsCatalog {\n    rewards {\n      id\n      name\n      cost\n    }\n  }\n": typeof types.RewardsCatalogDocument,
     "\n  query MemberBalance($id: ID!) {\n    member(id: $id) {\n      id\n      spendablePoints\n    }\n  }\n": typeof types.MemberBalanceDocument,
@@ -21,6 +23,8 @@ type Documents = {
     "\n  query MemberTransactions($memberId: ID!, $page: Int!, $type: String) {\n    transactions(memberId: $memberId, page: $page, type: $type) {\n      items {\n        id\n        type\n        points\n        source\n        occurredAtUtc\n      }\n      page\n      hasMore\n    }\n  }\n": typeof types.MemberTransactionsDocument,
 };
 const documents: Documents = {
+    "\n  query BenefitActivations($memberId: ID!) {\n    benefitActivations(memberId: $memberId) {\n      benefit\n      code\n      activatedAtUtc\n    }\n  }\n": types.BenefitActivationsDocument,
+    "\n  mutation ActivateBenefit($memberId: ID!, $benefit: String!, $idempotencyKey: String!) {\n    activateBenefit(memberId: $memberId, benefit: $benefit, idempotencyKey: $idempotencyKey) {\n      benefit\n      code\n      activatedAtUtc\n      alreadyApplied\n    }\n  }\n": types.ActivateBenefitDocument,
     "\n  query MemberDashboard($id: ID!) {\n    member(id: $id) {\n      id\n      name\n      tier\n      qualifyingPoints\n      spendablePoints\n      pointsToNextTier\n      benefits\n    }\n  }\n": types.MemberDashboardDocument,
     "\n  query RewardsCatalog {\n    rewards {\n      id\n      name\n      cost\n    }\n  }\n": types.RewardsCatalogDocument,
     "\n  query MemberBalance($id: ID!) {\n    member(id: $id) {\n      id\n      spendablePoints\n    }\n  }\n": types.MemberBalanceDocument,
@@ -42,6 +46,14 @@ const documents: Documents = {
  */
 export function graphql(source: string): unknown;
 
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query BenefitActivations($memberId: ID!) {\n    benefitActivations(memberId: $memberId) {\n      benefit\n      code\n      activatedAtUtc\n    }\n  }\n"): (typeof documents)["\n  query BenefitActivations($memberId: ID!) {\n    benefitActivations(memberId: $memberId) {\n      benefit\n      code\n      activatedAtUtc\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ActivateBenefit($memberId: ID!, $benefit: String!, $idempotencyKey: String!) {\n    activateBenefit(memberId: $memberId, benefit: $benefit, idempotencyKey: $idempotencyKey) {\n      benefit\n      code\n      activatedAtUtc\n      alreadyApplied\n    }\n  }\n"): (typeof documents)["\n  mutation ActivateBenefit($memberId: ID!, $benefit: String!, $idempotencyKey: String!) {\n    activateBenefit(memberId: $memberId, benefit: $benefit, idempotencyKey: $idempotencyKey) {\n      benefit\n      code\n      activatedAtUtc\n      alreadyApplied\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

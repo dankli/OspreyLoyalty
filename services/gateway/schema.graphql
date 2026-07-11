@@ -140,3 +140,18 @@ type TripBookingResult {
 extend type Mutation {
   bookTrip(memberId: ID!, from: ID!, to: ID!, optimize: RouteOptimize! = KM, idempotencyKey: String!): TripBookingResult!
 }
+
+type BenefitActivation {
+  benefit: String!
+  code: String!
+  activatedAtUtc: String!
+  alreadyApplied: Boolean!
+}
+
+extend type Query {
+  benefitActivations(memberId: ID!): [BenefitActivation!]!
+}
+
+extend type Mutation {
+  activateBenefit(memberId: ID!, benefit: String!, idempotencyKey: String!): BenefitActivation!
+}

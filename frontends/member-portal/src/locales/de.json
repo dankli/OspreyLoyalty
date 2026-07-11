@@ -74,5 +74,14 @@
     "tiersBody": "Du steigst von MEMBER über SILVER, GOLD und DIAMOND durch qualifizierende Punkte auf. OSPREY ist die höchste Stufe nur auf Einladung und wird nie allein durch Punkte erreicht.",
     "rewardsHeading": "Prämien",
     "rewardsBody": "Das Einlösen einer Prämie bucht von deinem verfügbaren Guthaben ab. Ein erneuter Versuch derselben Einlösung belastet dich nie doppelt."
+  },
+  "benefits": {
+    "activate": "Aktivieren",
+    "showCode": "Code anzeigen",
+    "codeTitle": "Dein Aktivierungscode",
+    "codeHint": "Zeige diesen Code am Schalter vor.",
+    "qrAlt": "QR-Code für {{code}}",
+    "close": "Schließen",
+    "error": "Aktivierung fehlgeschlagen. Versuche es erneut."
   }
 }

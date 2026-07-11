@@ -39,6 +39,7 @@ public static class Messages
             ["reward_slug_invalid"] = "Reward id must be 2-40 lowercase letters, digits or dashes.",
             ["reward_name_invalid"] = "Reward name is required and at most {0} characters.",
             ["reward_cost_invalid"] = "Reward cost must be positive and at most {0}.",
+            ["benefit_invalid"] = "Benefit is required and at most {0} characters.",
         },
         ["sv"] = new()
         {
@@ -62,6 +63,7 @@ public static class Messages
             ["reward_slug_invalid"] = "Belönings-id måste vara 2-40 gemener, siffror eller bindestreck.",
             ["reward_name_invalid"] = "Belöningens namn är obligatoriskt och högst {0} tecken.",
             ["reward_cost_invalid"] = "Belöningens kostnad måste vara positiv och högst {0}.",
+            ["benefit_invalid"] = "Förmånen är obligatorisk och högst {0} tecken.",
         },
         ["es"] = new()
         {
@@ -85,6 +87,7 @@ public static class Messages
             ["reward_slug_invalid"] = "El id de la recompensa debe tener 2-40 letras minúsculas, dígitos o guiones.",
             ["reward_name_invalid"] = "El nombre de la recompensa es obligatorio y debe tener como máximo {0} caracteres.",
             ["reward_cost_invalid"] = "El coste de la recompensa debe ser positivo y como máximo {0}.",
+            ["benefit_invalid"] = "El beneficio es obligatorio y debe tener como máximo {0} caracteres.",
         },
         ["de"] = new()
         {
@@ -108,6 +111,7 @@ public static class Messages
             ["reward_slug_invalid"] = "Die Prämien-ID muss aus 2-40 Kleinbuchstaben, Ziffern oder Bindestrichen bestehen.",
             ["reward_name_invalid"] = "Der Prämienname ist erforderlich und darf höchstens {0} Zeichen lang sein.",
             ["reward_cost_invalid"] = "Die Prämienkosten müssen positiv sein und höchstens {0} betragen.",
+            ["benefit_invalid"] = "Der Vorteil ist erforderlich und darf höchstens {0} Zeichen lang sein.",
         },
         ["it"] = new()
         {
@@ -131,6 +135,7 @@ public static class Messages
             ["reward_slug_invalid"] = "L'id del premio deve contenere 2-40 lettere minuscole, cifre o trattini.",
             ["reward_name_invalid"] = "Il nome del premio è obbligatorio e può contenere al massimo {0} caratteri.",
             ["reward_cost_invalid"] = "Il costo del premio deve essere positivo e al massimo {0}.",
+            ["benefit_invalid"] = "Il vantaggio è obbligatorio e può contenere al massimo {0} caratteri.",
         },
     };
 

@@ -74,5 +74,14 @@
     "tiersBody": "Du klättrar från MEMBER via SILVER, GOLD och DIAMOND genom att tjäna kvalificerande poäng. OSPREY är den inbjudan-endast högsta nivån och nås aldrig av poäng enbart.",
     "rewardsHeading": "Förmåner",
     "rewardsBody": "Att lösa in en förmån drar från ditt spenderbara saldo. Att göra om samma inlösen debiterar dig aldrig två gånger."
+  },
+  "benefits": {
+    "activate": "Aktivera",
+    "showCode": "Visa kod",
+    "codeTitle": "Din aktiveringskod",
+    "codeHint": "Visa den här koden vid disken.",
+    "qrAlt": "QR-kod för {{code}}",
+    "close": "Stäng",
+    "error": "Aktiveringen misslyckades. Försök igen."
   }
 }

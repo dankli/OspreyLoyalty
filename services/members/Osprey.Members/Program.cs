@@ -70,12 +70,15 @@ builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<IMongoClient>().GetDatabase("osprey").GetCollection<OutboxDocument>("outbox"));
 builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<IMongoClient>().GetDatabase("osprey").GetCollection<RewardDocument>("rewards"));
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<IMongoClient>().GetDatabase("osprey").GetCollection<BenefitActivationDocument>("benefitActivations"));
 builder.Services.AddScoped<EnrollMember.Handler>();
 builder.Services.AddScoped<GetMemberProfile.Handler>();
 builder.Services.AddScoped<ApplyEarn.Handler>();
 builder.Services.AddScoped<ListTransactions.Handler>();
 builder.Services.AddScoped<Redeem.Handler>();
 builder.Services.AddScoped<RedeemTrip.Handler>();
+builder.Services.AddScoped<ActivateBenefit.Handler>();
 builder.Services.AddScoped<FindMemberByEmail.Handler>();
 builder.Services.AddScoped<AdjustPoints.Handler>();
 builder.Services.AddScoped<SetOspreyInvitation.Handler>();
@@ -180,6 +183,7 @@ ListTransactions.MapExportEndpoint(app);
 Rewards.MapEndpoints(app);
 Redeem.MapEndpoints(app);
 RedeemTrip.MapEndpoints(app);
+ActivateBenefit.MapEndpoints(app);
 var findByEmail = FindMemberByEmail.MapEndpoints(app);
 var adjust = AdjustPoints.MapEndpoints(app);
 var osprey = SetOspreyInvitation.MapEndpoints(app);
@@ -202,6 +206,7 @@ app.MapMetrics().AllowAnonymous(); // Prometheus scrape endpoint at /metrics
 await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<PointsTransactionDocument>>());
 await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<MemberDocument>>());
 await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<AuditLogDocument>>());
+await MongoIndexes.EnsureAsync(app.Services.GetRequiredService<IMongoCollection<BenefitActivationDocument>>());
 
 // Versioned run-once migrations (idempotent bodies; markers in the `migrations` collection).
 await Migrations.RunAsync(app.Services.GetRequiredService<IMongoClient>().GetDatabase("osprey"), app.Logger);

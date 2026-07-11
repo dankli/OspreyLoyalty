@@ -234,3 +234,28 @@ label select:focus-visible { outline: none; border-color: var(--amber-500); box-
   text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;
 }
 .goal-card { border-style: dashed; }
+
+/* Benefit activation (batch: benefits stop being display-only). */
+.benefits { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.benefits li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.benefit-action {
+  font: inherit; font-size: 0.8rem; font-weight: 600; padding: 0.25rem 0.85rem;
+  border: 1px solid var(--line, rgba(227, 174, 54, 0.22)); border-radius: 999px;
+  background: none; color: var(--tan-400, #c1a274); cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.benefit-action:hover:not(:disabled) { border-color: var(--amber-500, #e3ae36); color: var(--amber-500, #e3ae36); }
+.benefit-action:disabled { opacity: 0.4; cursor: wait; }
+.benefit-code-card {
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  margin-top: 0.9rem; padding: 1.1rem; border-radius: 14px;
+  background: var(--feather-700, #2e2213); border: 1px solid var(--line, rgba(227, 174, 54, 0.22));
+  max-width: 20rem;
+}
+.benefit-code-card h3 { margin: 0; }
+.benefit-code-card .benefit-name { margin: 0; color: var(--tan-400, #c1a274); }
+.benefit-code-card .benefit-code {
+  margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: 0.2em;
+  font-variant-numeric: tabular-nums; color: var(--amber-500, #e3ae36);
+}
+.benefit-code-card img { border-radius: 8px; background: #fff; padding: 4px; }

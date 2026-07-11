@@ -7,9 +7,10 @@ import { fetchPartners } from "./features/partner/partnersClient.js";
 import { fetchRewards } from "./features/reward/rewardsClient.js";
 import { postRedemption } from "./features/reward/redeemClient.js";
 import { postTripRedemption } from "./features/trip/bookTripClient.js";
+import { fetchBenefitActivations, postBenefitActivation } from "./features/benefit/benefitsClient.js";
 import { fetchAirport, fetchAllAirports, fetchDestinations, searchAirports, searchRoute } from "./features/routes/routesClient.js";
 
-export function buildYoga(deps: Deps = { fetchMember, fetchTransactions, fetchPartners, fetchRewards, postRedemption, searchAirports, fetchAirport, fetchDestinations, fetchAllAirports, searchRoute, postTripRedemption }): YogaServerInstance<{}, {}> {
+export function buildYoga(deps: Deps = { fetchMember, fetchTransactions, fetchPartners, fetchRewards, postRedemption, searchAirports, fetchAirport, fetchDestinations, fetchAllAirports, searchRoute, postTripRedemption, fetchBenefitActivations, postBenefitActivation }): YogaServerInstance<{}, {}> {
   // Demo stack: the portal is served from another local port, so CORS is wide open on purpose.
   // maskedErrors: false — demo BFF: members' validation messages ARE the user-facing errors
   return createYoga({ schema: schema(deps), cors: { origin: "*" }, maskedErrors: false });

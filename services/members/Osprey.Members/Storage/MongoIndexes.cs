@@ -28,6 +28,20 @@ public static class MongoIndexes
             cancellationToken: ct);
     }
 
+    /// <summary>The unique idempotency index is the retry arbiter, exactly like the ledger's (ADR-0002).</summary>
+    public static async Task EnsureAsync(IMongoCollection<BenefitActivationDocument> activations, CancellationToken ct = default)
+    {
+        await activations.Indexes.CreateManyAsync(
+        [
+            new CreateIndexModel<BenefitActivationDocument>(
+                Builders<BenefitActivationDocument>.IndexKeys.Ascending(a => a.IdempotencyKey),
+                new CreateIndexOptions { Unique = true, Name = "ux_idempotency_key" }),
+            new CreateIndexModel<BenefitActivationDocument>(
+                Builders<BenefitActivationDocument>.IndexKeys.Ascending(a => a.MemberId).Descending(a => a.ActivatedAtUtc),
+                new CreateIndexOptions { Name = "ix_member_activated" }),
+        ], cancellationToken: ct);
+    }
+
     /// <summary>Audit trail lookups are always "what happened to member X, newest first" (ADR-0017).</summary>
     public static async Task EnsureAsync(IMongoCollection<AuditLogDocument> audit, CancellationToken ct = default)
     {

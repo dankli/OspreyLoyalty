@@ -22,6 +22,10 @@ export function fakeDeps(overrides: Partial<Deps> = {}): Deps {
     postTripRedemption: async (): Promise<never> => {
       throw new Error("not used");
     },
+    fetchBenefitActivations: async () => [],
+    postBenefitActivation: async (): Promise<never> => {
+      throw new Error("not used");
+    },
     ...overrides,
   };
 }

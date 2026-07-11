@@ -74,5 +74,14 @@
     "tiersBody": "Subes de MEMBER a SILVER, GOLD y DIAMOND ganando puntos cualificados. OSPREY es el nivel máximo solo por invitación y nunca se alcanza solo con puntos.",
     "rewardsHeading": "Recompensas",
     "rewardsBody": "Canjear una recompensa gasta de tu saldo disponible. Reintentar el mismo canje nunca te cobra dos veces."
+  },
+  "benefits": {
+    "activate": "Activar",
+    "showCode": "Mostrar código",
+    "codeTitle": "Tu código de activación",
+    "codeHint": "Muestra este código en el mostrador.",
+    "qrAlt": "Código QR de {{code}}",
+    "close": "Cerrar",
+    "error": "La activación falló. Inténtalo de nuevo."
   }
 }

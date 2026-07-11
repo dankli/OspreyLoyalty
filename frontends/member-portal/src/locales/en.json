@@ -74,5 +74,14 @@
     "tiersBody": "You climb from MEMBER through SILVER, GOLD and DIAMOND by earning qualifying points. OSPREY is the invitation-only top tier and is never reached by points alone.",
     "rewardsHeading": "Rewards",
     "rewardsBody": "Redeeming a reward spends from your spendable balance. Retrying the same redemption never charges you twice."
+  },
+  "benefits": {
+    "activate": "Activate",
+    "showCode": "Show code",
+    "codeTitle": "Your activation code",
+    "codeHint": "Show this code at the counter.",
+    "qrAlt": "QR code for {{code}}",
+    "close": "Close",
+    "error": "Activation failed. Try again."
   }
 }
