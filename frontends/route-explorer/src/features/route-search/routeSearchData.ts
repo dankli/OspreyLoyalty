@@ -35,6 +35,10 @@ const RouteSearchDocument = graphql(`
 
 export type { RouteOptimize };
 
+/** The UI adds a fourth mode with no backend counterpart: compare all three
+ * strategies and present the one earning the most points. */
+export type UiOptimize = RouteOptimize | "PTS";
+
 export type RouteLegRow = {
   from: AirportHit;
   to: AirportHit;

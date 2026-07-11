@@ -29,6 +29,19 @@ RETURN [n IN nodes(path) | n ${AIRPORT_PROJECTION}] AS airports,
        [r IN relationships(path) | r ${LEG_PROJECTION}] AS legs
 LIMIT 1`;
 
+// Distance search rides A* instead: APOC's haversine heuristic (over the latitude/
+// longitude properties) never exceeds routed km, so it is admissible — same optimal
+// answer as dijkstra while expanding far fewer nodes. Minutes have no admissible
+// geometric heuristic (block times vary per equipment), so "min" stays on dijkstra.
+// Same guardrails as ADR-0021's dijkstra move: the thin-pair integration tests are
+// the tripwire that this stays within the 2 s bound.
+export const ASTAR_KM_QUERY = `
+MATCH (a:Airport {iata: $from}), (b:Airport {iata: $to})
+CALL apoc.algo.aStar(a, b, 'ROUTE>', 'km', 'latitude', 'longitude') YIELD path
+RETURN [n IN nodes(path) | n ${AIRPORT_PROJECTION}] AS airports,
+       [r IN relationships(path) | r ${LEG_PROJECTION}] AS legs
+LIMIT 1`;
+
 export type LegProps = { km: number; min: number; carrierIatas: string[]; carrierNames: string[] };
 
 export type RouteLeg = { from: Airport; to: Airport; km: number; min: number; carriers: Carrier[] };

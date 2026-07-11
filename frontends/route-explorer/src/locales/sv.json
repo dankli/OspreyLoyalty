@@ -38,5 +38,6 @@
   "mapAriaLabel": "Interaktiv världskarta över flygnätverket",
   "searchThisRoute": "Sök denna rutt",
   "allCountries": "Alla länder",
-  "sortBy": "Sortera på {column}"
+  "sortBy": "Sortera på {column}",
+  "optimizePoints": "Flest poäng"
 }

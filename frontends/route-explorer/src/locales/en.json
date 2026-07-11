@@ -38,5 +38,6 @@
   "mapAriaLabel": "Interactive world map of the airline network",
   "searchThisRoute": "Search this route",
   "allCountries": "All countries",
-  "sortBy": "Sort by {column}"
+  "sortBy": "Sort by {column}",
+  "optimizePoints": "Most points"
 }

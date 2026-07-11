@@ -4,7 +4,7 @@
   import RouteSearchPage from "./features/route-search/RouteSearchPage.svelte";
   import MapPanel from "./features/map/MapPanel.svelte";
   import type { AirportHit } from "./features/explore/exploreData";
-  import type { RouteOptimize } from "./features/route-search/routeSearchData";
+  import type { UiOptimize } from "./features/route-search/routeSearchData";
 
   const TABS = [
     { id: "explore", label: strings.tabExplore },
@@ -26,7 +26,7 @@
   // The latest searched itinerary, shared with the map so "find route" → "Map" draws it.
   let lastPathIatas = $state.raw<string[] | null>(null);
 
-  type RouteSeed = { from: AirportHit | null; to: AirportHit | null; optimize?: RouteOptimize; auto?: boolean };
+  type RouteSeed = { from: AirportHit | null; to: AirportHit | null; optimize?: UiOptimize; auto?: boolean };
   let routeSeed = $state.raw<RouteSeed | null>(null);
 
   function openRoute(seed: RouteSeed) {
@@ -36,7 +36,7 @@
 
   // Deep link: #route?from=ARN&to=HND&optimize=KM opens the search prefilled and runs it.
   // Only the iatas travel in the URL, so the stub hits display as bare codes until picked over.
-  const OPTIMIZE_VALUES = ["KM", "MIN", "HOPS"] as const;
+  const OPTIMIZE_VALUES = ["KM", "MIN", "HOPS", "PTS"] as const;
   {
     const match = location.hash.match(/^#route\?(.*)$/);
     if (match) {
@@ -51,7 +51,7 @@
           from,
           to,
           optimize: (OPTIMIZE_VALUES as readonly string[]).includes(rawOptimize)
-            ? (rawOptimize as RouteOptimize)
+            ? (rawOptimize as UiOptimize)
             : undefined,
           auto: Boolean(from && to),
         };

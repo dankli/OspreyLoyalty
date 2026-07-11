@@ -38,5 +38,6 @@
   "mapAriaLabel": "Mapa mundial interactivo de la red aérea",
   "searchThisRoute": "Buscar esta ruta",
   "allCountries": "Todos los países",
-  "sortBy": "Ordenar por {column}"
+  "sortBy": "Ordenar por {column}",
+  "optimizePoints": "Más puntos"
 }

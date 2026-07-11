@@ -20,7 +20,7 @@ export async function searchAirports(driver: Driver, q: string, limit: number): 
      WITH node, score
      ORDER BY score DESC
      LIMIT 50
-     WITH node, COUNT { (node)-[:ROUTE]->() } AS degree
+     WITH node, coalesce(node.degree, 0) AS degree
      RETURN node ${AIRPORT_PROJECTION} AS airport, degree
      ORDER BY degree DESC, node.name ASC
      LIMIT $limit`,
@@ -73,7 +73,7 @@ export function createAllAirports(driver: Driver): () => Promise<MapAirport[]> {
       // LIMIT 5000: the dataset holds ~3.9k airports; the bound caps a future-grown graph.
       `MATCH (a:Airport)
        RETURN a.iata AS iata, a.latitude AS latitude, a.longitude AS longitude,
-              COUNT { (a)-[:ROUTE]->() } AS degree
+              coalesce(a.degree, 0) AS degree
        ORDER BY a.iata
        LIMIT 5000`,
       {},

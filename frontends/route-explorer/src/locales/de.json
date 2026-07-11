@@ -38,5 +38,6 @@
   "mapAriaLabel": "Interaktive Weltkarte des Streckennetzes",
   "searchThisRoute": "Diese Route suchen",
   "allCountries": "Alle Länder",
-  "sortBy": "Sortieren nach {column}"
+  "sortBy": "Sortieren nach {column}",
+  "optimizePoints": "Meiste Punkte"
 }

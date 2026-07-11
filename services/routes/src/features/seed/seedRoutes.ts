@@ -37,6 +37,14 @@ export async function seedRoutes(
     WRITE_TIMEOUT_MS,
   );
   if (marker[0]?.version === DATASET_VERSION) {
+    // Older seeds predate the degree property — backfill idempotently (single
+    // bounded write, a no-op when nothing is null) so queries can rely on it.
+    await writeQuery(
+      driver,
+      `MATCH (a:Airport) WHERE a.degree IS NULL SET a.degree = COUNT { (a)-[:ROUTE]->() }`,
+      {},
+      WRITE_TIMEOUT_MS,
+    );
     log.info({ version: DATASET_VERSION }, "route graph already seeded");
     return { skipped: true };
   }
@@ -67,6 +75,15 @@ export async function seedRoutes(
       WRITE_TIMEOUT_MS,
     );
   }
+
+  // Persist each airport's out-degree: the map payload and the search ordering read
+  // it, so no request-path query ever re-counts 59k edges.
+  await writeQuery(
+    driver,
+    `MATCH (a:Airport) SET a.degree = COUNT { (a)-[:ROUTE]->() }`,
+    {},
+    WRITE_TIMEOUT_MS,
+  );
 
   // The full-text index populates asynchronously; block readiness until it is queryable
   // so the first typeahead after boot doesn't silently return nothing.

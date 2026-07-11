@@ -9,6 +9,7 @@
     searchRoute as gatewayRouteSearch,
     type RouteOptimize,
     type RoutePathResult,
+    type UiOptimize,
   } from "./routeSearchData";
 
   let {
@@ -25,19 +26,25 @@
     /** Overrides forwarded to the inline result map (tests inject a fake island). */
     mapProps?: Partial<ComponentProps<typeof MapPanel>>;
     /** Prefill from a deep link or the explore tab; auto runs the search when both ends are set. */
-    seed?: { from: AirportHit | null; to: AirportHit | null; optimize?: RouteOptimize; auto?: boolean } | null;
+    seed?: { from: AirportHit | null; to: AirportHit | null; optimize?: UiOptimize; auto?: boolean } | null;
   } = $props();
 
-  const OPTIMIZE_OPTIONS: { value: RouteOptimize; label: string }[] = [
+  const STRATEGIES: RouteOptimize[] = ["KM", "MIN", "HOPS"];
+  const OPTIMIZE_OPTIONS: { value: UiOptimize; label: string }[] = [
     { value: "KM", label: strings.optimizeKm },
     { value: "MIN", label: strings.optimizeMin },
     { value: "HOPS", label: strings.optimizeHops },
+    { value: "PTS", label: strings.optimizePoints },
   ];
 
   let from = $state.raw<AirportHit | null>(null);
   let to = $state.raw<AirportHit | null>(null);
-  let optimize = $state<RouteOptimize>("KM");
+  let optimize = $state<UiOptimize>("KM");
   let result = $state.raw<RoutePathResult | null>(null);
+  // Every search fetches all three strategies: the requested one answers, the rest
+  // become the comparison chips (and "Most points" picks the best earner among them).
+  let alternatives = $state.raw<Partial<Record<RouteOptimize, RoutePathResult | null>>>({});
+  let shown = $state<RouteOptimize>("KM");
   let noRoute = $state(false);
   let loading = $state(false);
   let failed = $state(false);
@@ -46,31 +53,95 @@
     return [...path.legs.map((leg) => leg.from.iata), path.legs.at(-1)?.to.iata ?? ""].filter(Boolean);
   }
 
-  async function run(fromHit: AirportHit | null, toHit: AirportHit | null, opt: RouteOptimize) {
+  function writeHash(fromIata: string, toIata: string, opt: UiOptimize) {
+    // A shareable deep link for this exact search (replace: no history spam).
+    try {
+      history.replaceState(null, "", `#route?from=${fromIata}&to=${toIata}&optimize=${opt}`);
+    } catch {
+      // sandboxed contexts may refuse; the search itself is unaffected
+    }
+  }
+
+  function display(strategy: RouteOptimize, path: RoutePathResult, updateHash = true) {
+    shown = strategy;
+    result = path;
+    onresult?.(pathToIatas(path));
+    // Chip clicks share the displayed strategy; the initial display keeps the
+    // searched mode (a PTS deep link should re-run the comparison, not pin a winner).
+    if (updateHash && from && to) writeHash(from.iata, to.iata, strategy);
+  }
+
+  function bestByPoints(
+    byStrategy: Partial<Record<RouteOptimize, RoutePathResult | null>>,
+  ): { strategy: RouteOptimize; path: RoutePathResult } | null | undefined {
+    const loaded = STRATEGIES.filter((strategy) => byStrategy[strategy] !== undefined);
+    if (loaded.length === 0) return undefined; // every strategy errored
+    let best: { strategy: RouteOptimize; path: RoutePathResult } | null = null;
+    for (const strategy of loaded) {
+      const path = byStrategy[strategy];
+      if (!path) continue;
+      if (!best || (path.estimatedPoints ?? -1) > (best.path.estimatedPoints ?? -1)) {
+        best = { strategy, path };
+      }
+    }
+    return best; // null → reachable nowhere
+  }
+
+  async function run(fromHit: AirportHit | null, toHit: AirportHit | null, opt: UiOptimize) {
     if (!fromHit || !toHit) return;
     loading = true;
     failed = false;
     noRoute = false;
     result = null;
-    // A shareable deep link for this exact search (replace: no history spam).
+    alternatives = {};
+    writeHash(fromHit.iata, toHit.iata, opt);
+    let byStrategy: Partial<Record<RouteOptimize, RoutePathResult | null>> = {};
     try {
-      history.replaceState(null, "", `#route?from=${fromHit.iata}&to=${toHit.iata}&optimize=${opt}`);
-    } catch {
-      // sandboxed contexts may refuse; the search itself is unaffected
-    }
-    try {
-      const path = await routeSearch(fromHit.iata, toHit.iata, opt);
-      if (path) {
-        result = path;
-        onresult?.(pathToIatas(path));
-      } else {
-        noRoute = true; // unreachable is a value on the happy rail, not an error
+      const settled = await Promise.all(
+        STRATEGIES.map((strategy) =>
+          routeSearch(fromHit.iata, toHit.iata, strategy).then(
+            (path) => ({ strategy, path: path as RoutePathResult | null | undefined }),
+            () => ({ strategy, path: undefined }),
+          ),
+        ),
+      );
+      for (const { strategy, path } of settled) {
+        if (path !== undefined) byStrategy[strategy] = path;
       }
-    } catch {
-      failed = true;
     } finally {
       loading = false;
     }
+    alternatives = byStrategy;
+
+    let chosen: { strategy: RouteOptimize; path: RoutePathResult } | null;
+    if (opt === "PTS") {
+      const best = bestByPoints(byStrategy);
+      if (best === undefined) {
+        failed = true;
+        return;
+      }
+      chosen = best;
+    } else {
+      const path = byStrategy[opt];
+      if (path === undefined) {
+        failed = true; // the requested strategy errored
+        return;
+      }
+      chosen = path ? { strategy: opt, path } : null;
+    }
+    if (!chosen) {
+      noRoute = true; // unreachable is a value on the happy rail, not an error
+      return;
+    }
+    display(chosen.strategy, chosen.path, false);
+  }
+
+  function strategyLabel(strategy: RouteOptimize): string {
+    return strategy === "KM"
+      ? strings.optimizeKm
+      : strategy === "MIN"
+        ? strings.optimizeMin
+        : strings.optimizeHops;
   }
 
   $effect(() => {
@@ -132,6 +203,27 @@
     <p class="loading">{strings.loading}</p>
   {:else if result}
     <h2>{strings.legsHeading}</h2>
+    {#if Object.values(alternatives).filter(Boolean).length > 1}
+      <div class="alternatives">
+        {#each STRATEGIES as strategy (strategy)}
+          {@const alt = alternatives[strategy]}
+          {#if alt}
+            <button
+              type="button"
+              class={{ chip: true, active: shown === strategy }}
+              onclick={() => display(strategy, alt)}
+            >
+              <span class="chip-label">{strategyLabel(strategy)}</span>
+              <span class="chip-facts">
+                {formatNumber(alt.totalKm)} km · {formatDuration(alt.totalMin)}{alt.estimatedPoints !== null
+                  ? ` · ≈ ${formatNumber(alt.estimatedPoints)}`
+                  : ""}
+              </span>
+            </button>
+          {/if}
+        {/each}
+      </div>
+    {/if}
     <p class="summary">
       {summary}
       {#if result.estimatedPoints !== null}
@@ -256,6 +348,50 @@
     color: var(--re-heading, #f7f1e4);
     font-variant-numeric: tabular-nums;
     margin: 0;
+  }
+
+  .alternatives {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .chip {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    font: inherit;
+    padding: 0.45rem 0.85rem;
+    border: 1px solid var(--re-line, rgba(227, 174, 54, 0.22));
+    border-radius: 10px;
+    background: var(--re-surface-2, #241a10);
+    color: var(--re-text, #efe6d3);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  .chip:hover {
+    border-color: var(--re-accent, #e3ae36);
+  }
+
+  .chip.active {
+    border-color: var(--re-accent, #e3ae36);
+    background: var(--re-raised, #382a17);
+  }
+
+  .chip-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--re-accent, #e3ae36);
+  }
+
+  .chip-facts {
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--re-muted, #c1a274);
   }
 
   .points-badge {

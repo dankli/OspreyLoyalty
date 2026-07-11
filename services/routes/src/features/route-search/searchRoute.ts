@@ -2,6 +2,7 @@ import type { Driver } from "neo4j-driver";
 import { isTransactionTimeout, readQuery } from "../../neo4j.js";
 import type { Airport } from "../airports/mapRecords.js";
 import {
+  ASTAR_KM_QUERY,
   DIJKSTRA_QUERY,
   HOP_SHORTEST_QUERY,
   assemblePath,
@@ -31,7 +32,9 @@ export async function searchRoute(
     rows =
       optimize === "hops"
         ? await readQuery(driver, HOP_SHORTEST_QUERY, { from, to }, HOP_TIMEOUT_MS)
-        : await readQuery(driver, DIJKSTRA_QUERY, { from, to, weight: optimize }, HOP_TIMEOUT_MS);
+        : optimize === "km"
+          ? await readQuery(driver, ASTAR_KM_QUERY, { from, to }, HOP_TIMEOUT_MS)
+          : await readQuery(driver, DIJKSTRA_QUERY, { from, to, weight: optimize }, HOP_TIMEOUT_MS);
   } catch (error) {
     if (isTransactionTimeout(error)) return null; // absence proof exceeded its budget → not found
     throw error;

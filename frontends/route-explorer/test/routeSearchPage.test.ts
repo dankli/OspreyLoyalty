@@ -68,6 +68,29 @@ test("a seed prefills both ends and auto-runs the search", async () => {
   expect(location.hash).toBe("#route?from=ARN&to=SYD&optimize=HOPS");
 });
 
+test("Most points picks the best-earning strategy and chips switch the itinerary", async () => {
+  const kmPath = { ...path, estimatedPoints: 50000 };
+  const minPath = { ...path, totalMin: 1200, estimatedPoints: 90000 };
+  const hopsPath = { ...path, estimatedPoints: null };
+  const search = vi.fn();
+  const routeSearch = vi.fn(async (_from: string, _to: string, strategy: string) =>
+    strategy === "KM" ? kmPath : strategy === "MIN" ? minPath : hopsPath);
+  render(RouteSearchPage, { props: { search, routeSearch } });
+
+  await pickAirports(search);
+  await userEvent.click(screen.getByLabelText(/most points/i));
+  await userEvent.click(screen.getByRole("button", { name: /find route/i }));
+
+  // The fastest route earns the most points, so it is what renders.
+  await screen.findByText(/90,000 Osprey points/);
+  expect(location.hash).toContain("optimize=PTS");
+
+  // The comparison chips can switch to the shortest itinerary.
+  await userEvent.click(screen.getByRole("button", { name: /^Distance/ }));
+  await screen.findByText(/50,000 Osprey points/);
+  expect(location.hash).toContain("optimize=KM");
+});
+
 test("a found route is drawn on the inline world map below the itinerary", async () => {
   const search = vi.fn();
   const routeSearch = vi.fn(async () => path);
