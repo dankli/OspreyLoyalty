@@ -1,0 +1,9 @@
+{
+  "name": "osprey-e2e-ui",
+  "private": true,
+  "type": "module",
+  "description": "Browser-level smoke for the shell + route explorer (see smoke.mjs)",
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}

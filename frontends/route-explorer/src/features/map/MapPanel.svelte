@@ -1,5 +1,6 @@
 <script lang="ts">
   import { strings, formatNumber } from "../../strings";
+  import { logClient } from "../../telemetry";
   import { fetchDestinations as gatewayDestinations } from "../explore/exploreData";
   import {
     fetchAirportDetails as gatewayAirportDetails,
@@ -98,6 +99,7 @@
     const target = host;
 
     void (async () => {
+      const startedAt = performance.now();
       let island: IslandModule;
       try {
         island = await loadIsland();
@@ -105,9 +107,11 @@
         if (!cancelled) unavailable = true; // no Rust toolchain / pkg not built — a hint, not a crash
         return;
       }
+      const islandMs = Math.round(performance.now() - startedAt);
       try {
         const rows = await airports();
         if (cancelled) return;
+        const airportsMs = Math.round(performance.now() - startedAt) - islandMs;
         mapRows = rows;
         iatas = rows.map((row) => row.iata);
         indexByIata = new Map(iatas.map((iata, index) => [iata, index]));
@@ -126,6 +130,14 @@
         map.draw_base();
         airportCount = rows.length;
         drawPath(pathIatas);
+        // How long the WASM island took to become interactive — visible in Loki
+        // alongside the backend spans, since the browser is otherwise a blind spot.
+        logClient("info", "map-island-ready", {
+          islandMs,
+          airportsMs,
+          totalMs: Math.round(performance.now() - startedAt),
+          airports: rows.length,
+        });
       } catch {
         if (!cancelled) failed = true;
       }

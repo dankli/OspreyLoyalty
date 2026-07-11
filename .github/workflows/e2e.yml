@@ -11,3 +11,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: bash infra/e2e-smoke.sh
+
+  # Real Chromium through the shell: explore -> route search -> map, with
+  # assertions per step and a fail on any uncaught page error.
+  ui-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bash infra/e2e-ui-smoke.sh
