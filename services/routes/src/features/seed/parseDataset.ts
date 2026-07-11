@@ -10,7 +10,7 @@ export type AirportProps = {
   city: string;
   country: string;
   countryCode: string;
-  continent: string;
+  continent: string | null; // the source lacks one for ~45 airports
   latitude: number;
   longitude: number;
   timezone: string | null;
@@ -36,7 +36,7 @@ type RawCarrier = { iata: string | null; name: string | null };
 type RawRoute = { carriers: RawCarrier[]; iata: string; km: number | null; min: number | null };
 type RawAirport = {
   city_name: string;
-  continent: string;
+  continent: string | null;
   country: string;
   country_code: string;
   iata: string;
@@ -67,7 +67,7 @@ export function parseDataset(json: string): ParsedDataset {
       city: airport.city_name,
       country: airport.country,
       countryCode: airport.country_code,
-      continent: airport.continent,
+      continent: airport.continent ?? null,
       latitude,
       longitude,
       timezone: airport.timezone ?? null,

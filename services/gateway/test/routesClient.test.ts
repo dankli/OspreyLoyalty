@@ -33,6 +33,18 @@ test("5xx from the routes service throws", async () => {
   await expect(fetchDestinations("http://routes", "ARN")).rejects.toThrow("routes service responded 500");
 });
 
+test("a destination airport without a continent is data, not drift", async () => {
+  // 45 of the dataset's airports genuinely lack a continent; one of them inside a
+  // big hub's fan must not fail the whole response (the MIA click bug).
+  vi.stubGlobal("fetch", vi.fn(async () =>
+    new Response(
+      JSON.stringify([{ airport: { ...arlanda, iata: "MYG", continent: null }, km: 100, min: 45, carriers: [] }]),
+      { status: 200, headers: { "content-type": "application/json" } },
+    )));
+  const destinations = await fetchDestinations("http://routes", "MIA");
+  expect(destinations[0]?.airport.continent).toBeNull();
+});
+
 test("a drifted destinations shape is rejected, not passed through", async () => {
   // zod is the trust boundary: a 200 whose body is missing required fields must fail loudly here.
   vi.stubGlobal("fetch", vi.fn(async () =>

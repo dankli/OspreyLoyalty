@@ -39,7 +39,7 @@ export const sampleDataset = JSON.stringify({
   },
   CCC: {
     city_name: "Gamma Town",
-    continent: "EU",
+    continent: null, // mirrors the ~45 real airports without one (the MIA click bug)
     country: "Testland",
     country_code: "TL",
     display_name: "Gamma (CCC), Testland",

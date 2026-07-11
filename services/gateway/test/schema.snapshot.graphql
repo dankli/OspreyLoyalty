@@ -72,7 +72,7 @@ type Airport {
   city: String!
   country: String!
   countryCode: String!
-  continent: String!
+  continent: String
   latitude: Float!
   longitude: Float!
   timezone: String

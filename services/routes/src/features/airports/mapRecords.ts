@@ -10,7 +10,7 @@ export type Airport = {
   city: string;
   country: string;
   countryCode: string;
-  continent: string;
+  continent: string | null;
   latitude: number;
   longitude: number;
   timezone: string | null;

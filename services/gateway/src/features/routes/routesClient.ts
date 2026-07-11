@@ -11,7 +11,7 @@ export const AirportSchema = z.object({
   city: z.string(),
   country: z.string(),
   countryCode: z.string(),
-  continent: z.string(),
+  continent: z.string().nullable(), // 45 dataset airports genuinely lack one
   latitude: z.number(),
   longitude: z.number(),
   timezone: z.string().nullable(),
