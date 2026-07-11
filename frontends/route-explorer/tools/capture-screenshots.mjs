@@ -61,6 +61,10 @@ await page.screenshot({ path: join(outDir, "route-search.png") });
 await page.click('nav button:has-text("Map")');
 await page.waitForSelector("canvas:visible");
 await page.waitForTimeout(1200);
+// The itinerary auto-fit (and any persisted view) has already moved the camera —
+// reset to the world view so the wheel target below actually lands on Europe.
+await page.click('button[title="Reset view"]:visible');
+await page.waitForTimeout(200);
 const canvas = page.locator("canvas:visible").last();
 const box = await canvas.boundingBox();
 if (box) {
