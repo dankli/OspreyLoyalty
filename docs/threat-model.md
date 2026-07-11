@@ -73,7 +73,7 @@ Read this alongside the [architecture overview](architecture.md) (the container 
 | A slow/hung upstream stalls the gateway | Every gateway → members/partners call carries a **2 s timeout**; the members Mongo lookup carries a **5 s cap**. No unbounded awaits. |
 | Unbounded query/loop exhausts memory | Bounded reads throughout (e.g. the tier-window recompute is `Limit`-ed). Backend pods now run with **request = limit memory** (Guaranteed QoS), so one pod's spike can't starve neighbours. |
 | Poison message loops forever on the queue | The quorum queue dead-letters after five delivery attempts ([ADR-0001](decisions/0001-queue-rabbitmq.md)) rather than retrying endlessly. |
-| Request flood on public endpoints | **Gap:** no rate limiting / quotas at the ingress or gateway yet — a candidate hardening step (Traefik middleware). |
+| Request flood on public endpoints | A **token-bucket rate limit** (Traefik file-provider middleware, per source IP, average 50 r/s / burst 100) sits on every ingress-routed host; sustained abuse gets 429s. Per-user/tenant quotas at the gateway remain a follow-up. |
 
 ### E — Elevation of privilege (can you become someone more powerful?)
 
@@ -90,6 +90,6 @@ Read this alongside the [architecture overview](architecture.md) (the container 
 2. **No privileged-action audit trail** — addressed by the planned audit-log initiative (Repudiation).
 3. **RabbitMQ earn hop** — the last async surface being brought fully under zero-trust (Spoofing, roadmap).
 4. **No PII governance** — retention, tagging, and right-to-erasure are the GDPR/PII initiative (Information disclosure).
-5. **Secrets in plain manifests** and **no rate limiting** — documented hardening follow-ups.
+5. **Secrets in plain manifests** — a documented hardening follow-up (ingress rate limiting has since landed as a Traefik middleware).
 
 Each residual risk maps to a concrete, tracked next step rather than an unknown. That mapping — not the absence of risk — is what this document exists to provide.

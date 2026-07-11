@@ -58,6 +58,7 @@ public static partial class ApplyEarn
                 options: null, cts.Token);
 
             Tiers.Tier tier = Tiers.Effective(qualifying, member.IsOspreyInvited);
+            BusinessMetrics.PointsEarned.Inc(points);
 
             // Tier movement becomes a domain event via the outbox (ADR-0024). The event id is
             // derived from the ledger entry that caused the change, so a redelivered earn (which
@@ -66,6 +67,7 @@ public static partial class ApplyEarn
             Tiers.Tier before = Tiers.Effective(member.QualifyingPoints, member.IsOspreyInvited);
             if (before != tier)
             {
+                BusinessMetrics.TierChanges.WithLabels(tier > before ? "up" : "down").Inc();
                 await outbox.WriteAsync(new Outbox.TierChangedEvent(
                     $"tier-{earn.MemberId}-{tier.ToString().ToUpperInvariant()}-{entry.Id}",
                     earn.MemberId,

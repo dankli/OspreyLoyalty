@@ -51,6 +51,24 @@ metadata:
 spec:
   controller: traefik.io/ingress-controller
 ---
+# Ingress rate limiting (threat-model follow-up): a file-provider middleware keeps this
+# CRD-free — the Ingress opts in via the router.middlewares annotation (ratelimit@file).
+# Token bucket per source IP: bursts absorb a page load, sustained abuse gets 429s.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: traefik-dynamic
+  namespace: osprey
+  labels: { app: traefik }
+data:
+  dynamic.yml: |
+    http:
+      middlewares:
+        ratelimit:
+          rateLimit:
+            average: 50
+            burst: 100
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -72,6 +90,8 @@ spec:
           args:
             - --providers.kubernetesingress=true
             - --providers.kubernetesingress.ingressclass=traefik
+            # File provider carries the rate-limit middleware (no CRDs needed).
+            - --providers.file.filename=/etc/traefik/dynamic/dynamic.yml
             - --entrypoints.web.address=:80
             - --entrypoints.websecure.address=:443
             # TLS-terminate every router on :443 by default (cert comes from the Ingress tls secret via
@@ -106,6 +126,14 @@ spec:
           resources:
             requests: { cpu: 100m, memory: 64Mi }
             limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts:
+            - name: dynamic
+              mountPath: /etc/traefik/dynamic
+              readOnly: true
+      volumes:
+        - name: dynamic
+          configMap:
+            name: traefik-dynamic
 ---
 apiVersion: v1
 kind: Service

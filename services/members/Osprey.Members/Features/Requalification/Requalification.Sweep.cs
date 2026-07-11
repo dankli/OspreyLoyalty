@@ -55,7 +55,9 @@ public static partial class Requalification
 
             Tiers.Tier before = Tiers.Effective(member.QualifyingPoints, member.IsOspreyInvited);
             Tiers.Tier after = Tiers.Effective(qualifying, member.IsOspreyInvited);
-            if (before != after) changes.Add(new TierChange(member.Id, before, after));
+            if (before == after) continue;
+            BusinessMetrics.TierChanges.WithLabels(after > before ? "up" : "down").Inc();
+            changes.Add(new TierChange(member.Id, before, after));
         }
         return changes;
     }

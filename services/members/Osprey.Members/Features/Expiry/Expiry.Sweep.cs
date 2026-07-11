@@ -70,6 +70,7 @@ public static partial class Expiry
 
                 if (decrement.ModifiedCount == 0) continue;
                 totalExpired += lot.PointsToExpire;
+                BusinessMetrics.PointsExpired.Inc(lot.PointsToExpire);
             }
         }
         return totalExpired;

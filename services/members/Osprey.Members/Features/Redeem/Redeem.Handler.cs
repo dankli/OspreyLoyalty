@@ -62,6 +62,7 @@ public static partial class Redeem
                 return Outcome.Ok(await AlreadyAppliedResponse(reward, memberId, cts.Token));
             }
 
+            BusinessMetrics.PointsRedeemed.Inc(reward.Cost);
             MemberDocument member = await members.Find(m => m.Id == memberId).FirstAsync(cts.Token);
             return Outcome.Ok(new Response(reward.Id, reward.Cost, member.SpendablePoints, AlreadyApplied: false));
         }

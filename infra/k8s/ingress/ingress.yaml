@@ -16,6 +16,9 @@ metadata:
   name: osprey
   namespace: osprey
   labels: { app: osprey }
+  annotations:
+    # Every routed host shares the token-bucket rate limit (see traefik.yaml's ConfigMap).
+    traefik.ingress.kubernetes.io/router.middlewares: ratelimit@file
 spec:
   ingressClassName: traefik
   # TLS for every host from one wildcard cert. run-local-k8s creates the `osprey-tls` secret from a

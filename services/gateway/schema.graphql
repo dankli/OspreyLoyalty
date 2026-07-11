@@ -36,6 +36,7 @@ type Partner {
 type Dashboard {
   member: Member
   partners: [Partner!]!
+  degraded: [String!]!
 }
 
 extend type Query {

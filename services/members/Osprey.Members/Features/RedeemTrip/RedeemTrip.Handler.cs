@@ -53,6 +53,7 @@ public static partial class RedeemTrip
                 return Outcome.Ok(await AlreadyAppliedResponse(request, memberId, cts.Token));
             }
 
+            BusinessMetrics.PointsRedeemed.Inc(request.Points);
             MemberDocument member = await members.Find(m => m.Id == memberId).FirstAsync(cts.Token);
             return Outcome.Ok(new Response(
                 request.FromIata, request.ToIata, request.Points, member.SpendablePoints, AlreadyApplied: false));

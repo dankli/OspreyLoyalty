@@ -29,7 +29,7 @@ test("dashboard fans out to members and partners", async () => {
   });
 });
 
-test("partners outage surfaces as a GraphQL error, not a crash", async () => {
+test("a partners outage degrades that section instead of failing the dashboard", async () => {
   const yoga = buildYoga(fakeDeps({
     fetchMember: async () => ada,
     fetchPartners: async () => { throw new Error("partners service responded 500"); },
@@ -38,9 +38,30 @@ test("partners outage surfaces as a GraphQL error, not a crash", async () => {
   const response = await yoga.fetch("http://gateway/graphql", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ query: '{ dashboard(memberId: "demo-ada") { partners { id } } }' }),
+    body: JSON.stringify({ query: '{ dashboard(memberId: "demo-ada") { member { name } partners { id } degraded } }' }),
   });
 
   const body = await response.json();
-  expect(body.errors).toBeDefined();
+  expect(body.errors).toBeUndefined();
+  expect(body.data.dashboard).toEqual({
+    member: { name: "Ada Lindqvist" },
+    partners: [],
+    degraded: ["partners"],
+  });
+});
+
+test("a healthy dashboard reports nothing degraded", async () => {
+  const yoga = buildYoga(fakeDeps({
+    fetchMember: async () => ada,
+    fetchPartners: async () => partners,
+  }));
+
+  const response = await yoga.fetch("http://gateway/graphql", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ query: '{ dashboard(memberId: "demo-ada") { degraded } }' }),
+  });
+
+  const body = await response.json();
+  expect(body.data.dashboard.degraded).toEqual([]);
 });

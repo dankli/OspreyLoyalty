@@ -57,14 +57,23 @@ export function schema(deps: Deps): GraphQLSchemaWithContext<YogaInitialContext>
           deps.fetchPartners(env.PARTNERS_URL, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),
         dashboard: async (_parent: unknown, args: { memberId: string }, context: RequestContext) => {
           // Fan-out: both legs run concurrently, each bounded by its client's own 2s timeout.
+          // One leg down must not take the whole dashboard with it — the failed section
+          // degrades to empty and is NAMED in `degraded`, so the UI can say so honestly.
           const correlationId = correlationIdOf(context);
           const authorization = authorizationOf(context);
           const acceptLanguage = acceptLanguageOf(context);
-          const [member, partners] = await Promise.all([
+          const [memberResult, partnersResult] = await Promise.allSettled([
             deps.fetchMember(env.MEMBERS_URL, args.memberId, correlationId, authorization, acceptLanguage),
             deps.fetchPartners(env.PARTNERS_URL, correlationId, authorization, acceptLanguage),
           ]);
-          return { member, partners };
+          const degraded: string[] = [];
+          if (memberResult.status === "rejected") degraded.push("member");
+          if (partnersResult.status === "rejected") degraded.push("partners");
+          return {
+            member: memberResult.status === "fulfilled" ? memberResult.value : null,
+            partners: partnersResult.status === "fulfilled" ? partnersResult.value : [],
+            degraded,
+          };
         },
         rewards: (_parent: unknown, _args: unknown, context: RequestContext) =>
           deps.fetchRewards(env.MEMBERS_URL, correlationIdOf(context), authorizationOf(context), acceptLanguageOf(context)),

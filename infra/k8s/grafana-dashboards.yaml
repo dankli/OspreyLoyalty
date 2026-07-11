@@ -824,6 +824,111 @@ data:
         }
       ]
     }
+  osprey-business.json: |
+    {
+      "uid": "osprey-business",
+      "title": "Osprey Business",
+      "schemaVersion": 39,
+      "version": 1,
+      "editable": true,
+      "refresh": "5s",
+      "time": { "from": "now-1h", "to": "now" },
+      "timezone": "browser",
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "Points earned / min",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+          "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(rate(osprey_points_earned_total[5m])) * 60",
+              "legendFormat": "earned/min"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "Points redeemed / min",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+          "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(rate(osprey_points_redeemed_total[5m])) * 60",
+              "legendFormat": "redeemed/min"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Points expired / min",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+          "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(rate(osprey_points_expired_total[5m])) * 60",
+              "legendFormat": "expired/min"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "Tier changes / hour (by direction)",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(rate(osprey_tier_changes_total[15m])) by (direction) * 3600",
+              "legendFormat": "{{direction}}/h"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "type": "stat",
+          "title": "Totals since members started",
+          "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(osprey_points_earned_total)",
+              "legendFormat": "earned"
+            },
+            {
+              "refId": "B",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(osprey_points_redeemed_total)",
+              "legendFormat": "redeemed"
+            },
+            {
+              "refId": "C",
+              "datasource": { "type": "prometheus", "uid": "osprey-prom" },
+              "expr": "sum(osprey_tier_changes_total)",
+              "legendFormat": "tier changes"
+            }
+          ]
+        }
+      ]
+    }
 kind: ConfigMap
 metadata:
   name: grafana-dashboards
