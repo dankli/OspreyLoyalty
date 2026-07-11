@@ -127,8 +127,10 @@ await step("admin quick-pick lookup renders a profile and the audit trail answer
 });
 
 await step("shell language switch relabels chrome and propagates to the portal", async () => {
+  // The remote keeps its router state across remounts, so anchor on the nav (present on
+  // every member-portal page) rather than any specific page's content.
   await page.click('.shell-nav button:has-text("Member portal")');
-  await page.waitForSelector("ul.benefits li");
+  await page.waitForSelector('nav a:has-text("Transactions")');
   await page.selectOption("select.shell-lang", "sv");
   await page.waitForSelector('.shell-nav button:has-text("Medlemsportal")');
   await page.waitForSelector('nav a:has-text("Transaktioner")'); // the mounted remote followed live
