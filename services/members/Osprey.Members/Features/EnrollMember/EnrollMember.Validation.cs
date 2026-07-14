@@ -5,8 +5,8 @@ namespace Osprey.Members.Features;
 public static partial class EnrollMember
 {
     /// <summary>
-    /// Pure input rules. Throws ArgumentException with a human message — the edge maps it
-    /// to a 400, so the happy path in the handler never branches on validation state.
+    /// Pure input rules. Returns the first broken rule as a ValidationError value — the edge
+    /// maps it to a 400, so the happy path in the handler never branches on validation state.
     /// </summary>
     public static class Validation
     {

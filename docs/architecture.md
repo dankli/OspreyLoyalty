@@ -1,6 +1,6 @@
 # Architecture overview
 
-Osprey Loyalty is a miniature airline-style loyalty platform built as a multi-language demo. It runs as a set of Docker containers — six backend services (including a first-party OIDC identity service and a Rust points engine), a message broker, two databases, four frontend artifacts, and a full observability stack (OpenTelemetry → Jaeger for traces, Loki for logs, Prometheus/Grafana for metrics) — all wired together in a single `docker compose up`. Phase 6 added enterprise concerns: zero-trust JWT validation on every service (with a per-service kill-switch, off by default), five-language i18n on both the frontends and backend messages, and an in-app help system. The intended audience for this document is a reviewer spending five minutes in the repo.
+Osprey Loyalty is a miniature airline-style loyalty platform built as a multi-language demo. It runs as a set of Docker containers — seven backend services (including a first-party OIDC identity service and a Rust points engine), a message broker, two databases, four frontend artifacts, and a full observability stack (OpenTelemetry → Jaeger for traces, Loki for logs, Prometheus/Grafana for metrics) — all wired together in a single `docker compose up`. Phase 6 added enterprise concerns: zero-trust JWT validation on every service (with a per-service kill-switch, off by default), five-language i18n on both the frontends and backend messages, and an in-app help system. The intended audience for this document is a reviewer spending five minutes in the repo.
 
 ---
 
@@ -24,12 +24,14 @@ flowchart TD
         Security["security<br/>(Java 21 / Spring Auth Server)<br/>OIDC / JWKS / PKCE<br/>:9000"]
         PointsEngine["points-engine<br/>(Rust / axum)<br/>pure points calc<br/>:8082"]
         Routes["routes<br/>(TypeScript / Node 22)<br/>airline route graph<br/>:8083"]
+        Notifications["notifications<br/>(TypeScript / Node 22)<br/>member-event emails"]
     end
 
     subgraph Infra
         RabbitMQ["RabbitMQ 3<br/>earn-events queue"]
         Mongo["MongoDB 7<br/>members documents"]
         Neo4j["Neo4j 5<br/>route graph"]
+        Mailpit["Mailpit<br/>demo SMTP inbox"]
     end
 
     subgraph Observability
@@ -58,6 +60,10 @@ flowchart TD
 
     Partners -->|"EarnEvent (JSON)<br/>correlationId + authToken in the payload"| RabbitMQ
     RabbitMQ -->|"at-least-once delivery<br/>token validated before apply"| Members
+    Members -->|"member events (tier.changed, points.expiring)<br/>via transactional outbox"| RabbitMQ
+    RabbitMQ -->|"member-events topic<br/>at-least-once"| Notifications
+    Notifications -->|"REST: resolve email at send time, 2 s timeout"| Members
+    Notifications -->|"SMTP"| Mailpit
 
     Members --> Mongo
     Routes --> Neo4j

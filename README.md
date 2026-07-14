@@ -2,10 +2,10 @@
 
 Osprey Loyalty is a miniature airline-style loyalty platform — members earn points from
 partner purchases, climb a tier ladder, and redeem rewards. It is built in public as a demo
-of full-stack, polyglot engineering: six backend services across four languages
-(C#, TypeScript, Java, Rust) behind a GraphQL gateway and four micro-frontends, with a
-first-party OIDC identity service, opt-in zero-trust auth, distributed tracing, and a
-Kubernetes deployment. The interesting bugs in this domain live in the business rules, so
+of full-stack, polyglot engineering: seven backend services across four languages
+(C#, TypeScript, Java, Rust) — among them a GraphQL gateway and a first-party OIDC
+identity service — and four micro-frontends, with opt-in zero-trust auth, distributed
+tracing, and a Kubernetes deployment. The interesting bugs in this domain live in the business rules, so
 that is where the tests live too.
 
 [![members](https://github.com/dankli/OspreyLoyalty/actions/workflows/members.yml/badge.svg)](https://github.com/dankli/OspreyLoyalty/actions/workflows/members.yml)
@@ -283,6 +283,7 @@ if you just want to poke the endpoints without tokens, start the cluster with `-
 | [`services/points-engine`](services/points-engine) | Rust | Pure points calculation with promotions, property-tested; deliberately not wired into the earn path ([ADR-0006](docs/decisions/0006-rust-points-engine.md)) |
 | [`services/security`](services/security) | Java 21 / Spring Boot | First-party OIDC/OAuth2 identity service — issues the JWTs the fleet validates ([ADR-0007](docs/decisions/0007-zero-trust-auth.md)) |
 | [`services/routes`](services/routes) | TypeScript / Node 22 | The airline route graph in Neo4j: airport typeahead, direct destinations, and weighted shortest-itinerary search via APOC dijkstra ([ADR-0021](docs/decisions/0021-neo4j-route-graph.md)) |
+| [`services/notifications`](services/notifications) | TypeScript / Node 22 | Consumes member domain events off RabbitMQ and sends the tier-change and expiring-points emails that land in Mailpit ([ADR-0024](docs/decisions/0024-member-events-and-notifications.md)) |
 | [`frontends/member-portal`](frontends/member-portal) | React 19 | Member dashboard: balance, tier progress, benefits, rewards, and a simulated Travel Agent streamed over SSE |
 | [`frontends/admin-portal`](frontends/admin-portal) | Vue 3 | Admin tools: member lookup, point adjustments, partner rates, OSPREY invitations |
 | [`frontends/route-explorer`](frontends/route-explorer) | Svelte 5 | Route explorer: airport search, A→B itinerary search with a points estimate, and a world map drawn by a Rust/Leptos WASM island ([ADR-0022](docs/decisions/0022-svelte-mfe-leptos-wasm-island.md)) |
@@ -338,12 +339,14 @@ These are principles I claim I use when developing software. Here they are as co
   [`Features/EnrollMember`](services/members/Osprey.Members/Features/EnrollMember) holds contracts,
   validation, handler and endpoint. The domain core ([`Tiers.Core.cs`](services/members/Osprey.Members/Features/Tiers/Tiers.Core.cs))
   is pure and I/O-free, which makes it trivially testable.
-- **TDD, visibly.** The commit history shows tests driving the implementation — integration tests
-  against a real Mongo and RabbitMQ via Testcontainers, JWT auth tests (HS256 and RS256/JWKS, incl.
-  the RabbitMQ hop), and per-language i18n tests.
-- **Exceptions on the edges.** Validation throws with a human message; one middleware in
-  [`Program.cs`](services/members/Osprey.Members/Program.cs) turns expected failures into clean 400s.
-  The happy path reads top to bottom, no Result types threaded through every method.
+- **Tests ship with the feature.** No feature lands without its tests in the same commit —
+  integration tests against a real Mongo and RabbitMQ via Testcontainers, JWT auth tests (HS256
+  and RS256/JWKS, incl. the RabbitMQ hop), and per-language i18n tests.
+- **Sad paths stop at the edge.** Validation returns the broken rule as a value, and an endpoint
+  filter ([`Guard.cs`](services/members/Osprey.Members/Infrastructure/Pipeline/Guard.cs)) turns it
+  into a clean, localized 400 before the handler runs; a handler returns one outcome that its
+  endpoint maps to a status code. The happy path reads top to bottom — expected failures never
+  throw, and no result-wrapping is threaded through every method.
 - **Bounded everything.** Every query, loop, retry and integration call carries an explicit bound and
   a timeout with a reason — the Mongo lookup's 5-second cap, the gateway's 2-second call to members.
 - **Standards over invention.** GraphQL Yoga, zod, TanStack Query, GraphQL codegen, Testcontainers,
