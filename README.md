@@ -332,7 +332,7 @@ DevSecOps pipeline scans every push (gitleaks, Trivy, SBOM, Dependabot) with the
 
 ## How I build
 
-These are principles I claim on my CV. Here they are as code you can click:
+These are principles I claim I use when developing software. Here they are as code you can click:
 
 - **Vertical Slice Architecture.** One folder per feature, everything it needs in one place:
   [`Features/EnrollMember`](services/members/Osprey.Members/Features/EnrollMember) holds contracts,
