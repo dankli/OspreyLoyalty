@@ -4,9 +4,12 @@
 # with assertions (infra/e2e-ui/smoke.mjs).
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
 
-COMPOSE="docker compose -f infra/docker-compose.yml"
+# Absolute path: the EXIT trap must find the compose file even after the
+# script cd:s into infra/e2e-ui for the Playwright run.
+COMPOSE="docker compose -f $ROOT/infra/docker-compose.yml"
 
 cleanup() {
   status=$?
