@@ -116,7 +116,7 @@
 			<plugin>
 				<groupId>com.diffplug.spotless</groupId>
 				<artifactId>spotless-maven-plugin</artifactId>
-				<version>2.44.5</version>
+				<version>3.8.0</version>
 				<!-- Deliberately low-churn: no wholesale reformat (google-java-format would fight
 				     the hand-written style), just the hygiene rules a reviewer should never have
 				     to comment on. `mvn spotless:check` gates CI; `mvn spotless:apply` fixes. -->
