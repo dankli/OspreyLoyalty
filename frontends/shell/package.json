@@ -42,9 +42,9 @@
     "eslint": "^9.39.5",
     "jsdom": "^29.1.1",
     "typescript": "~7.0.2",
-    "typescript-eslint": "^8.63.0",
+    "typescript-eslint": "^8.64.0",
     "typescript5": "npm:typescript@~5.9.3",
-    "vite": "^8.1.4",
+    "vite": "^8.1.5",
     "vitest": "^4.1.10"
   },
   "dependencies": {
