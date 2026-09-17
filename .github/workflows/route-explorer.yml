@@ -13,7 +13,7 @@ jobs:
       run: { working-directory: frontends/route-explorer }
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - run: npm ci
@@ -35,7 +35,7 @@ jobs:
       - run: cargo test
         working-directory: frontends/route-explorer/wasm-map
       - run: rustup target add wasm32-unknown-unknown
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
       - run: npm ci
